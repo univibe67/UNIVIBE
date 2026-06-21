@@ -1,0 +1,6 @@
+@UniVibe.API_HostAddress = http://localhost:5107
+
+GET {{UniVibe.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
