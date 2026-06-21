@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="UniVibe.Domain/UniVibe.Domain.csproj" Id="6d2afcd2-45c9-4a25-afba-f4d881da1ba5" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>
