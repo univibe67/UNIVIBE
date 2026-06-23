@@ -23,7 +23,7 @@ namespace UniVibe.Application.Services
                 Email = createUserDto.Email,
                 FirstName = createUserDto.FirstName,
                 LastName = createUserDto.LastName,
-                PasswordHash = "GEÇİCİ_HASH" // İleride buraya hashleme gelecek
+                PasswordHash = "GEÇİCİ_HASH" 
             };
 
             await _userRepository.AddAsync(user);

@@ -8,6 +8,9 @@ namespace UniVibe.Domain.Entities
         public string Description { get; set; } = string.Empty;
         public DateTime EventDate { get; set; }
         public string Location { get; set; } = string.Empty;
+        public string? TargetDepartment { get; set; } 
+        public string? TargetFaculty { get; set; }
+        public int? MinGrade { get; set; }
 
         public Guid UserId { get; set; }
         public virtual User User { get; set; } = default!;

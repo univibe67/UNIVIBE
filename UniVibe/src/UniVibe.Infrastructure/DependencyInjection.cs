@@ -20,6 +20,7 @@ namespace UniVibe.Infrastructure
             // Generic (T) yapılar typeof ile eklenir
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
+
             return services;
         }
     }
