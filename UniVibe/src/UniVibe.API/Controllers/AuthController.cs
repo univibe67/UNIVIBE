@@ -19,15 +19,21 @@ namespace UniVibe.API.Controllers
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
-            // Controller sadece servisi çağırıyor, gerisine karışmıyor!
-            var token = await _authService.InitiateRegistrationAsync(request.Email);
-            return Ok(new { message = "Kayıt süreci başlatıldı.", token = token });
+            try
+            {
+                await _authService.InitiateRegistrationAsync(request.Email);
+
+                return Ok(new { message = "Kayıt doğrulama linki mail adresine gönderildi." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("verify-token")]
         public async Task<IActionResult> VerifyToken([FromQuery] string token)
         {
-            // Servis katmanındaki o güzelim metodu çağırıyoruz
             var isValid = await _authService.VerifyTokenAsync(token);
 
             if (!isValid)
