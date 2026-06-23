@@ -7,21 +7,26 @@ namespace UniVibe.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IGenericRepository<PendingUser> _pendingUserRepository;
+        private readonly IEmailService _emailService;
 
-        public AuthService(IGenericRepository<PendingUser> pendingUserRepository)
+        public AuthService(IGenericRepository<PendingUser> pendingUserRepository, IEmailService emailService)
         {
             _pendingUserRepository = pendingUserRepository;
+            _emailService = emailService;
         }
 
         public async Task<string> InitiateRegistrationAsync(string email)
         {
-            // 1. Zaten kayıtlı mı kontrolü (GenericRepository'de FirstOrDefaultAsync varsa)
-            var existing = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && !u.IsUsed);
+            var alreadyRegistered = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && u.IsUsed);
+            if (alreadyRegistered != null)
+                throw new Exception("Bu e-posta adresi ile zaten kayıtlı bir kullanıcı bulunuyor.");
 
-            if (existing != null && existing.ExpiryDate > DateTime.UtcNow)
-                return existing.Token;
+            var pending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && !u.IsUsed);
 
-            // 2. Yeni Token
+            if (pending != null && pending.ExpiryDate > DateTime.UtcNow)
+                return pending.Token;
+
+            // 3. ADIM: Yeni kayıt oluştur
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
@@ -33,6 +38,17 @@ namespace UniVibe.Application.Services
             };
 
             await _pendingUserRepository.AddAsync(pendingUser);
+
+            try
+            {
+                string link = $"https://localhost:7001/api/Auth/verify-token?token={token}";
+                await _emailService.SendEmailAsync(email, "UniVibe Kayıt", $"Link: <a href='{link}'>Doğrula</a>");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: " + ex.Message);
+            }
+
             return token;
         }
 
