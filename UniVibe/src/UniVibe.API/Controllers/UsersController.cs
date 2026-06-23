@@ -15,12 +15,5 @@ namespace UniVibe.API.Controllers
         {
             _userService = userService;
         }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
-        {
-            await _userService.CreateUserAsync(createUserDto);
-            return Ok(new { message = "Kullanıcı başarıyla oluşturuldu!" });
-        }
     }
 }

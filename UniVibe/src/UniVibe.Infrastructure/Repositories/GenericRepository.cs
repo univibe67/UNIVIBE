@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Asn1;
 using System.Linq.Expressions;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Common;
@@ -19,20 +20,20 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task AddAsync(T entity)
         {
-            await _dbSet.AddAsync(entity); // _context.Set yerine _dbSet
+            await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(T entity)
         {
             _dbSet.Remove(entity);
-            await _context.SaveChangesAsync(); // Burayı da await yaptık
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
-            await _context.SaveChangesAsync(); // Burayı da await yaptık
+            await _context.SaveChangesAsync();
         }
 
         public async Task<T> GetAsync(Expression<Func<T, bool>> filter)

@@ -7,9 +7,9 @@ namespace UniVibe.Application.Services
 {
     public class EventService : IEventService
     {
-        private readonly IGenericRepository<Event> _eventRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public EventService(IGenericRepository<Event> eventRepository)
+        public EventService(IEventRepository eventRepository)
         {
             _eventRepository = eventRepository;
         }
@@ -23,7 +23,7 @@ namespace UniVibe.Application.Services
                 Description = createEventDto.Description,
                 EventDate = createEventDto.EventDate,
                 Location = createEventDto.Location,
-                UserId = userId // Kullanıcıyla ilişkilendiriyoruz
+                UserId = userId
             };
 
             await _eventRepository.AddAsync(newEvent);

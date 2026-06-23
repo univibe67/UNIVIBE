@@ -7,11 +7,11 @@ namespace UniVibe.Application.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IGenericRepository<PendingUser> _pendingUserRepository;
-        private readonly IGenericRepository<User> _userRepository;
+        private readonly IPendingUserRepository _pendingUserRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IEmailService _emailService;
 
-        public AuthService(IGenericRepository<PendingUser> pendingUserRepository, IEmailService emailService, IGenericRepository<User> userRepository)
+        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -20,7 +20,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(string email)
         {
-            var alreadyRegistered = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && u.IsUsed);
+            var alreadyRegistered = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
             if (alreadyRegistered != null)
                 throw new Exception("Bu e-posta adresi ile zaten kayıtlı bir kullanıcı bulunuyor.");
 
@@ -29,7 +29,6 @@ namespace UniVibe.Application.Services
             if (pending != null && pending.ExpiryDate > DateTime.UtcNow)
                 return pending.Token;
 
-            // 3. ADIM: Yeni kayıt oluştur
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
