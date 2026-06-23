@@ -17,8 +17,9 @@ namespace UniVibe.Infrastructure
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(DependencyInjection).Assembly.FullName)));
 
-            // Generic (T) yapılar typeof ile eklenir
-            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IEventRepository, EventRepository>();
+            services.AddScoped<IPendingUserRepository, PendingUserRepository>();
 
 
             return services;

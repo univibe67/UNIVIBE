@@ -16,10 +16,8 @@ namespace UniVibe.Application.Services
 
             using var smtp = new SmtpClient();
 
-            // Gmail SMTP ayarları
             await smtp.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
 
-            // ÖNEMLİ: Normal şifren değil, "Uygulama Şifresi" kullanmalısın!
             await smtp.AuthenticateAsync("univibe67@gmail.com", "otqk sifg vqse ozbw");
 
             await smtp.SendAsync(email);

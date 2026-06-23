@@ -7,6 +7,6 @@ namespace UniVibe.Domain.Entities
         public string Email { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
         public DateTime ExpiryDate { get; set; }
-        public bool IsUsed { get; set; } = false; // Link kullanıldı mı?
+        public bool IsUsed { get; set; } = false;
     }
 }
