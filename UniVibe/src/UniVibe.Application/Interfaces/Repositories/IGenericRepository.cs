@@ -5,10 +5,12 @@ namespace UniVibe.Application.Interfaces.Repositories
 {
     public interface IGenericRepository<T> where T: BaseEntity
     {
-        Task<List<T>> GetAllAsync(Expression<Func<T, bool>> filter = null);
-        Task<T> GetAsync(Expression<Func<T, bool>> filter);
         Task AddAsync(T entity);
-        void Update(T entity); // EF Core'da Update'in asenkronu yoktur
-        void Delete(T entity);
+        Task UpdateAsync(T entity);
+        Task DeleteAsync(T entity);
+
+        Task<T?> GetAsync(Expression<Func<T, bool>> filter);
+        Task<List<T>> GetAllAsync(Expression<Func<T, bool>> filter = null);
+        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
     }
 }
