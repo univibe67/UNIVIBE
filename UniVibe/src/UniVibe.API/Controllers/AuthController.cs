@@ -37,9 +37,18 @@ namespace UniVibe.API.Controllers
             var isValid = await _authService.VerifyTokenAsync(token);
 
             if (!isValid)
-                return BadRequest("Token geçersiz veya süresi dolmuş.");
+                return BadRequest(new { message = "Token geçersiz veya süresi dolmuş." });
 
-            return Ok(new { message = "Token doğrulandı." });
+            return Ok(new { message = "Token doğrulandı.", token = token });
+        }
+
+        [HttpPost("register-complete")]
+        public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
+        {
+
+            await _authService.CompleteRegistrationAsync(request);
+
+            return Ok(new { message = "Kaydınız başarıyla tamamlandı. Artık giriş yapabilirsiniz!" });
         }
     }
 }

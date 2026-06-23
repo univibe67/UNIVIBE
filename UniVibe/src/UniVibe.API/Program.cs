@@ -1,3 +1,4 @@
+using FluentValidation.AspNetCore;
 using UniVibe.Application;
 using UniVibe.Infrastructure;
 
@@ -9,8 +10,11 @@ builder.Services.AddApplicationServices();
 
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
+    
 
 builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
