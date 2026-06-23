@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Infrastructure.Persistence.Context;
+using UniVibe.Infrastructure.Repositories;
 
 namespace UniVibe.Infrastructure
 {
@@ -13,7 +15,10 @@ namespace UniVibe.Infrastructure
         {
             services.AddDbContext<UniVibeDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(nameof(UniVibe.Infrastructure))));
+                b => b.MigrationsAssembly(typeof(DependencyInjection).Assembly.FullName)));
+
+            // Generic (T) yapılar typeof ile eklenir
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             return services;
         }

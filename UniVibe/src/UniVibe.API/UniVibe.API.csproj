@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\UniVibe.Application\UniVibe.Application.csproj" />
     <ProjectReference Include="..\UniVibe.Infrastructure\UniVibe.Infrastructure.csproj" />
   </ItemGroup>
