@@ -10,6 +10,7 @@ namespace UniVibe.Domain.Entities
         public string LastName { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
         public string Faculty { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
         public int Grade { get; set; }
 
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
