@@ -2,7 +2,7 @@
 using MimeKit;
 using UniVibe.Application.Interfaces;
 
-namespace UniVibe.Application.Services
+namespace UniVibe.Infrastructure.Services
 {
     public class EmailService : IEmailService
     {

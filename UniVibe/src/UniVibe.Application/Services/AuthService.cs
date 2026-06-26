@@ -10,12 +10,15 @@ namespace UniVibe.Application.Services
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEmailService _emailService;
+        private readonly IPasswordHasher _passwordHasher;
 
-        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository)
+
+        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository, IPasswordHasher passwordHasher)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
             _userRepository = userRepository;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<string> InitiateRegistrationAsync(string email)
@@ -80,7 +83,7 @@ namespace UniVibe.Application.Services
             {
                 Id = Guid.NewGuid(),
                 Email = pendingUser.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber, 

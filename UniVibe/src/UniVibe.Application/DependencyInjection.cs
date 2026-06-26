@@ -17,7 +17,6 @@ namespace UniVibe.Application
 
 
             services.AddValidatorsFromAssemblyContaining<RegisterInitValidator>();
-            services.AddScoped<IEmailService, EmailService>();
 
             return services;
         }
