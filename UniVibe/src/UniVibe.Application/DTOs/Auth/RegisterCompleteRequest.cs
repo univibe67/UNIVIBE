@@ -1,4 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.Auth;
+﻿using UniVibe.Domain.Enums;
+
+namespace UniVibe.Application.DTOs.Auth;
 
 public class RegisterCompleteRequest
 {
@@ -9,5 +11,5 @@ public class RegisterCompleteRequest
     public string Department { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string Faculty { get; set; } = string.Empty;
-    public int Grade { get; set; }         
+    public GradeLevel Grade { get; set; }         
 }

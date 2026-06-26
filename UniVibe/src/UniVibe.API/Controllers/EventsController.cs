@@ -17,7 +17,7 @@ namespace UniVibe.API.Controllers
             this._eventService = eventService;
         }
 
-        [HttpGet]
+        [HttpGet("all-events")]
         public async Task<IActionResult> GetAllEvents()
         {
             var events = await _eventService.GetAllEventsAsync();
@@ -29,7 +29,7 @@ namespace UniVibe.API.Controllers
 
             return Ok(events);
         }
-        [HttpPost]
+        [HttpPost("create-event")]
         public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto createEventDto)
         { 
             await _eventService.CreateEventAsync(createEventDto, createEventDto.UserId);

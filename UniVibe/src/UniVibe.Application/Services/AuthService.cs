@@ -52,7 +52,6 @@ namespace UniVibe.Application.Services
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
-                Id = Guid.NewGuid(),
                 Email = email,
                 Token = token,
                 ExpiryDate = DateTime.UtcNow.AddMinutes(5),
@@ -98,7 +97,6 @@ namespace UniVibe.Application.Services
 
             var newUser = new User
             {
-                Id = Guid.NewGuid(),
                 Email = pendingUser.Email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,

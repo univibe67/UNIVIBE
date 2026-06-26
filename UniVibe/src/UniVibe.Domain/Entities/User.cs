@@ -1,4 +1,6 @@
-﻿using UniVibe.Domain.Common;
+﻿using System.Diagnostics;
+using UniVibe.Domain.Common;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Domain.Entities
 {
@@ -11,7 +13,7 @@ namespace UniVibe.Domain.Entities
         public string Department { get; set; } = string.Empty;
         public string Faculty { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
-        public int Grade { get; set; }
+        public GradeLevel Grade { get; set; }
 
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
     }
