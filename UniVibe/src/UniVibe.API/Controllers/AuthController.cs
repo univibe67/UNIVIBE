@@ -16,6 +16,22 @@ namespace UniVibe.API.Controllers
             _authService = authService;
         }
 
+
+        [HttpPost("login")]
+        public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+        {
+            try
+            {
+                var result = await _authService.LoginAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
