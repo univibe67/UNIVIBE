@@ -34,7 +34,7 @@ namespace UniVibe.Application.Validators.Auth
                 .Matches(@"^5\d{9}$").WithMessage("Telefon 5 ile başlamalı ve 10 haneli olmalıdır.");
 
             RuleFor(x => x.Grade)
-                .InclusiveBetween(0, 6).WithMessage("Sınıf bilgisi 0 ile 6 arasında olmalıdır.");
+                .IsInEnum().WithMessage("Lütfen geçerli bir sınıf seviyesi seçiniz");
         }
     }
 }

@@ -18,7 +18,6 @@ namespace UniVibe.Application.Services
         {
             var newEvent = new Event
             {
-                Id = Guid.NewGuid(),
                 Title = createEventDto.Title,
                 Description = createEventDto.Description,
                 EventDate = createEventDto.EventDate,
