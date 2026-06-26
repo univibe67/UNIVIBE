@@ -15,18 +15,5 @@ namespace UniVibe.Application.Services
             _userRepository = userRepository;
         }
 
-        public async Task CreateUserAsync(CreateUserDto createUserDto)
-        {
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = createUserDto.Email,
-                FirstName = createUserDto.FirstName,
-                LastName = createUserDto.LastName,
-                PasswordHash = "GEÇİCİ_HASH" 
-            };
-
-            await _userRepository.AddAsync(user);
-        }
     }
 }

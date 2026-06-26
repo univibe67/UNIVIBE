@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="deneme\**" />
+    <Compile Remove="Valida\**" />
     <EmbeddedResource Remove="deneme\**" />
+    <EmbeddedResource Remove="Valida\**" />
     <None Remove="deneme\**" />
+    <None Remove="Valida\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,14 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
-    <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Valida\" />
   </ItemGroup>
 
 </Project>
