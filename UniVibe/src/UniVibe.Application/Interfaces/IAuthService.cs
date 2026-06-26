@@ -7,5 +7,6 @@ namespace UniVibe.Application.Interfaces
         Task<string> InitiateRegistrationAsync(string email);
         Task<bool> VerifyTokenAsync(string token);
         Task CompleteRegistrationAsync(RegisterCompleteRequest request);
+        Task<LoginResponse> LoginAsync(LoginRequest request);
     }
 }

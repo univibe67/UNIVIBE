@@ -11,14 +11,31 @@ namespace UniVibe.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ITokenService _tokenService;
 
 
-        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository, IPasswordHasher passwordHasher)
+        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository, IPasswordHasher passwordHasher, ITokenService tokenService)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _tokenService = tokenService;
+        }
+
+        public async Task<LoginResponse> LoginAsync(LoginRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                throw new Exception("E-posta veya şifre hatalı.");
+
+            var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
+            if (!isPasswordValid)
+                throw new Exception("E-posta veya şifre hatalı.");
+
+            var token = _tokenService.GenerateToken(user);
+
+            return new LoginResponse(token, user.FirstName, user.LastName);
         }
 
         public async Task<string> InitiateRegistrationAsync(string email)
