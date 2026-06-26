@@ -1,8 +1,5 @@
-﻿using UniVibe.Application.DTOs.Event;
-using UniVibe.Application.DTOs.User;
-using UniVibe.Application.Interfaces;
+﻿using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
-using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Services
 {

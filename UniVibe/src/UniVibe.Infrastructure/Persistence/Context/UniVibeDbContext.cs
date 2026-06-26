@@ -40,6 +40,22 @@ namespace UniVibe.Infrastructure.Persistence.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.Property(u => u.Email).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.FirstName).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.LastName).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.PhoneNumber).HasMaxLength(20);
+            });
+
+
+            modelBuilder.Entity<Event>(entity =>
+            {
+                entity.Property(e => e.Title).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Description).HasMaxLength(2000);
+                entity.Property(e => e.Location).HasMaxLength(200);
+            });
         }
     }
 }
