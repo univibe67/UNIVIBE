@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.DTOs.Event;
+﻿using UniVibe.Application.Constants;
+using UniVibe.Application.DTOs.Event;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
@@ -28,18 +29,25 @@ namespace UniVibe.Application.Services
             await _eventRepository.AddAsync(newEvent);
         }
 
-        public async Task<List<EventDto>> GetAllEventsAsync()
+        public async Task<PaginatedResult<EventDto>> GetAllEventsAsync(int pageNumber, int pageSize)
         {
-            var events = await _eventRepository.GetAllAsync();
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(pageNumber, pageSize);
 
-            return events.Select(e => new EventDto
+            var eventDtos = items.Select(e => new EventDto
             {
-                Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
                 EventDate = e.EventDate,
                 Location = e.Location
             }).ToList();
+
+            return new PaginatedResult<EventDto>
+            {
+                Items = eventDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
     }
 }
