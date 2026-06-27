@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="deneme\**" />
+    <Compile Remove="Valida\**" />
     <EmbeddedResource Remove="deneme\**" />
+    <EmbeddedResource Remove="Valida\**" />
     <None Remove="deneme\**" />
+    <None Remove="Valida\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,12 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Interfaces\" />
-    <Folder Include="DTOs\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
   </ItemGroup>
 
