@@ -14,6 +14,8 @@ namespace UniVibe.Domain.Entities
         public string Faculty { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public GradeLevel Grade { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
 
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
     }

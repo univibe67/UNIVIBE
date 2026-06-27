@@ -20,16 +20,20 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("all-events")]
-        public async Task<IActionResult> GetAllEvents()
+        public async Task<IActionResult> GetAllEvents([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var events = await _eventService.GetAllEventsAsync();
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 50) pageSize = 50; 
 
-            if (events == null || events.Count == 0)
+            var pagedEvents = await _eventService.GetAllEventsAsync(pageNumber, pageSize);
+
+            if (pagedEvents.Items == null || pagedEvents.Items.Count == 0)
             {
                 return NoContent();
             }
 
-            return Ok(events);
+            return Ok(pagedEvents);
         }
 
         [Authorize]
