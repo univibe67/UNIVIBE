@@ -11,12 +11,13 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
         {
-            var query = _context.Events.AsQueryable();
+            var query = _context.Events.Where(e => !e.IsDeleted).AsQueryable();
 
             if (onlyActive)
             {
-                query = query.Where(e => !e.IsDeleted);
+                query = query.Where(e => e.IsActive && e.EventDate >= DateTime.UtcNow);
             }
+
 
             var totalCount = await query.CountAsync();
 
