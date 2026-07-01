@@ -44,10 +44,11 @@ namespace UniVibe.Application.Services
             if (alreadyRegistered != null)
                 throw new Exception("Bu e-posta adresi ile zaten kayıtlı bir kullanıcı bulunuyor.");
 
-            var pending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && !u.IsUsed);
-
-            if (pending != null && pending.ExpiryDate > DateTime.UtcNow)
-                return pending.Token;
+            var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email);
+            if (existingPending != null)
+            {
+                await _pendingUserRepository.DeleteAsync(existingPending);
+            }
 
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
@@ -67,6 +68,7 @@ namespace UniVibe.Application.Services
             }
             catch (Exception ex)
             {
+                await _pendingUserRepository.DeleteAsync(pendingUser);
                 throw new Exception("Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: " + ex.Message);
             }
 

@@ -26,7 +26,6 @@ namespace UniVibe.API.Controllers
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 50) pageSize = 50;
-            // Gelen onlyActive değerini servise iletiyoruz
             var pagedEvents = await _eventService.GetAllEventsAsync(pageNumber, pageSize, onlyActive);
 
             if (pagedEvents.Items == null || pagedEvents.Items.Count == 0)
