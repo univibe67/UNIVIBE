@@ -1,4 +1,5 @@
-﻿using UniVibe.Domain.Common;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using UniVibe.Domain.Common;
 
 namespace UniVibe.Domain.Entities
 {
@@ -14,5 +15,11 @@ namespace UniVibe.Domain.Entities
 
         public Guid UserId { get; set; }
         public virtual User User { get; set; } = default!;
+
+        public Guid CategoryId { get; set; }
+
+        [ForeignKey(nameof(CategoryId))]
+        public EventCategory Category { get; set; } = default!;
     }
+
 }
