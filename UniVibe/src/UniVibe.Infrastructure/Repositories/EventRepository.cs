@@ -9,14 +9,21 @@ namespace UniVibe.Infrastructure.Repositories
     {
         public EventRepository(UniVibeDbContext context) : base(context) { }
 
-        public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(int pageNumber, int pageSize)
+        public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
         {
-            var totalCount = await _context.Events.CountAsync();
+            var query = _context.Events.AsQueryable();
 
-            var items = await _context.Events
-                .OrderByDescending(e => e.CreatedAt) 
-                .Skip((pageNumber - 1) * pageSize)     
-                .Take(pageSize)                        
+            if (onlyActive)
+            {
+                query = query.Where(e => !e.IsDeleted);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(e => e.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             return (items, totalCount);

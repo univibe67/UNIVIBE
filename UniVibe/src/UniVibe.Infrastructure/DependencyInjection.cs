@@ -22,6 +22,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IPendingUserRepository, PendingUserRepository>();
+            services.AddScoped<IEventCategoryRepository, EventCategoryRepository>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();

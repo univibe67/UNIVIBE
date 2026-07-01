@@ -13,7 +13,8 @@ namespace UniVibe.Infrastructure.Persistence.Context
 
         public DbSet<User> Users { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<PendingUser> PendingUsers { get; set; } // Bunu ekle
+        public DbSet<PendingUser> PendingUsers { get; set; }
+        public DbSet<EventCategory> EventCategories { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
