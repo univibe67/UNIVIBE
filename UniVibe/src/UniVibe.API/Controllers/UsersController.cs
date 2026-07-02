@@ -37,5 +37,14 @@ namespace UniVibe.API.Controllers
 
             return Ok(new { Message = "Profil bilgileri başarıyla güncellendi!" });
         }
+        [HttpGet("my-profile")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            var userId = User.GetUserId();
+
+            var profileData = await _userService.GetUserProfileAsync(userId);
+
+            return Ok(profileData);
+        }
     }
 }
