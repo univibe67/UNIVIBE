@@ -95,10 +95,15 @@ namespace UniVibe.Application.Services
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
 
             if (pendingUser == null)
-                throw new Exception("Geçersiz işlem.");
+                throw new Exception("Geçersiz veya süresi dolmuş işlem.");
+
+            var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            if (isUsernameTaken)
+                throw new Exception("Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.");
 
             var newUser = new User
             {
+                Username = request.Username,
                 Email = pendingUser.Email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,

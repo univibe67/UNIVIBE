@@ -38,7 +38,7 @@ namespace UniVibe.API.Controllers
 
         [Authorize]
         [HttpPost("create-event")]
-        public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto createEventDto)
+        public async Task<IActionResult> CreateEvent([FromForm] CreateEventDto createEventDto)
         {
 
             var userId = User.GetUserId();

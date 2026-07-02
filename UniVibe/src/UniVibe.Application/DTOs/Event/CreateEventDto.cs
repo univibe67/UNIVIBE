@@ -1,4 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.Event
+﻿using Microsoft.AspNetCore.Http;
+
+namespace UniVibe.Application.DTOs.Event
 {
     public class CreateEventDto
     {
@@ -7,6 +9,7 @@
         public DateTime EventDate { get; set; }
         public string Location { get; set; } = string.Empty;
         public Guid CategoryId { get; set; }
+        public IFormFile? ImageFile { get; set; }
 
 
     }

@@ -48,6 +48,8 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 entity.Property(u => u.FirstName).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.LastName).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);
+                entity.Property(u => u.Username).HasMaxLength(20).IsRequired();
+                entity.HasIndex(u => u.Username).IsUnique();
             });
 
 
