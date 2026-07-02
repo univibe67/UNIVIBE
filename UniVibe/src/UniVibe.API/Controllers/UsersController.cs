@@ -46,5 +46,11 @@ namespace UniVibe.API.Controllers
 
             return Ok(profileData);
         }
+        [HttpGet("{username}")]
+        public async Task<IActionResult> GetProfileByUsername(string username)
+        {
+            var profileData = await _userService.GetProfileByUsernameAsync(username);
+            return Ok(profileData);
+        }
     }
 }

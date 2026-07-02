@@ -93,6 +93,30 @@ namespace UniVibe.Application.Services
                 Faculty = user.Faculty
             };
         }
+        public async Task<PublicUserProfileDto> GetProfileByUsernameAsync(string username)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+            if (user == null)
+                throw new Exception("Kullanıcı bulunamadı.");
+
+            return new PublicUserProfileDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+
+                ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
+                    ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
+                    : user.ProfilePictureUrl,
+
+                Bio = user.Bio,
+                SocialMediaLink = user.SocialMediaLink,
+                Department = user.Department,
+                Faculty = user.Faculty
+            };
+        }
 
     }
 }
