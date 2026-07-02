@@ -70,6 +70,29 @@ namespace UniVibe.Application.Services
 
             await _userRepository.UpdateAsync(user);
         }
+        public async Task<UserProfileDto> GetUserProfileAsync(Guid userId)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                throw new Exception("Kullanıcı bulunamadı.");
+
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
+                    ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
+                    : user.ProfilePictureUrl,
+                Bio = user.Bio,
+                SocialMediaLink = user.SocialMediaLink,
+                Department = user.Department,
+                Faculty = user.Faculty
+            };
+        }
 
     }
 }

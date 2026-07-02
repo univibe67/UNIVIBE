@@ -7,5 +7,6 @@ namespace UniVibe.Application.Interfaces
     {
         Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage);
         Task UpdateProfileAsync(Guid userId, UpdateUserProfileDto updateDto);
+        Task<UserProfileDto> GetUserProfileAsync(Guid userId);
     }
 }
