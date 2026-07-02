@@ -10,11 +10,13 @@ namespace UniVibe.Application.Services
     {
         private readonly IEventRepository _eventRepository;
         private readonly IEventCategoryRepository _categoryRepository;
+        private readonly IImageService _imageService;
 
-        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository)
+        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
+            _imageService = imageService;
         }
 
         public async Task CreateEventAsync(CreateEventDto createEventDto, Guid userId)
@@ -33,6 +35,15 @@ namespace UniVibe.Application.Services
             if (!categoryExists)
                 throw new Exception("Seçilen kategori bulunamadı!");
 
+            string? imageUrl = null;
+            string? imagePublicId = null;
+            if (createEventDto.ImageFile != null)
+            {
+                var uploadResult = await _imageService.UploadImageAsync(createEventDto.ImageFile, "Events");
+                imageUrl = uploadResult.Url;
+                imagePublicId = uploadResult.PublicId;
+            }
+
             var newEvent = new Event
             {
                 Title = createEventDto.Title,
@@ -40,7 +51,9 @@ namespace UniVibe.Application.Services
                 EventDate = createEventDto.EventDate,
                 Location = createEventDto.Location,
                 UserId = userId,
-                CategoryId = createEventDto.CategoryId
+                CategoryId = createEventDto.CategoryId,
+                ImageUrl = imageUrl,
+                ImagePublicId = imagePublicId,
             };
 
             await _eventRepository.AddAsync(newEvent);
@@ -57,7 +70,8 @@ namespace UniVibe.Application.Services
                 Description = e.Description,
                 EventDate = e.EventDate,
                 Location = e.Location,
-                CategoryId = e.CategoryId
+                CategoryId = e.CategoryId,
+                ImageUrl = e.ImageUrl
             }).ToList();
 
             return new PaginatedResult<EventDto>
@@ -90,6 +104,14 @@ namespace UniVibe.Application.Services
 
             if (existingEvent.UserId != userId)
                 throw new Exception("Bu etkinliği silmeye yetkiniz yok.");
+
+            if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
+            {
+                await _imageService.DeleteImageAsync(existingEvent.ImagePublicId);
+
+                existingEvent.ImageUrl = null;
+                existingEvent.ImagePublicId = null;
+            }
 
             existingEvent.IsDeleted = true;
             existingEvent.UpdatedAt = DateTime.UtcNow;

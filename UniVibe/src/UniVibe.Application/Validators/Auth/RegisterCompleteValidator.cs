@@ -35,6 +35,11 @@ namespace UniVibe.Application.Validators.Auth
 
             RuleFor(x => x.Grade)
                 .IsInEnum().WithMessage("Lütfen geçerli bir sınıf seviyesi seçiniz");
+            RuleFor(x => x.Username)
+                .NotEmpty().WithMessage(ValidationMessages.Required)
+                .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
+                .MaximumLength(20).WithMessage(ValidationMessages.MaxLength)
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage("Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.");
         }
     }
 }
