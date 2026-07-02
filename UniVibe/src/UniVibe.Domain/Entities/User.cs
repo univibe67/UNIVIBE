@@ -12,8 +12,6 @@ namespace UniVibe.Domain.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
-        public string Faculty { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public GradeLevel Grade { get; set; }
         public string? ProfilePictureUrl { get; set; }
@@ -21,6 +19,8 @@ namespace UniVibe.Domain.Entities
         public string? Bio { get; set; }
         public string? SocialMediaLink { get; set; }
 
+        public Guid DepartmentId { get; set; }
+        public Department Department { get; set; } = null!;
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
     }
 }

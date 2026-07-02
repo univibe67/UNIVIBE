@@ -9,23 +9,30 @@ namespace UniVibe.Application.Services
     {
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IDepartmentRepository _departmentRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
 
-
-        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository, IPasswordHasher passwordHasher, ITokenService tokenService)
+        public AuthService(
+            IPendingUserRepository pendingUserRepository,
+            IEmailService emailService,
+            IUserRepository userRepository,
+            IPasswordHasher passwordHasher,
+            ITokenService tokenService,
+            IDepartmentRepository departmentRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
+            _departmentRepository = departmentRepository;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
             if (user == null)
                 throw new Exception("E-posta veya şifre hatalı.");
 
@@ -84,7 +91,6 @@ namespace UniVibe.Application.Services
             }
 
             pendingUser.IsUsed = true;
-
             await _pendingUserRepository.UpdateAsync(pendingUser);
 
             return true;
@@ -101,6 +107,10 @@ namespace UniVibe.Application.Services
             if (isUsernameTaken)
                 throw new Exception("Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.");
 
+            var isDepartmentValid = await _departmentRepository.AnyAsync(d => d.Id == request.DepartmentId);
+            if (!isDepartmentValid)
+                throw new Exception("Seçilen bölüm sistemde bulunamadı. Lütfen geçerli bir bölüm seçiniz.");
+
             var newUser = new User
             {
                 Username = request.Username,
@@ -108,9 +118,8 @@ namespace UniVibe.Application.Services
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                PhoneNumber = request.PhoneNumber, 
-                Department = request.Department,
-                Faculty = request.Faculty,
+                PhoneNumber = request.PhoneNumber,
+                DepartmentId = request.DepartmentId,
                 Grade = request.Grade
             };
 

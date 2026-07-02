@@ -72,7 +72,7 @@ namespace UniVibe.Application.Services
         }
         public async Task<UserProfileDto> GetUserProfileAsync(Guid userId)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
@@ -89,13 +89,13 @@ namespace UniVibe.Application.Services
                     : user.ProfilePictureUrl,
                 Bio = user.Bio,
                 SocialMediaLink = user.SocialMediaLink,
-                Department = user.Department,
-                Faculty = user.Faculty
+                Department = user.Department.Name,
+                Faculty = user.Department.Faculty.Name
             };
         }
         public async Task<PublicUserProfileDto> GetProfileByUsernameAsync(string username)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+            var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
@@ -106,15 +106,13 @@ namespace UniVibe.Application.Services
                 Username = user.Username,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-
                 ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
                     ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
                     : user.ProfilePictureUrl,
-
                 Bio = user.Bio,
                 SocialMediaLink = user.SocialMediaLink,
-                Department = user.Department,
-                Faculty = user.Faculty
+                Department = user.Department.Name,
+                Faculty = user.Department.Faculty.Name
             };
         }
 

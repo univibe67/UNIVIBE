@@ -13,5 +13,6 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<List<T>> GetAllAsync(Expression<Func<T, bool>> filter = null);
         Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
+        IQueryable<T> AsQueryable();
     }
 }
