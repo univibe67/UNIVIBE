@@ -22,12 +22,8 @@ namespace UniVibe.Application.Validators.Auth
 
             RuleFor(x => x.LastName)
                 .NotEmpty().WithMessage(ValidationMessages.Required);
-
-            RuleFor(x => x.Department)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
-
-            RuleFor(x => x.Faculty)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
+            RuleFor(x => x.DepartmentId)
+                .NotEmpty().WithMessage("Lütfen bir bölüm seçiniz.");
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage(ValidationMessages.Required)

@@ -55,5 +55,9 @@ namespace UniVibe.Infrastructure.Repositories
         {
             return await _dbSet.AnyAsync(predicate);
         }
+        public IQueryable<T> AsQueryable()
+        {
+            return _dbSet.AsQueryable();
+        }
     }
 }

@@ -14,6 +14,7 @@ namespace UniVibe.Application
             services.AddScoped<IEventService, EventService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUniversityService, UniversityService>();
 
 
             services.AddValidatorsFromAssemblyContaining<RegisterInitValidator>();
