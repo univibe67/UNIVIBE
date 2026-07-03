@@ -64,5 +64,13 @@ namespace UniVibe.API.Controllers
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(result); 
         }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            var result = await _authService.RefreshTokenAsync(request);
+
+            return Ok(result);
+        }
     }
 }

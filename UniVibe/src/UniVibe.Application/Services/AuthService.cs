@@ -48,7 +48,13 @@ namespace UniVibe.Application.Services
 
             var token = _tokenService.GenerateToken(user);
 
-            return new LoginResponse(token, user.FirstName, user.LastName);
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+
+            await _userRepository.UpdateAsync(user);
+
+            return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
         }
 
         public async Task<string> InitiateRegistrationAsync(string email)
@@ -141,14 +147,35 @@ namespace UniVibe.Application.Services
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,
                 Grade = request.Grade,
-                IsActive = true
+                IsActive = true,
+
+                RefreshToken = _tokenService.GenerateRefreshToken(),
+                RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30)
             };
 
             await _userRepository.AddAsync(newUser);
             await _pendingUserRepository.DeleteAsync(pendingUser);
 
             var accessToken = _tokenService.GenerateToken(newUser);
-            return new LoginResponse(accessToken, newUser.FirstName, newUser.LastName);
+            return new LoginResponse(accessToken, newUser.RefreshToken, newUser.FirstName, newUser.LastName);
+        }
+        public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+            if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                throw new Exception("Oturum süreniz dolmuş. Lütfen tekrar giriş yapınız.");
+
+            var newAccessToken = _tokenService.GenerateToken(user);
+
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+
+            await _userRepository.UpdateAsync(user);
+
+            return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
         }
     }
 }
