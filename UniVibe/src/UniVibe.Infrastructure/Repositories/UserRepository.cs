@@ -14,6 +14,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await _context.Users
                 .Include(u => u.Department)
                 .ThenInclude(d => d.Faculty)
+                .ThenInclude(f => f.University)
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         }
         public async Task<User?> GetUserWithDetailsByIdAsync(Guid userId)
@@ -21,6 +22,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await _context.Users
                 .Include(u => u.Department)
                 .ThenInclude(d => d.Faculty)
+                .ThenInclude(f => f.University)
                 .FirstOrDefaultAsync(u => u.Id == userId);
         }
 

@@ -16,6 +16,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<EventCategory> EventCategories { get; set; }
         public DbSet<Faculty> Faculties { get; set; }
         public DbSet<Department> Departments { get; set; }
+        public DbSet<University> Universities { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -42,6 +43,18 @@ namespace UniVibe.Infrastructure.Persistence.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Faculty>()
+            .HasOne(f => f.University)
+            .WithMany(u => u.Faculties)
+            .HasForeignKey(f => f.UniversityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<University>(entity =>
+            {
+                entity.Property(u => u.Name).HasMaxLength(150).IsRequired();
+                entity.Property(u => u.EmailDomain).HasMaxLength(50).IsRequired();
+            });
 
             modelBuilder.Entity<Faculty>(entity =>
             {

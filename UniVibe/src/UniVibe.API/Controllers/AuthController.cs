@@ -58,13 +58,11 @@ namespace UniVibe.API.Controllers
             return Ok(new { message = "Token doğrulandı.", token = token });
         }
 
-        [HttpPost("register-complete")]
+        [HttpPost("complete-registration")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
-
-            await _authService.CompleteRegistrationAsync(request);
-
-            return Ok(new { message = "Kaydınız başarıyla tamamlandı. Artık giriş yapabilirsiniz!" });
+            var result = await _authService.CompleteRegistrationAsync(request);
+            return Ok(result); 
         }
     }
 }
