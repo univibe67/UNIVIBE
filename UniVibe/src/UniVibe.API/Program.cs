@@ -2,12 +2,19 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Text; 
 using UniVibe.Application;
 using UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
+using UniVibe.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddUniVibeSerilog();
+builder.Host.UseSerilog();
+
+Log.Information("Starting up the UniVibe API...");
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
@@ -31,6 +38,7 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
 });
+
 
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
@@ -83,4 +91,5 @@ app.UseAuthentication();
 app.UseAuthorization();  
 
 app.MapControllers();
+
 app.Run();
