@@ -10,7 +10,9 @@
         public string? ProfilePictureUrl { get; set; } 
         public string? Bio { get; set; }
         public string? SocialMediaLink { get; set; }
-        public string Department { get; set; } = string.Empty;
-        public string Faculty { get; set; } = string.Empty;
+        public string UniversityName { get; set; } = string.Empty;
+        public string FacultyName { get; set; } = string.Empty;
+        public string DepartmentName { get; set; } = string.Empty;
+
     }
 }

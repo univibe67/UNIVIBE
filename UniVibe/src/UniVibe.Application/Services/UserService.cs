@@ -89,8 +89,9 @@ namespace UniVibe.Application.Services
                     : user.ProfilePictureUrl,
                 Bio = user.Bio,
                 SocialMediaLink = user.SocialMediaLink,
-                Department = user.Department.Name,
-                Faculty = user.Department.Faculty.Name
+                DepartmentName = user.Department.Name,
+                FacultyName = user.Department.Faculty.Name,
+                UniversityName = user.Department.Faculty.University.Name
             };
         }
         public async Task<PublicUserProfileDto> GetProfileByUsernameAsync(string username)

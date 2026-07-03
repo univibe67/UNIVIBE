@@ -10,6 +10,8 @@ namespace UniVibe.Application.Services
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepartmentRepository _departmentRepository;
+        private readonly IUniversityRepository _universityRepository; 
+        private readonly IFacultyRepository _facultyRepository;       
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
@@ -20,7 +22,9 @@ namespace UniVibe.Application.Services
             IUserRepository userRepository,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
-            IDepartmentRepository departmentRepository)
+            IDepartmentRepository departmentRepository,
+            IUniversityRepository universityRepository,
+            IFacultyRepository facultyRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -28,6 +32,8 @@ namespace UniVibe.Application.Services
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
             _departmentRepository = departmentRepository;
+            _universityRepository = universityRepository;
+            _facultyRepository = facultyRepository;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -96,20 +102,34 @@ namespace UniVibe.Application.Services
             return true;
         }
 
-        public async Task CompleteRegistrationAsync(RegisterCompleteRequest request)
+        public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
-
             if (pendingUser == null)
                 throw new Exception("Geçersiz veya süresi dolmuş işlem.");
+
+            /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
+            var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
+            var university = await _universityRepository.FirstOrDefaultAsync(u => u.EmailDomain.ToLower() == emailDomain!.ToLower());
+            if (university == null)
+                 throw new Exception($"Sistemimizde '{emailDomain}' uzantısına tanımlı bir üniversite bulunmamaktadır.");
+            */
 
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
                 throw new Exception("Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.");
 
-            var isDepartmentValid = await _departmentRepository.AnyAsync(d => d.Id == request.DepartmentId);
-            if (!isDepartmentValid)
-                throw new Exception("Seçilen bölüm sistemde bulunamadı. Lütfen geçerli bir bölüm seçiniz.");
+            var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+            if (department == null)
+                throw new Exception("Seçilen bölüm sistemde bulunamadı.");
+
+            // TEST İÇİN KAPATILDI: Seçilen bölümün, adamın e-postasındaki üniversiteye ait olup olmadığı kontrolü
+            // (Çünkü yukarıdaki university değişkenini kapattık, burası patlar)
+            /*
+            var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.Id == department.FacultyId);
+            if (faculty == null || faculty.UniversityId != university.Id)
+                throw new Exception("Seçtiğiniz bölüm, e-posta adresinizin bağlı olduğu üniversiteye ait değil! Lütfen kendi üniversitenizin bölümlerinden birini seçin.");
+            */
 
             var newUser = new User
             {
@@ -120,11 +140,15 @@ namespace UniVibe.Application.Services
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,
-                Grade = request.Grade
+                Grade = request.Grade,
+                IsActive = true
             };
 
             await _userRepository.AddAsync(newUser);
             await _pendingUserRepository.DeleteAsync(pendingUser);
+
+            var accessToken = _tokenService.GenerateToken(newUser);
+            return new LoginResponse(accessToken, newUser.FirstName, newUser.LastName);
         }
     }
 }

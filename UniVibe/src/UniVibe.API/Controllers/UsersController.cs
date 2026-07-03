@@ -19,9 +19,8 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("upload-profile-picture")]
-        public async Task<IActionResult> UploadProfilePicture( IFormFile profileImage)
+        public async Task<IActionResult> UploadProfilePicture(IFormFile profileImage)
         {
-
             var userId = User.GetUserId();
             var newImageUrl = await _userService.UploadProfilePictureAsync(userId, profileImage);
 
@@ -37,7 +36,8 @@ namespace UniVibe.API.Controllers
 
             return Ok(new { Message = "Profil bilgileri başarıyla güncellendi!" });
         }
-        [HttpGet("my-profile")]
+
+        [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = User.GetUserId();
@@ -46,7 +46,8 @@ namespace UniVibe.API.Controllers
 
             return Ok(profileData);
         }
-        [HttpGet("{username}")]
+
+        [HttpGet("profile/{username}")]
         public async Task<IActionResult> GetProfileByUsername(string username)
         {
             var profileData = await _userService.GetProfileByUsernameAsync(username);

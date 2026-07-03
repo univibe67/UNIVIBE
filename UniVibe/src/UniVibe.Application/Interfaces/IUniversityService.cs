@@ -4,7 +4,10 @@ namespace UniVibe.Application.Interfaces
 {
     public interface IUniversityService
     {
-        Task<List<FacultyLookupDto>> GetFacultiesAsync();
+        Task<List<UniversityLookupDto>> GetAllUniversitiesAsync();
+
+        Task<List<FacultyLookupDto>> GetFacultiesByUniversityIdAsync(Guid universityId);
+
         Task<List<DepartmentLookupDto>> GetDepartmentsByFacultyIdAsync(Guid facultyId);
     }
 }

@@ -28,6 +28,8 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IPendingUserRepository, PendingUserRepository>();
             services.AddScoped<IEventCategoryRepository, EventCategoryRepository>();
             services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+            services.AddScoped<IUniversityRepository, UniversityRepository>();
+            services.AddScoped<IFacultyRepository, FacultyRepository>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();
