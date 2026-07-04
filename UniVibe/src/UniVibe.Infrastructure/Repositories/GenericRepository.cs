@@ -35,7 +35,7 @@ namespace UniVibe.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<T> GetAsync(Expression<Func<T, bool>> filter)
+        public async Task<T?> GetAsync(Expression<Func<T, bool>> filter)
         {
             return await _dbSet.SingleOrDefaultAsync(filter);
         }
