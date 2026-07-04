@@ -1,46 +1,41 @@
-import { Tabs } from "expo-router";
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarActiveTintColor: '#3B82F6', 
+        tabBarInactiveTintColor: '#9CA3AF', 
+        headerStyle: { backgroundColor: '#FFFFFF' },
+        headerTitleStyle: { fontWeight: 'bold', color: '#1F2937' },
+        tabBarStyle: { paddingBottom: 5, height: 60 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Anasayfa",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          title: 'Etkinlikler',
+          tabBarLabel: 'Ana Sayfa',
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={26} color={color} />,
         }}
       />
+
       <Tabs.Screen
-        name="explore"
+        name="create"
         options={{
-          title: "Keşfet",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="magnifyingglass" color={color} />
-          ),
+          title: 'Yeni Etkinlik',
+          tabBarLabel: 'Oluştur',
+          tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={28} color={color} />,
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profil",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.circle" color={color} />
-          ),
+          title: 'Profilim',
+          tabBarLabel: 'Profil',
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={26} color={color} />,
         }}
       />
     </Tabs>

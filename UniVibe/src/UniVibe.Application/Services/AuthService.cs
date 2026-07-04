@@ -9,23 +9,36 @@ namespace UniVibe.Application.Services
     {
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IDepartmentRepository _departmentRepository;
+        private readonly IUniversityRepository _universityRepository; 
+        private readonly IFacultyRepository _facultyRepository;       
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
 
-
-        public AuthService(IPendingUserRepository pendingUserRepository, IEmailService emailService, IUserRepository userRepository, IPasswordHasher passwordHasher, ITokenService tokenService)
+        public AuthService(
+            IPendingUserRepository pendingUserRepository,
+            IEmailService emailService,
+            IUserRepository userRepository,
+            IPasswordHasher passwordHasher,
+            ITokenService tokenService,
+            IDepartmentRepository departmentRepository,
+            IUniversityRepository universityRepository,
+            IFacultyRepository facultyRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
+            _departmentRepository = departmentRepository;
+            _universityRepository = universityRepository;
+            _facultyRepository = facultyRepository;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
             if (user == null)
                 throw new Exception("E-posta veya şifre hatalı.");
 
@@ -35,7 +48,13 @@ namespace UniVibe.Application.Services
 
             var token = _tokenService.GenerateToken(user);
 
-            return new LoginResponse(token, user.FirstName, user.LastName);
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+
+            await _userRepository.UpdateAsync(user);
+
+            return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
         }
 
         public async Task<string> InitiateRegistrationAsync(string email)
@@ -44,10 +63,11 @@ namespace UniVibe.Application.Services
             if (alreadyRegistered != null)
                 throw new Exception("Bu e-posta adresi ile zaten kayıtlı bir kullanıcı bulunuyor.");
 
-            var pending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email && !u.IsUsed);
-
-            if (pending != null && pending.ExpiryDate > DateTime.UtcNow)
-                return pending.Token;
+            var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email);
+            if (existingPending != null)
+            {
+                await _pendingUserRepository.DeleteAsync(existingPending);
+            }
 
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
@@ -62,11 +82,20 @@ namespace UniVibe.Application.Services
 
             try
             {
-                string link = $"https://localhost:7001/api/Auth/verify-token?token={token}";
-                await _emailService.SendEmailAsync(email, "UniVibe Kayıt", $"Link: <a href='{link}'>Doğrula</a>");
+                string webBridgeLink = $"http://192.168.1.110:5000/api/Auth/verify-redirect?token={token}";
+
+                string mailBody = $@"
+                    <h3>UniVibe'a Hoş Geldin!</h3>
+                    <p>Kampüsün nabzını tutmaya çok az kaldı. Kaydını tamamlamak için lütfen aşağıdaki bağlantıya tıkla:</p>
+                    <a href='{webBridgeLink}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;'>Hesabımı Doğrula</a>
+                    <br><br>
+                    <small>Eğer buton çalışmazsa bu linki tarayıcına yapıştırabilirsin: {webBridgeLink}</small>";
+
+                await _emailService.SendEmailAsync(email, "UniVibe Kayıt Onayı", mailBody);
             }
             catch (Exception ex)
             {
+                await _pendingUserRepository.DeleteAsync(pendingUser);
                 throw new Exception("Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: " + ex.Message);
             }
 
@@ -82,33 +111,79 @@ namespace UniVibe.Application.Services
             }
 
             pendingUser.IsUsed = true;
-
             await _pendingUserRepository.UpdateAsync(pendingUser);
 
             return true;
         }
 
-        public async Task CompleteRegistrationAsync(RegisterCompleteRequest request)
+        public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
-
             if (pendingUser == null)
-                throw new Exception("Geçersiz işlem.");
+                throw new Exception("Geçersiz veya süresi dolmuş işlem.");
+
+            /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
+            var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
+            var university = await _universityRepository.FirstOrDefaultAsync(u => u.EmailDomain.ToLower() == emailDomain!.ToLower());
+            if (university == null)
+                 throw new Exception($"Sistemimizde '{emailDomain}' uzantısına tanımlı bir üniversite bulunmamaktadır.");
+            */
+
+            var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            if (isUsernameTaken)
+                throw new Exception("Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.");
+
+            var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+            if (department == null)
+                throw new Exception("Seçilen bölüm sistemde bulunamadı.");
+
+            // TEST İÇİN KAPATILDI: Seçilen bölümün, adamın e-postasındaki üniversiteye ait olup olmadığı kontrolü
+            // (Çünkü yukarıdaki university değişkenini kapattık, burası patlar)
+            /*
+            var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.Id == department.FacultyId);
+            if (faculty == null || faculty.UniversityId != university.Id)
+                throw new Exception("Seçtiğiniz bölüm, e-posta adresinizin bağlı olduğu üniversiteye ait değil! Lütfen kendi üniversitenizin bölümlerinden birini seçin.");
+            */
 
             var newUser = new User
             {
+                Username = request.Username,
                 Email = pendingUser.Email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                PhoneNumber = request.PhoneNumber, 
-                Department = request.Department,
-                Faculty = request.Faculty,
-                Grade = request.Grade
+                PhoneNumber = request.PhoneNumber,
+                DepartmentId = request.DepartmentId,
+                Grade = request.Grade,
+                IsActive = true,
+
+                RefreshToken = _tokenService.GenerateRefreshToken(),
+                RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30)
             };
 
             await _userRepository.AddAsync(newUser);
             await _pendingUserRepository.DeleteAsync(pendingUser);
+
+            var accessToken = _tokenService.GenerateToken(newUser);
+            return new LoginResponse(accessToken, newUser.RefreshToken, newUser.FirstName, newUser.LastName);
+        }
+        public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+            if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                throw new Exception("Oturum süreniz dolmuş. Lütfen tekrar giriş yapınız.");
+
+            var newAccessToken = _tokenService.GenerateToken(user);
+
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+
+            await _userRepository.UpdateAsync(user);
+
+            return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
         }
     }
 }

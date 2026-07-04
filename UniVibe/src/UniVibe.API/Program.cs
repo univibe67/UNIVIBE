@@ -2,14 +2,21 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Text; 
 using UniVibe.Application;
+using UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
+using UniVibe.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddUniVibeSerilog();
+builder.Host.UseSerilog();
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -30,6 +37,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
@@ -46,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Token'ı şu formatta girin: Bearer {token}"
+        Description = "Token'i şu formatta girin: Bearer {token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -75,8 +83,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();  
 
 app.MapControllers();
+
 app.Run();
