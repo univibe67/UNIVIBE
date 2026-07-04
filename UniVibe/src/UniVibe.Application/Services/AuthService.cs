@@ -82,8 +82,16 @@ namespace UniVibe.Application.Services
 
             try
             {
-                string link = $"https://localhost:7001/api/Auth/verify-token?token={token}";
-                await _emailService.SendEmailAsync(email, "UniVibe Kayıt", $"Link: <a href='{link}'>Doğrula</a>");
+                string webBridgeLink = $"http://192.168.1.110:5000/api/Auth/verify-redirect?token={token}";
+
+                string mailBody = $@"
+                    <h3>UniVibe'a Hoş Geldin!</h3>
+                    <p>Kampüsün nabzını tutmaya çok az kaldı. Kaydını tamamlamak için lütfen aşağıdaki bağlantıya tıkla:</p>
+                    <a href='{webBridgeLink}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;'>Hesabımı Doğrula</a>
+                    <br><br>
+                    <small>Eğer buton çalışmazsa bu linki tarayıcına yapıştırabilirsin: {webBridgeLink}</small>";
+
+                await _emailService.SendEmailAsync(email, "UniVibe Kayıt Onayı", mailBody);
             }
             catch (Exception ex)
             {

@@ -14,8 +14,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddUniVibeSerilog();
 builder.Host.UseSerilog();
 
-Log.Information("Starting up the UniVibe API...");
-
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
@@ -56,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Token'ı şu formatta girin: Bearer {token}"
+        Description = "Token'i şu formatta girin: Bearer {token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
