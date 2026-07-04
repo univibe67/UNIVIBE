@@ -16,7 +16,6 @@ namespace UniVibe.API.Controllers
             _authService = authService;
         }
 
-
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
@@ -30,7 +29,6 @@ namespace UniVibe.API.Controllers
                 return Unauthorized(new { message = ex.Message });
             }
         }
-
 
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
@@ -72,6 +70,7 @@ namespace UniVibe.API.Controllers
 
             return Ok(result);
         }
+
         [HttpGet("verify-redirect")]
         public IActionResult VerifyRedirect([FromQuery] string token)
         {
