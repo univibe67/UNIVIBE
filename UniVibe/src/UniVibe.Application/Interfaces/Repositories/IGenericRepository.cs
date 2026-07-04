@@ -3,7 +3,7 @@ using UniVibe.Domain.Common;
 
 namespace UniVibe.Application.Interfaces.Repositories
 {
-    public interface IGenericRepository<T> where T: BaseEntity
+    public interface IRepository<T> where T: BaseEntity
     {
         Task AddAsync(T entity);
         Task UpdateAsync(T entity);

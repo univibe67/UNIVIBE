@@ -21,7 +21,7 @@ namespace UniVibe.Infrastructure
                 b => b.MigrationsAssembly(typeof(DependencyInjection).Assembly.FullName)));
 
 
-            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IEventRepository, EventRepository>();

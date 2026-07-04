@@ -2,7 +2,7 @@
 
 namespace UniVibe.Application.Interfaces.Repositories
 {
-    public interface IEventCategoryRepository : IGenericRepository<EventCategory>
+    public interface IEventCategoryRepository : IRepository<EventCategory>
     {
     }
 }

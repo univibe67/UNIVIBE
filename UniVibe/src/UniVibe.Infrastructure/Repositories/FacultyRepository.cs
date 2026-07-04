@@ -4,7 +4,7 @@ using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
 {
-    public class FacultyRepository : GenericRepository<Faculty>, IFacultyRepository
+    public class FacultyRepository : Repository<Faculty>, IFacultyRepository
     {
         public FacultyRepository(UniVibeDbContext context) : base(context)
         {

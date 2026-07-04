@@ -2,7 +2,7 @@
 
 namespace UniVibe.Application.Interfaces.Repositories
 {
-    public interface IPendingUserRepository : IGenericRepository<PendingUser>
+    public interface IPendingUserRepository : IRepository<PendingUser>
     {
     }
 }
