@@ -10,11 +10,9 @@ import { useAuthStore } from '../../store/useAuthStore';
 export default function RegisterCompleteScreen() {
   const router = useRouter();
   
-  // URL'den gelen token parametresini yakalıyoruz
   const { token } = useLocalSearchParams<{ token: string }>();
   const loginAction = useAuthStore((state) => state.login);
 
-  // Form State'leri
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -22,14 +20,11 @@ export default function RegisterCompleteScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [grade, setGrade] = useState('');
   
-  // Şimdilik bölüm ID'sini elle girelim, bir sonraki adımda buraya o 3'lü Cascading Dropdown'u kuracağız!
   const [departmentId, setDepartmentId] = useState('1'); 
 
-  // UI Durum State'leri
   const [isValidatingToken, setIsValidatingToken] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sayfa açıldığında token'ı backend'e doğrulatıyoruz (IsUsed = true yapmak için)
   useEffect(() => {
     const verifyToken = async () => {
       if (!token) {
@@ -39,8 +34,6 @@ export default function RegisterCompleteScreen() {
       }
 
       try {
-        // Backend'deki doğrulamayı tetikliyoruz
-        // GET isteği olduğu için token'ı query parametresi olarak yolluyoruz
         await api.get(`/Auth/verify-token?token=${token}`);
         setIsValidatingToken(false);
       } catch (error: any) {
@@ -60,19 +53,16 @@ export default function RegisterCompleteScreen() {
 
   setIsSubmitting(true);
   try {
-    // Backend DTO şemasıyla BİREBİR eşleşen nesnemiz:
     const requestData = {
-      token: token,               // URL'den yakaladığımız o gizli token
+      token: token,              
       username: username.trim(),
       password: password,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      phoneNumber: phoneNumber.trim() || null, // Boşsa null gitsin
-      departmentId: departmentId, // DİKKAT: Artık parseInt YAPMIYORUZ, direkt GUID string olarak gidiyor!
-      grade: parseInt(grade) || 0 // Şemada 0 (int) olduğu için sayıya çeviriyoruz
+      phoneNumber: phoneNumber.trim() || null, 
+      departmentId: departmentId, 
+      grade: parseInt(grade) || 0 
     };
-
-    console.log("Backend'e giden veri:", requestData); // Test için konsola basalım
 
     const response = await api.post('/Auth/complete-registration', requestData);
     const { token: receivedToken, refreshToken, firstName: resName, lastName: resLastName } = response.data;

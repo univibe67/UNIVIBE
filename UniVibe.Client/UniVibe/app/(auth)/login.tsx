@@ -34,23 +34,18 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 2. Backend'e İstek Atıyoruz
       const response = await api.post('/Auth/login', { 
         email: email, 
         password: password 
       });
 
-      // 3. DÜZELTİLEN YER: accessToken yerine backend'den gelen gerçek isim olan 'token'ı alıyoruz
       const { token, refreshToken, firstName, lastName } = response.data;
 
-      // 4. DÜZELTİLEN YER: Yakaladığımız bu 'token' değişkenini fonksiyonun içine gönderiyoruz
       await loginAction(token, refreshToken, firstName, lastName);
 
-      // 5. Her şey başarılıysa içeri (tabs) alıyoruz!
       router.replace('/(tabs)');
       
     } catch (error: any) {
-      // Hata Yönetimi: Axios'tan dönen hata mesajını yakalıyoruz
       const errorMessage = error.response?.data?.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin.";
       Alert.alert("Giriş Başarısız", errorMessage);
     } finally {
@@ -90,7 +85,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Butonu Loading Durumuna Göre Ayarladık */}
         <TouchableOpacity 
           style={[styles.loginButton, loading && { opacity: 0.7 }]} 
           onPress={handleLogin}

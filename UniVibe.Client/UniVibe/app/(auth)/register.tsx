@@ -19,7 +19,6 @@ export default function RegisterInitScreen() {
 
     setLoading(true);
     try {
-      // SADECE MAİL GÖNDERİYORUZ
       await api.post('/Auth/register-init', { email });
 
       Alert.alert(
@@ -28,10 +27,7 @@ export default function RegisterInitScreen() {
         [{ text: "Anladım", onPress: () => router.replace('/(auth)/login') }]
       );
     } catch (error: any) {
-      // Backend'den gelen asıl hatayı konsola ve ekrana basıyoruz
-      console.log("Register-Init Hatası:", error.response?.data);
-      
-      // Eğer backend bir Exception mesajı gönderdiyse onu al, yoksa varsayılanı yaz
+
       const errorMessage = error.response?.data?.message || error.response?.data || "İşlem başarısız.";
       
       Alert.alert("Uyarı", typeof errorMessage === 'string' ? errorMessage : "Bu e-posta ile ilgili bir sorun var.");
