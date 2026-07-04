@@ -5,7 +5,7 @@ using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
 {
-    public class EventRepository : GenericRepository<Event>, IEventRepository
+    public class EventRepository : Repository<Event>, IEventRepository
     {
         public EventRepository(UniVibeDbContext context) : base(context) { }
 

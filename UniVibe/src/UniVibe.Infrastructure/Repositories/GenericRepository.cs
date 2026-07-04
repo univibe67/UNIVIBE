@@ -6,12 +6,12 @@ using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
+    public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         protected readonly UniVibeDbContext _context;
         private readonly DbSet<T> _dbSet;
 
-        public GenericRepository(UniVibeDbContext context)
+        public Repository(UniVibeDbContext context)
         {
             _context = context;
             _dbSet = _context.Set<T>();

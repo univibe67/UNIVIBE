@@ -2,7 +2,7 @@
 
 namespace UniVibe.Application.Interfaces.Repositories
 {
-    public interface IDepartmentRepository : IGenericRepository<Department>
+    public interface IDepartmentRepository : IRepository<Department>
     {
     }
 }

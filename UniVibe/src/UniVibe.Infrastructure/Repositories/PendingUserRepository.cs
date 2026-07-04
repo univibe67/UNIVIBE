@@ -4,7 +4,7 @@ using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
 {
-    public class PendingUserRepository : GenericRepository<PendingUser>, IPendingUserRepository
+    public class PendingUserRepository : Repository<PendingUser>, IPendingUserRepository
     {
         public PendingUserRepository(UniVibeDbContext context) : base(context) { }
 
