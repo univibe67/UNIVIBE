@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UniVibe.Application.Constants;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event;
 using UniVibe.Application.Interfaces;
 
@@ -8,6 +8,7 @@ namespace UniVibe.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EventsController : ControllerBase
     {
         private readonly IEventService _eventService;
@@ -18,25 +19,17 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("all-events")]
-        public async Task<IActionResult> GetAllEvents(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] bool onlyActive = true)
+        public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 50) pageSize = 50;
-            var pagedEvents = await _eventService.GetAllEventsAsync(pageNumber, pageSize, onlyActive);
+            var pagedEvents = await _eventService.GetAllEventsAsync(
+                request.PageNumber,
+                request.PageSize,
+                request.OnlyActive
+            );
 
-            if (pagedEvents.Items == null || pagedEvents.Items.Count == 0)
-            {
-                return NoContent();
-            }
-
-            return Ok(pagedEvents);
+            return Ok(ApiResponse<object>.Success(pagedEvents));
         }
 
-        [Authorize]
         [HttpPost("create-event")]
         public async Task<IActionResult> CreateEvent([FromForm] CreateEventDto createEventDto)
         {
@@ -45,10 +38,9 @@ namespace UniVibe.API.Controllers
 
             await _eventService.CreateEventAsync(createEventDto, userId);
 
-            return Ok(new { Message = "Etkinlik başarıyla oluşturuldu." });
+            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla oluşturuldu."));
         }
 
-        [Authorize]
         [HttpDelete("delete-event/{id}")]
         public async Task<IActionResult> DeleteEvent(Guid id)
         {
@@ -56,7 +48,7 @@ namespace UniVibe.API.Controllers
 
             await _eventService.DeleteEventAsync(id, userId);
 
-            return Ok(new { Message = "Etkinlik başarıyla silindi." });
+            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla silindi."));
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth;
 using UniVibe.Application.Interfaces;
 
@@ -19,30 +19,15 @@ namespace UniVibe.API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            try
-            {
-                var result = await _authService.LoginAsync(request);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            var result = await _authService.LoginAsync(request);
+            return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
-            try
-            {
-                await _authService.InitiateRegistrationAsync(request.Email);
-
-                return Ok(new { message = "Kayıt doğrulama linki mail adresine gönderildi." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _authService.InitiateRegistrationAsync(request.Email);
+            return Ok(ApiResponse<string>.Success("Kayıt doğrulama linki mail adresine gönderildi."));
         }
 
         [HttpGet("verify-token")]
@@ -51,24 +36,23 @@ namespace UniVibe.API.Controllers
             var isValid = await _authService.VerifyTokenAsync(token);
 
             if (!isValid)
-                return BadRequest(new { message = "Token geçersiz veya süresi dolmuş." });
+                return BadRequest(ApiResponse<string>.Fail("Token geçersiz veya süresi dolmuş."));
 
-            return Ok(new { message = "Token doğrulandı.", token = token });
+            return Ok(ApiResponse<string>.Success("Token doğrulandı."));
         }
 
         [HttpPost("complete-registration")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
             var result = await _authService.CompleteRegistrationAsync(request);
-            return Ok(result); 
+            return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var result = await _authService.RefreshTokenAsync(request);
-
-            return Ok(result);
+            return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
         [HttpGet("verify-redirect")]

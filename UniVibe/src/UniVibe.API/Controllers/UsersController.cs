@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UniVibe.Application.Constants;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User;
 using UniVibe.Application.Interfaces;
 
@@ -24,7 +24,7 @@ namespace UniVibe.API.Controllers
             var userId = User.GetUserId();
             var newImageUrl = await _userService.UploadProfilePictureAsync(userId, profileImage);
 
-            return Ok(new { Message = "Profil fotoğrafı güncellendi!", ImageUrl = newImageUrl });
+            return Ok(ApiResponse<string>.Success(newImageUrl));
         }
 
         [HttpPut("update-profile")]
@@ -34,7 +34,7 @@ namespace UniVibe.API.Controllers
 
             await _userService.UpdateProfileAsync(userId, updateDto);
 
-            return Ok(new { Message = "Profil bilgileri başarıyla güncellendi!" });
+            return Ok(ApiResponse<string>.Success("Profil bilgileri başarıyla güncellendi!"));
         }
 
         [HttpGet("profile")]
@@ -44,14 +44,14 @@ namespace UniVibe.API.Controllers
 
             var profileData = await _userService.GetUserProfileAsync(userId);
 
-            return Ok(profileData);
+            return Ok(ApiResponse<UserProfileDto>.Success(profileData));
         }
 
         [HttpGet("profile/{username}")]
         public async Task<IActionResult> GetProfileByUsername(string username)
         {
             var profileData = await _userService.GetProfileByUsernameAsync(username);
-            return Ok(profileData);
+            return Ok(ApiResponse<PublicUserProfileDto>.Success(profileData));
         }
 
         [HttpDelete("delete-account")]
@@ -61,7 +61,7 @@ namespace UniVibe.API.Controllers
 
             await _userService.DeleteAccountAsync(userId);
 
-            return Ok(new { Message = "Hesabınız başarıyla donduruldu. 15 gün içinde giriş yaparak geri kurtarabilirsiniz." });
+            return Ok(ApiResponse<string>.Success("Hesabınız başarıyla donduruldu. 15 gün içinde giriş yaparak geri kurtarabilirsiniz."));
         }
     }
 }

@@ -21,7 +21,6 @@ namespace UniVibe.Application
 
             services.AddAutoMapper(cfg => { cfg.AddProfile<MappingProfile>(); });
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-            services.AddValidatorsFromAssemblyContaining<RegisterInitValidator>();
 
             return services;
         }

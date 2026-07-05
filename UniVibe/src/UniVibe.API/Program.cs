@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Text; 
+using System.Text;
+using UniVibe.API.Extensions;
 using UniVibe.Application;
 using UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
@@ -38,7 +39,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddMemoryCache();
 
-builder.Services.AddControllers();
+builder.Services.AddWebAPIServices();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

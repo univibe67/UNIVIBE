@@ -1,4 +1,4 @@
-﻿using UniVibe.Application.Constants;
+﻿using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event;
 
 namespace UniVibe.Application.Interfaces
