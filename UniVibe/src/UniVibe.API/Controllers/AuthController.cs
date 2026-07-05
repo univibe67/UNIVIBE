@@ -11,6 +11,7 @@ namespace UniVibe.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
+
         public AuthController(IAuthService authService, IConfiguration configuration)
         {
             _authService = authService;
@@ -59,7 +60,8 @@ namespace UniVibe.API.Controllers
         [HttpGet("verify-redirect")]
         public IActionResult VerifyRedirect([FromQuery] string token)
         {
-            string baseUrl = _configuration["ExpoBaseUrl"]; string expoLink = $"{baseUrl}/--/register-complete?token={token}";
+            string baseUrl = _configuration["ExpoBaseUrl"];
+            string expoLink = $"{baseUrl}/--/register-complete?token={token}";
 
             string htmlContent = $@"
                 <!DOCTYPE html>
