@@ -9,27 +9,35 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-});
+}) as any; 
 
 api.interceptors.request.use(
-  async (config) => {
+  async (config: any) => {
     const token = await tokenService.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
-  (response) => {
-    return response;
+  (response: any) => {
+    const apiResponse = response.data;
+
+    if (apiResponse && typeof apiResponse === 'object' && 'isSuccessful' in apiResponse) {
+        return apiResponse.data !== null ? apiResponse.data : apiResponse;
+    }
+
+    // Beklenmedik bir zarf dışı cevapsa direkt dön
+    return apiResponse;
   },
-  async (error) => {
+  async (error: any) => {
     const originalRequest = error.config; 
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true; 
       try {
@@ -43,7 +51,7 @@ api.interceptors.response.use(
           refreshToken: refreshToken 
         });
 
-        const { token: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data;
+        const { token: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
 
         await tokenService.saveTokens(newAccessToken, newRefreshToken);
 
@@ -52,15 +60,26 @@ api.interceptors.response.use(
         return api(originalRequest);
 
       } catch (refreshError) {
-        
         await tokenService.clearTokens();
-        
         router.replace('/(auth)/login');
-        
         return Promise.reject(refreshError);
       }
     }
 
-    return Promise.reject(error);
+    if (error.response && error.response.data) {
+      let errorBody = error.response.data;
+
+      if (errorBody.errors && Array.isArray(errorBody.errors)) {
+        return Promise.reject(errorBody.errors.join('\n'));
+      }
+      if (typeof errorBody === 'string' && errorBody.trim() !== '') {
+        return Promise.reject(errorBody);
+      }
+      if (errorBody.message) {
+        return Promise.reject(errorBody.message);
+      }
+    }
+
+    return Promise.reject(error.message || "Sunucu ile bağlantı kurulamadı.");
   }
 );

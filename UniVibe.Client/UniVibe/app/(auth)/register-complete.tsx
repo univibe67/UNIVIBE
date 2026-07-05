@@ -46,45 +46,49 @@ export default function RegisterCompleteScreen() {
   }, [token]);
 
   const handleCompleteRegistration = async () => {
-  if (!username || !firstName || !lastName || !password || !departmentId) {
-    Alert.alert("Eksik Bilgi", "Lütfen zorunlu alanları doldurun.");
-    return;
-  }
-
-  setIsSubmitting(true);
-  try {
-    const requestData = {
-      token: token,              
-      username: username.trim(),
-      password: password,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phoneNumber: phoneNumber.trim() || null, 
-      departmentId: departmentId, 
-      grade: parseInt(grade) || 0 
-    };
-
-    const response = await api.post('/Auth/complete-registration', requestData);
-    const { token: receivedToken, refreshToken, firstName: resName, lastName: resLastName } = response.data;
-
-    // Başarılı ise login işlemini yap ve içeri al
-    await loginAction(receivedToken, refreshToken, resName, resLastName);
-    router.replace('/(tabs)');
-
-  } catch (error: any) {
-    console.log("🚨 Detaylı Hata:", JSON.stringify(error.response?.data, null, 2));
-    
-    if (error.response?.data?.errors) {
-      const validationErrors = Object.values(error.response.data.errors).flat().join('\n');
-      Alert.alert("Form Hatası", validationErrors);
-    } else {
-      const errorMessage = error.response?.data?.message || "Kayıt tamamlanamadı.";
-      Alert.alert("Hata", errorMessage);
+    if (!username || !firstName || !lastName || !password || !departmentId) {
+      Alert.alert("Eksik Bilgi", "Lütfen zorunlu alanları doldurun.");
+      return;
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+    setIsSubmitting(true);
+    try {
+      const requestData = {
+        token: token,              
+        username: username.trim(),
+        password: password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phoneNumber: phoneNumber.trim() || null, 
+        departmentId: departmentId, 
+        grade: parseInt(grade) || 0 
+      };
+
+      const registerData = await api.post('/Auth/complete-registration', requestData);
+      
+      const receivedToken = registerData.token || registerData.Token || registerData.accessToken;
+      const refreshToken = registerData.refreshToken || registerData.RefreshToken;
+      const resName = registerData.firstName || registerData.FirstName;
+      const resLastName = registerData.lastName || registerData.LastName;
+
+      if (!receivedToken || typeof receivedToken !== 'string') {
+        throw new Error("Sunucudan geçerli bir token alınamadı.");
+      }
+
+      await loginAction(receivedToken, refreshToken, resName, resLastName);
+      router.replace('/(tabs)');
+
+    } catch (error: any) {
+      const errorMessage = Array.isArray(error) 
+        ? error.join('\n') 
+        : (typeof error === 'string' ? error : "Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
+        
+      Alert.alert("Form Hatası", errorMessage);
+      
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isValidatingToken) {
     return (

@@ -19,18 +19,25 @@ export default function RegisterInitScreen() {
 
     setLoading(true);
     try {
-      await api.post('/Auth/register-init', { email });
+      const response = await api.post('/Auth/register-init', { email });
+
+      const backendSuccessMessage = typeof response === 'string' && response.trim() !== '' 
+        ? response 
+        : "İşlem başarılı, lütfen e-postanızı kontrol edin.";
 
       Alert.alert(
-        "Onay Maili Gönderildi!", 
-        "Lütfen e-posta kutunuzu kontrol edin ve gelen linke tıklayarak kaydınızı tamamlayın.",
+        "Bilgi", 
+        backendSuccessMessage,
         [{ text: "Anladım", onPress: () => router.replace('/(auth)/login') }]
       );
-    } catch (error: any) {
-
-      const errorMessage = error.response?.data?.message || error.response?.data || "İşlem başarısız.";
       
-      Alert.alert("Uyarı", typeof errorMessage === 'string' ? errorMessage : "Bu e-posta ile ilgili bir sorun var.");
+    } catch (error: any) {
+      const errorMessage = Array.isArray(error) 
+        ? error.join('\n') 
+        : (typeof error === 'string' ? error : "Bu e-posta ile ilgili bir sorun var.");
+      
+      Alert.alert("Uyarı", errorMessage);
+      
     } finally {
       setLoading(false);
     }
@@ -46,7 +53,7 @@ export default function RegisterInitScreen() {
           <Text style={styles.label}>E-Posta (Üniversite Uzantılı)</Text>
           <TextInput
             style={styles.input}
-            placeholder="ornek@beun.edu.tr"
+            placeholder="ornek@...edu.tr"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -72,7 +79,6 @@ export default function RegisterInitScreen() {
   );
 }
 
-// Stiller login ile aynı kalabilir...
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6' },
   formContainer: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
