@@ -2,7 +2,7 @@ import axios from 'axios';
 import { tokenService } from './tokenService';
 import { router } from 'expo-router';
 
-const API_BASE_URL = 'http://10.0.2.2:5000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
