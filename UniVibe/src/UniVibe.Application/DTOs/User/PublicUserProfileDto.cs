@@ -11,5 +11,6 @@
         public string? SocialMediaLink { get; set; }
         public string Department { get; set; } = string.Empty;
         public string Faculty { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 }

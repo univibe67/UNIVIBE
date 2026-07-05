@@ -38,7 +38,8 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+
             if (user == null)
                 throw new Exception("E-posta veya şifre hatalı.");
 
@@ -46,9 +47,27 @@ namespace UniVibe.Application.Services
             if (!isPasswordValid)
                 throw new Exception("E-posta veya şifre hatalı.");
 
-            var token = _tokenService.GenerateToken(user);
+            if (!user.IsActive)
+            {
+                if (user.DeletedAt.HasValue)
+                {
+                    var gecenSure = (DateTime.UtcNow - user.DeletedAt.Value).TotalDays;
 
+                    if (gecenSure < 15)
+                    {
+                        user.IsActive = true;
+                        user.DeletedAt = null;
+                    }
+                    else
+                    {
+                        throw new Exception("Hesabınızı silmenizin üzerinden 15 günden fazla zaman geçmiş. Lütfen yeni bir hesap açın.");
+                    }
+                }
+            }
+
+            var token = _tokenService.GenerateToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();
+
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
@@ -59,9 +78,40 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(string email)
         {
-            var alreadyRegistered = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
-            if (alreadyRegistered != null)
-                throw new Exception("Bu e-posta adresi ile zaten kayıtlı bir kullanıcı bulunuyor.");
+            var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (existingUser != null)
+            {
+                if (existingUser.IsActive)
+                {
+                    throw new Exception("Bu e-posta adresi ile zaten kayıtlı aktif bir kullanıcı bulunuyor.");
+                }
+
+                if (!existingUser.IsActive && existingUser.DeletedAt.HasValue)
+                {
+                    var gecenSure = (DateTime.UtcNow - existingUser.DeletedAt.Value).TotalDays;
+
+                    if (gecenSure < 15)
+                    {
+                        int kalanGun = 15 - (int)gecenSure;
+                        throw new Exception($"Bu e-posta ile silinme sürecinde olan bir hesap var. Hesabınızı 'Giriş Yap' ekranından kurtarabilir veya tamamen silinmesi için {kalanGun} gün bekleyebilirsiniz.");
+                    }
+                    else
+                    {
+                        string damga = Guid.NewGuid().ToString().Substring(0, 8);
+
+                        existingUser.Email = $"deleted_{damga}@univibe.com";
+                        existingUser.Username = $"deleted_user_{damga}";
+                        existingUser.FirstName = "Silinmiş";
+                        existingUser.LastName = "Kullanıcı";
+                        existingUser.Bio = null;
+                        existingUser.SocialMediaLink = null;
+                        existingUser.ProfilePictureUrl = null;
+
+                        await _userRepository.UpdateAsync(existingUser);
+                    }
+                }
+            }
 
             var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email);
             if (existingPending != null)
