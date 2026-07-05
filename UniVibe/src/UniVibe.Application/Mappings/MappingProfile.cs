@@ -19,7 +19,6 @@ namespace UniVibe.Application.Mappings
             CreateMap<Event, EventDto>();
             CreateMap<EventCategory, EventCategoryDto>();
 
-            //User Mappings
         }
     }
 }
