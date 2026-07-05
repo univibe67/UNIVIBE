@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using UniVibe.Application.DTOs.User;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -9,11 +10,13 @@ namespace UniVibe.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
+        private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, IImageService imageService)
+        public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper)
         {
             _userRepository = userRepository;
             _imageService = imageService;
+            _mapper = mapper;
         }
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
@@ -65,7 +68,6 @@ namespace UniVibe.Application.Services
 
             user.Bio = updateDto.Bio;
             user.SocialMediaLink = updateDto.SocialMediaLink;
-
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
