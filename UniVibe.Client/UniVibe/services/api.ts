@@ -52,7 +52,6 @@ api.interceptors.response.use(
         return api(originalRequest);
 
       } catch (refreshError) {
-        console.log("🚨 Kritik: Refresh Token süresi dolmuş veya geçersiz! Sistemden çıkılıyor...");
         
         await tokenService.clearTokens();
         
