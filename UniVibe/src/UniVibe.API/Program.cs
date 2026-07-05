@@ -37,6 +37,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddMemoryCache();
 
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
