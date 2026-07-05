@@ -20,6 +20,7 @@ namespace UniVibe.Domain.Entities
         public string? SocialMediaLink { get; set; }
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; } = null!;

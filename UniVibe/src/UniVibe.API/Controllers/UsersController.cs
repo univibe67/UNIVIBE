@@ -53,5 +53,15 @@ namespace UniVibe.API.Controllers
             var profileData = await _userService.GetProfileByUsernameAsync(username);
             return Ok(profileData);
         }
+
+        [HttpDelete("delete-account")]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            var userId = User.GetUserId();
+
+            await _userService.DeleteAccountAsync(userId);
+
+            return Ok(new { Message = "Hesabınız başarıyla donduruldu. 15 gün içinde giriş yaparak geri kurtarabilirsiniz." });
+        }
     }
 }

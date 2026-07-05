@@ -108,6 +108,7 @@ namespace UniVibe.Application.Services
                 Username = user.Username,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
                 ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
                     ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
                     : user.ProfilePictureUrl,
@@ -116,6 +117,23 @@ namespace UniVibe.Application.Services
                 Department = user.Department.Name,
                 Faculty = user.Department.Faculty.Name
             };
+        }
+        public async Task DeleteAccountAsync(Guid userId)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                throw new Exception("Kullanıcı bulunamadı.");
+
+            user.IsActive = false;
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow;
+
+            user.DeletedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(user);
         }
 
     }

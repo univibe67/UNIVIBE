@@ -9,5 +9,6 @@ namespace UniVibe.Application.Interfaces
         Task UpdateProfileAsync(Guid userId, UpdateUserProfileDto updateDto);
         Task<UserProfileDto> GetUserProfileAsync(Guid userId);
         Task<PublicUserProfileDto> GetProfileByUsernameAsync(string username);
+        Task DeleteAccountAsync(Guid userId);
     }
 }
