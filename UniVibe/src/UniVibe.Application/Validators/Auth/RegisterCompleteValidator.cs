@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using UniVibe.Application.Constants;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth;
 
 namespace UniVibe.Application.Validators.Auth

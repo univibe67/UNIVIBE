@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using UniVibe.Application.Constants;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;

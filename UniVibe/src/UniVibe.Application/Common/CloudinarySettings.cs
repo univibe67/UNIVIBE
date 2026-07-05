@@ -1,4 +1,4 @@
-﻿namespace UniVibe.Application.Constants
+﻿namespace UniVibe.Application.Common
 {
     public class CloudinarySettings
     {
