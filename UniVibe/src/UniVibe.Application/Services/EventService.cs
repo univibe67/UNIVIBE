@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.Constants;
+﻿using AutoMapper;
+using UniVibe.Application.Constants;
 using UniVibe.Application.DTOs.Event;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -11,12 +12,14 @@ namespace UniVibe.Application.Services
         private readonly IEventRepository _eventRepository;
         private readonly IEventCategoryRepository _categoryRepository;
         private readonly IImageService _imageService;
+        private readonly IMapper _mapper;
 
-        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService)
+        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService, IMapper mapper)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
             _imageService = imageService;
+            _mapper = mapper;
         }
 
         public async Task CreateEventAsync(CreateEventDto createEventDto, Guid userId)
@@ -44,17 +47,10 @@ namespace UniVibe.Application.Services
                 imagePublicId = uploadResult.PublicId;
             }
 
-            var newEvent = new Event
-            {
-                Title = createEventDto.Title,
-                Description = createEventDto.Description,
-                EventDate = createEventDto.EventDate,
-                Location = createEventDto.Location,
-                UserId = userId,
-                CategoryId = createEventDto.CategoryId,
-                ImageUrl = imageUrl,
-                ImagePublicId = imagePublicId,
-            };
+            var newEvent = _mapper.Map<Event>(createEventDto);
+            newEvent.UserId = userId;
+            newEvent.ImageUrl = imageUrl;
+            newEvent.ImagePublicId = imagePublicId;
 
             await _eventRepository.AddAsync(newEvent);
         }
@@ -63,16 +59,7 @@ namespace UniVibe.Application.Services
         {
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(pageNumber, pageSize, onlyActive);
 
-            var eventDtos = items.Select(e => new EventDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                Description = e.Description,
-                EventDate = e.EventDate,
-                Location = e.Location,
-                CategoryId = e.CategoryId,
-                ImageUrl = e.ImageUrl
-            }).ToList();
+            var eventDtos = _mapper.Map<List<EventDto>>(items);
 
             return new PaginatedResult<EventDto>
             {
@@ -87,13 +74,7 @@ namespace UniVibe.Application.Services
         {
             var categories = await _categoryRepository.GetAllAsync();
 
-            return categories.Select(c => new EventCategoryDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Icon = c.Icon,
-                Color = c.Color
-            }).ToList();
+            return _mapper.Map<List<EventCategoryDto>>(categories);
         }
         public async Task DeleteEventAsync(Guid eventId, Guid userId)
         {

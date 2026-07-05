@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using UniVibe.Application.DTOs.University;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -11,13 +12,15 @@ namespace UniVibe.Application.Services
         private readonly IFacultyRepository _facultyRepository;
         private readonly IDepartmentRepository _departmentRepository;
         private readonly IMemoryCache _memoryCache;
+        private readonly IMapper _mapper;
 
-        public UniversityService(IUniversityRepository universityRepository, IFacultyRepository facultyRepository, IDepartmentRepository departmentRepository, IMemoryCache memoryCache)
+        public UniversityService(IUniversityRepository universityRepository, IFacultyRepository facultyRepository, IDepartmentRepository departmentRepository, IMemoryCache memoryCache, IMapper mapper)
         {
             _universityRepository = universityRepository;
             _facultyRepository = facultyRepository;
             _departmentRepository = departmentRepository;
             _memoryCache = memoryCache;
+            _mapper = mapper;
         }
 
         public async Task<List<UniversityLookupDto>> GetAllUniversitiesAsync()
@@ -28,12 +31,7 @@ namespace UniVibe.Application.Services
             {
                 var universities = await _universityRepository.GetAllAsync(u => u.IsActive && !u.IsDeleted);
 
-                cachedUniversities = universities.OrderBy(u => u.Name).Select(u => new UniversityLookupDto
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    EmailDomain = u.EmailDomain
-                }).ToList();
+                cachedUniversities = _mapper.Map<List<UniversityLookupDto>>(universities.OrderBy(u => u.Name));
 
                 var cacheOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromDays(7));
@@ -52,11 +50,7 @@ namespace UniVibe.Application.Services
             {
                 var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive && !f.IsDeleted);
 
-                cachedFaculties = faculties.OrderBy(f => f.Name).Select(f => new FacultyLookupDto
-                {
-                    Id = f.Id,
-                    Name = f.Name
-                }).ToList();
+                cachedFaculties = _mapper.Map<List<FacultyLookupDto>>(faculties.OrderBy(f => f.Name));
 
                 var cacheOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromDays(7));
@@ -75,11 +69,7 @@ namespace UniVibe.Application.Services
             {
                 var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive && !d.IsDeleted);
 
-                cachedDepartments = departments.OrderBy(d => d.Name).Select(d => new DepartmentLookupDto
-                {
-                    Id = d.Id,
-                    Name = d.Name
-                }).ToList();
+                cachedDepartments = _mapper.Map<List<DepartmentLookupDto>>(departments.OrderBy(d => d.Name));
 
                 var cacheOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromDays(7));
