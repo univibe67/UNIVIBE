@@ -9,7 +9,6 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-// BURASI ÇOK ÖNEMLİ: "export const" ile dışarı aktarılmış olmalı
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   userFirstName: null,

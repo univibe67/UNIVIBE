@@ -21,10 +21,16 @@ export default function ProfileScreen() {
   const fetchProfile = async () => {
     try {
       const response = await api.get('/Users/profile'); 
-      setProfile(response.data);
+      
+      let data = response.data ? response.data : response;
+      if (data.data) {
+        data = data.data;
+      }
+
+      setProfile(data);
       setEditForm({
-        bio: response.data.bio || '',
-        socialMediaLink: response.data.socialMediaLink || ''
+        bio: data.bio || '',
+        socialMediaLink: data.socialMediaLink || ''
       });
     } catch (error) {
       Toast.show({
@@ -63,8 +69,10 @@ export default function ProfileScreen() {
         const response = await api.post('/Users/upload-profile-picture', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        const newPhotoUrl = response.data.imageUrl + '?t=' + new Date().getTime();
+        
+        const newPhotoUrl = response.imageUrl + '?t=' + new Date().getTime();
         setProfile((prev: any) => ({ ...prev, profilePictureUrl: newPhotoUrl }));
+        
         Toast.show({
           type: 'success',
           text1: 'Güncelleme Başarılı',
@@ -74,7 +82,7 @@ export default function ProfileScreen() {
         Toast.show({
           type: 'error',
           text1: 'Yükleme Hatası',
-          text2: 'Fotoğraf sunucuya gönderilemedi.',
+          text2: typeof error === 'string' ? error : 'Fotoğraf sunucuya gönderilemedi.',
         });
       } finally {
         setUploading(false);

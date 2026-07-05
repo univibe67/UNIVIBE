@@ -17,15 +17,13 @@ import { useAuthStore } from '../../store/useAuthStore';
 export default function LoginScreen() {
   const router = useRouter();
   
-  // Zustand'dan login fonksiyonumuzu çekiyoruz
   const loginAction = useAuthStore((state) => state.login);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Yükleniyor state'i
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // 1. Basit Validasyon
     if (!email.trim() || !password.trim()) {
       Alert.alert("Eksik Bilgi", "Lütfen e-posta ve şifrenizi girin.");
       return;
@@ -34,19 +32,26 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const response = await api.post('/Auth/login', { 
-        email: email, 
-        password: password 
+      const loginData = await api.post('/Auth/login', { 
+        email: email.trim(), 
+        password: password.trim() 
       });
-
-      const { token, refreshToken, firstName, lastName } = response.data;
-
-      await loginAction(token, refreshToken, firstName, lastName);
-
-      router.replace('/(tabs)');
       
+      const token = loginData.token || loginData.Token || loginData.accessToken;
+      const refreshToken = loginData.refreshToken || loginData.RefreshToken;
+      const firstName = loginData.firstName || loginData.FirstName;
+      const lastName = loginData.lastName || loginData.LastName;
+
+      if (!token || typeof token !== 'string') {
+        throw new Error("Sunucudan geçerli bir token alınamadı.");
+      }
+      await loginAction(token, refreshToken, firstName, lastName);
+      router.replace('/(tabs)');
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin.";
+      const errorMessage = Array.isArray(error) 
+        ? error[0] 
+        : (typeof error === 'string' ? error : "Giriş yapılamadı.");
+        
       Alert.alert("Giriş Başarısız", errorMessage);
     } finally {
       setLoading(false);
