@@ -84,6 +84,7 @@ namespace UniVibe.Application.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
                 ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
                     ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
                     : user.ProfilePictureUrl,
