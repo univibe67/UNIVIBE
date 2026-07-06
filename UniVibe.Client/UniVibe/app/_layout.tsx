@@ -1,11 +1,13 @@
-import { Stack } from 'expo-router';
-import Toast, { ToastConfig, ToastProps } from 'react-native-toast-message';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import Toast, { ToastConfig } from 'react-native-toast-message';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useAuthStore } from '../store/useAuthStore'; 
 
 const toastConfig: ToastConfig = {
-  success: ({ text1, text2, ...rest }: any) => ( // props yerine text1 ve text2'yi doğrudan destruct ediyoruz
+  success: ({ text1, text2, ...rest }: any) => (
     <BlurView intensity={80} tint="light" style={styles.toastContainer}>
       <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
         <Ionicons name="checkmark-done-circle" size={26} color="#10B981" />
@@ -31,6 +33,30 @@ const toastConfig: ToastConfig = {
 };
 
 export default function RootLayout() {
+  const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [isLoading, isAuthenticated]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
+        <ActivityIndicator size="large" color="#10B981" />
+      </View>
+    );
+  }
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
@@ -50,19 +76,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '90%',
     padding: 16,
-    borderRadius: 24, // Tam yuvarlak, modern köşe
-    backgroundColor: 'rgba(255, 255, 255, 0.4)', // Camın arkasındaki hafif beyazlık
+    borderRadius: 24, 
+    backgroundColor: 'rgba(255, 255, 255, 0.4)', 
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.8)', // Cam yansıması hissi
+    borderColor: 'rgba(255, 255, 255, 0.8)', 
     marginTop: 10,
     
-    // Zengin Gölgelendirme (Premium Shadow)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
-    elevation: 10, // Android için gölge
-    overflow: 'hidden', // BlurView'un köşelerden taşmaması için çok kritik!
+    elevation: 10, 
+    overflow: 'hidden', 
   },
   iconContainer: {
     width: 44,
