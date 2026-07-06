@@ -11,26 +11,18 @@ export const api = axios.create({
   },
 }) as any; 
 
-api.interceptors.request.use(
-  async (config: any) => {
-    const token = await tokenService.getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error: any) => {
-    return Promise.reject(error);
-  }
-);
-
 api.interceptors.response.use(
   (response: any) => {
     const apiResponse = response.data;
 
     if (apiResponse && typeof apiResponse === 'object' && 'isSuccessful' in apiResponse) {
+        if (apiResponse.isSuccessful === false) {
+            const errorMsg = apiResponse.message || (apiResponse.errors && apiResponse.errors.join('\n')) || "İşlem başarısız oldu.";
+            return Promise.reject(errorMsg);
+        }
         return apiResponse.data !== null ? apiResponse.data : apiResponse;
     }
+
     return apiResponse;
   },
   async (error: any) => {
@@ -45,6 +37,7 @@ api.interceptors.response.use(
         if (!refreshToken) {
           throw new Error("Refresh token bulunamadı, yeniden giriş gerekli.");
         }
+
         const refreshResponse = await axios.post(`${API_BASE_URL}/Auth/refresh-token`, {
           token: expiredToken,         
           refreshToken: refreshToken 
@@ -53,9 +46,10 @@ api.interceptors.response.use(
         const { token: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
         await tokenService.saveTokens(newAccessToken, newRefreshToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        
         return api(originalRequest);
 
-      } catch (refreshError:any) {
+      } catch (refreshError: any) {
         await tokenService.clearTokens();
         router.replace('/(auth)/login');
         return Promise.reject(refreshError);
@@ -65,9 +59,15 @@ api.interceptors.response.use(
     if (error.response && error.response.data) {
       let errorBody = error.response.data;
 
+      if (errorBody.errors && typeof errorBody.errors === 'object' && !Array.isArray(errorBody.errors)) {
+        const errorMessages = Object.values(errorBody.errors).flat().join('\n');
+        return Promise.reject(errorMessages);
+      }
+
       if (errorBody.errors && Array.isArray(errorBody.errors)) {
         return Promise.reject(errorBody.errors.join('\n'));
       }
+      
       if (typeof errorBody === 'string' && errorBody.trim() !== '') {
         return Promise.reject(errorBody);
       }
@@ -75,6 +75,7 @@ api.interceptors.response.use(
         return Promise.reject(errorBody.message);
       }
     }
+
     return Promise.reject(error.message || "Sunucu ile bağlantı kurulamadı.");
   }
 );

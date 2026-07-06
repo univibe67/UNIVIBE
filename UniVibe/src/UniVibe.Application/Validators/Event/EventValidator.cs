@@ -11,7 +11,7 @@ namespace UniVibe.Application.Validators.Event
                 .NotEmpty().WithMessage("Etkinlik başlığı boş olamaz.")
                 .MaximumLength(100).WithMessage("Başlık en fazla 100 karakter olmalıdır.");
 
-            RuleFor(x => x.Date)
+            RuleFor(x => x.EventDate)
                 .GreaterThan(DateTime.UtcNow).WithMessage("Etkinlik tarihi geçmiş bir tarih olamaz.");
 
             RuleFor(x => x.Description)

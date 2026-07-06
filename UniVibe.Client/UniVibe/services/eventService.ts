@@ -37,8 +37,6 @@ const emptyResult = <T,>(pageNumber: number, pageSize: number): PaginatedResult<
   hasNextPage: false,
 });
 
-// NOT: api.ts'deki response interceptor axios yanıtını değil doğrudan
-// gövdeyi döndürüyor; backend liste boşken 204 (boş gövde) dönüyor.
 export const eventService = {
   async getEvents(pageNumber = 1, pageSize = 10): Promise<PaginatedResult<EventDto>> {
     const data = await api.get('/Events/all-events', {
