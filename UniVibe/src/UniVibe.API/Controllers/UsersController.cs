@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User;
@@ -12,10 +13,12 @@ namespace UniVibe.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IValidator<UpdateUserProfileDto> _updateProfileValidator;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, IValidator<UpdateUserProfileDto> updateProfileValidator)
         {
             _userService = userService;
+            _updateProfileValidator = updateProfileValidator;
         }
 
         [HttpPost("upload-profile-picture")]
@@ -30,10 +33,16 @@ namespace UniVibe.API.Controllers
         [HttpPut("update-profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto updateDto)
         {
+            var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
+
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return BadRequest(new { isSuccessful = false, errors = errors });
+            }
+
             var userId = User.GetUserId();
-
             await _userService.UpdateProfileAsync(userId, updateDto);
-
             return Ok(ApiResponse<string>.Success("Profil bilgileri başarıyla güncellendi!"));
         }
 

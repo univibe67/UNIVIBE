@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth;
 using UniVibe.Application.Interfaces;
@@ -11,11 +12,15 @@ namespace UniVibe.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
+        private readonly IValidator<RegisterInitRequest> _registerInitValidator;
+        private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
 
-        public AuthController(IAuthService authService, IConfiguration configuration)
+        public AuthController(IAuthService authService, IConfiguration configuration, IValidator<RegisterInitRequest> registerInitValidator, IValidator<RegisterCompleteRequest> registerCompleteValidator)
         {
             _authService = authService;
             _configuration = configuration;
+            _registerInitValidator = registerInitValidator;
+            _registerCompleteValidator = registerCompleteValidator;
         }
 
         [HttpPost("login")]
@@ -28,6 +33,12 @@ namespace UniVibe.API.Controllers
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
+            var validationResult = await _registerInitValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return BadRequest(new { isSuccessful = false, errors = errors });
+            }
             await _authService.InitiateRegistrationAsync(request.Email);
             return Ok(ApiResponse<string>.Success("Kayıt doğrulama linki mail adresine gönderildi."));
         }
@@ -46,6 +57,13 @@ namespace UniVibe.API.Controllers
         [HttpPost("complete-registration")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
+            var validationResult = await _registerCompleteValidator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return BadRequest(new { isSuccessful = false, errors = errors });
+            }
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
         }
