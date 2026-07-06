@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, TextInput, Acti
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../services/api'; 
 import { tokenService } from '../../services/tokenService'; 
 import Toast from 'react-native-toast-message';
@@ -158,74 +159,78 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={pickAndUploadImage} disabled={uploading} style={styles.avatarContainer}>
-          {uploading ? (
-            <View style={styles.avatarCircle}><ActivityIndicator color="#FFF" /></View>
-          ) : profile?.profilePictureUrl ? (
-            <Image source={{ uri: profile.profilePictureUrl }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}</Text>
-            </View>
-          )}
-          <View style={styles.editIconBadge}><Ionicons name="camera" size={14} color="#FFF" /></View>
-        </TouchableOpacity>
-        <Text style={styles.userName}>{profile?.firstName} {profile?.lastName}</Text>
-        <Text style={styles.userTag}>@{profile?.username}</Text>
-      </View>
-
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Akademik Bilgiler</Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Üniversite</Text><Text style={styles.infoValue}>{profile?.universityName}</Text>
-          <View style={styles.divider} /><Text style={styles.infoLabel}>Fakülte</Text><Text style={styles.infoValue}>{profile?.facultyName}</Text>
-          <View style={styles.divider} /><Text style={styles.infoLabel}>Bölüm</Text><Text style={styles.infoValue}>{profile?.departmentName}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>
+      
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={pickAndUploadImage} disabled={uploading} style={styles.avatarContainer}>
+            {uploading ? (
+              <View style={styles.avatarCircle}><ActivityIndicator color="#FFF" /></View>
+            ) : profile?.profilePictureUrl ? (
+              <Image source={{ uri: profile.profilePictureUrl }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}</Text>
+              </View>
+            )}
+            <View style={styles.editIconBadge}><Ionicons name="camera" size={14} color="#FFF" /></View>
+          </TouchableOpacity>
+          <Text style={styles.userName}>{profile?.firstName} {profile?.lastName}</Text>
+          <Text style={styles.userTag}>@{profile?.username}</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Hakkımda & İletişim</Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>E-posta</Text><Text style={styles.infoValue}>{profile?.email}</Text>
-          <View style={styles.divider} /><Text style={styles.infoLabel}>Biyografi</Text><Text style={styles.infoValue}>{profile?.bio || "Henüz bir biyografi eklenmemiş."}</Text>
-          <View style={styles.divider} /><Text style={styles.infoLabel}>Sosyal Medya</Text><Text style={styles.infoValue}>{profile?.socialMediaLink || "Bağlantı eklenmemiş."}</Text>
-          <View style={styles.divider} /><Text style={styles.infoLabel}>Telefon No</Text><Text style={styles.infoValue}>{profile?.phoneNumber }</Text>
-        </View>
-      </View>
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Akademik Bilgiler</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Üniversite</Text><Text style={styles.infoValue}>{profile?.universityName}</Text>
+            <View style={styles.divider} /><Text style={styles.infoLabel}>Fakülte</Text><Text style={styles.infoValue}>{profile?.facultyName}</Text>
+            <View style={styles.divider} /><Text style={styles.infoLabel}>Bölüm</Text><Text style={styles.infoValue}>{profile?.departmentName}</Text>
+          </View>
 
-      <View style={styles.btnContainer}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => setEditModalVisible(true)}>
-          <Ionicons name="create-outline" size={24} color="#3B82F6" /><Text style={[styles.menuText, { color: '#3B82F6' }]}>Profili Düzenle</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#EF4444" /><Text style={styles.logoutText}>Çıkış Yap</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuItem, { borderColor: '#FEE2E2', marginTop: 10 }]} onPress={handleDeleteAccount}>
-          <Ionicons name="trash-outline" size={24} color="#DC2626" /><Text style={[styles.menuText, { color: '#DC2626' }]}>Hesabımı Sil</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal visible={isEditModalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}><Text style={styles.modalTitle}>Profili Düzenle</Text></View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.fieldGroup}><Text style={styles.modalLabel}>Biyografi</Text><TextInput style={[styles.modalInput, styles.textArea]} value={editForm.bio} multiline numberOfLines={3} onChangeText={(text) => setEditForm({...editForm, bio: text})} /></View>
-              <View style={styles.fieldGroup}><Text style={styles.modalLabel}>Sosyal Medya Linki</Text><TextInput style={styles.modalInput} value={editForm.socialMediaLink} onChangeText={(text) => setEditForm({...editForm, socialMediaLink: text})} /></View>
-            </ScrollView>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}><Text style={styles.cancelButtonText}>İptal</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleUpdateProfile}><Text style={styles.saveButtonText}>Kaydet</Text></TouchableOpacity>
-            </View>
+          <Text style={styles.sectionTitle}>Hakkımda & İletişim</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>E-posta</Text><Text style={styles.infoValue}>{profile?.email}</Text>
+            <View style={styles.divider} /><Text style={styles.infoLabel}>Biyografi</Text><Text style={styles.infoValue}>{profile?.bio || "Henüz bir biyografi eklenmemiş."}</Text>
+            <View style={styles.divider} /><Text style={styles.infoLabel}>Sosyal Medya</Text><Text style={styles.infoValue}>{profile?.socialMediaLink || "Bağlantı eklenmemiş."}</Text>
+            <View style={styles.divider} /><Text style={styles.infoLabel}>Telefon No</Text><Text style={styles.infoValue}>{profile?.phoneNumber }</Text>
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+
+        <View style={styles.btnContainer}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setEditModalVisible(true)}>
+            <Ionicons name="create-outline" size={24} color="#3B82F6" /><Text style={[styles.menuText, { color: '#3B82F6' }]}>Profili Düzenle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#EF4444" /><Text style={styles.logoutText}>Çıkış Yap</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.menuItem, { borderColor: '#FEE2E2', marginTop: 10 }]} onPress={handleDeleteAccount}>
+            <Ionicons name="trash-outline" size={24} color="#DC2626" /><Text style={[styles.menuText, { color: '#DC2626' }]}>Hesabımı Sil</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Modal visible={isEditModalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}><Text style={styles.modalTitle}>Profili Düzenle</Text></View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.fieldGroup}><Text style={styles.modalLabel}>Biyografi</Text><TextInput style={[styles.modalInput, styles.textArea]} value={editForm.bio} multiline numberOfLines={3} onChangeText={(text) => setEditForm({...editForm, bio: text})} /></View>
+                <View style={styles.fieldGroup}><Text style={styles.modalLabel}>Sosyal Medya Linki</Text><TextInput style={styles.modalInput} value={editForm.socialMediaLink} onChangeText={(text) => setEditForm({...editForm, socialMediaLink: text})} /></View>
+              </ScrollView>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}><Text style={styles.cancelButtonText}>İptal</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleUpdateProfile}><Text style={styles.saveButtonText}>Kaydet</Text></TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+      
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({ /* CSS stilin aynı kalsın kanka, dokunmuyoruz */ 
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
+const styles = StyleSheet.create({ 
+  container: { flex: 1 },
   header: { backgroundColor: '#FFFFFF', paddingVertical: 24, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   avatarContainer: { position: 'relative', marginBottom: 12 },
   avatarCircle: { width: 94, height: 94, borderRadius: 47, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' },

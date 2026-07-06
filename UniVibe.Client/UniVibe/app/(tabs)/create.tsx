@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../services/api';
 import { eventService, EventCategoryDto } from '../../services/eventService';
 
@@ -87,7 +88,6 @@ export default function CreateEventScreen() {
       resetForm();
       router.push('/(tabs)');
     } catch (error: any) {
-      // api.ts'deki interceptor hataları string olarak fırlatıyor
       const msg = typeof error === 'string' ? error : 'Etkinlik oluşturulamadı. Tekrar dene.';
       Alert.alert('Hata', msg);
     } finally {
@@ -96,145 +96,148 @@ export default function CreateEventScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>Etkinlik Adı</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Örn: Yazılım Kulübü Tanışma"
-        placeholderTextColor="#9CA3AF"
-        value={title}
-        onChangeText={setTitle}
-      />
-
-      <Text style={styles.label}>Açıklama</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Etkinlik detaylarından bahset..."
-        placeholderTextColor="#9CA3AF"
-        multiline
-        numberOfLines={4}
-        value={description}
-        onChangeText={setDescription}
-      />
-
-      <Text style={styles.label}>Konum</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Örn: Mühendislik Fakültesi Amfi 1"
-        placeholderTextColor="#9CA3AF"
-        value={location}
-        onChangeText={setLocation}
-      />
-
-      <Text style={styles.label}>Tarih ve Saat</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-        <Text style={eventDate ? styles.dateText : styles.datePlaceholder}>
-          {eventDate ? formatDate(eventDate) : 'Tarih seç'}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={eventDate ?? new Date()}
-          mode="date"
-          minimumDate={new Date()}
-          onChange={(e, date) => {
-            setShowDatePicker(false);
-            if (date) {
-              setEventDate(date);
-              setShowTimePicker(true);
-            }
-          }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F4F6' }}>  
+      
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.label}>Etkinlik Adı</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Örn: Yazılım Kulübü Tanışma"
+          placeholderTextColor="#9CA3AF"
+          value={title}
+          onChangeText={setTitle}
         />
-      )}
 
-      {showTimePicker && (
-        <DateTimePicker
-          value={eventDate ?? new Date()}
-          mode="time"
-          onChange={(e, time) => {
-            setShowTimePicker(false);
-            if (time && eventDate) {
-              const merged = new Date(eventDate);
-              merged.setHours(time.getHours(), time.getMinutes(), 0, 0);
-              setEventDate(merged);
-            }
-          }}
+        <Text style={styles.label}>Açıklama</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder="Etkinlik detaylarından bahset..."
+          placeholderTextColor="#9CA3AF"
+          multiline
+          numberOfLines={4}
+          value={description}
+          onChangeText={setDescription}
         />
-      )}
 
-      <Text style={styles.label}>Kategori</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setShowCategoryModal(true)}>
-        <View style={styles.selectRow}>
-          <View style={styles.selectValue}>
-            {selectedCategory && (
-              <View style={[styles.categoryDot, { backgroundColor: selectedCategory.color || '#3B82F6' }]} />
-            )}
-            <Text style={selectedCategory ? styles.dateText : styles.datePlaceholder}>
-              {selectedCategory ? selectedCategory.name : 'Kategori seç'}
-            </Text>
-          </View>
-          <Ionicons name="chevron-down" size={18} color="#6B7280" />
-        </View>
-      </TouchableOpacity>
+        <Text style={styles.label}>Konum</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Örn: Mühendislik Fakültesi Amfi 1"
+          placeholderTextColor="#9CA3AF"
+          value={location}
+          onChangeText={setLocation}
+        />
 
-      <Text style={styles.label}>Etkinlik Görseli (isteğe bağlı)</Text>
-      {imageUri ? (
-        <View style={styles.imagePreviewContainer}>
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
-          <TouchableOpacity style={styles.removeImageButton} onPress={() => setImageUri(null)}>
-            <Ionicons name="close" size={18} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
-          <Ionicons name="image-outline" size={28} color="#6B7280" />
-          <Text style={styles.imagePickerText}>Galeriden görsel seç</Text>
+        <Text style={styles.label}>Tarih ve Saat</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+          <Text style={eventDate ? styles.dateText : styles.datePlaceholder}>
+            {eventDate ? formatDate(eventDate) : 'Tarih seç'}
+          </Text>
         </TouchableOpacity>
-      )}
 
-      <TouchableOpacity
-        style={[styles.submitButton, submitting && { opacity: 0.7 }]}
-        onPress={handleSubmit}
-        disabled={submitting}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.submitButtonText}>Etkinliği Paylaş</Text>
+        {showDatePicker && (
+          <DateTimePicker
+            value={eventDate ?? new Date()}
+            mode="date"
+            minimumDate={new Date()}
+            onChange={(e, date) => {
+              setShowDatePicker(false);
+              if (date) {
+                setEventDate(date);
+                setShowTimePicker(true);
+              }
+            }}
+          />
         )}
-      </TouchableOpacity>
 
-      <View style={{ height: 40 }} />
+        {showTimePicker && (
+          <DateTimePicker
+            value={eventDate ?? new Date()}
+            mode="time"
+            onChange={(e, time) => {
+              setShowTimePicker(false);
+              if (time && eventDate) {
+                const merged = new Date(eventDate);
+                merged.setHours(time.getHours(), time.getMinutes(), 0, 0);
+                setEventDate(merged);
+              }
+            }}
+          />
+        )}
 
-      <Modal visible={showCategoryModal} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Kategori Seç</Text>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.categoryRow}
-                  onPress={() => {
-                    setCategoryId(item.id);
-                    setShowCategoryModal(false);
-                  }}
-                >
-                  <View style={[styles.categoryDot, { backgroundColor: item.color || '#3B82F6' }]} />
-                  <Text style={styles.categoryRowText}>{item.name}</Text>
-                  {categoryId === item.id && <Ionicons name="checkmark" size={20} color="#3B82F6" />}
-                </TouchableOpacity>
+        <Text style={styles.label}>Kategori</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowCategoryModal(true)}>
+          <View style={styles.selectRow}>
+            <View style={styles.selectValue}>
+              {selectedCategory && (
+                <View style={[styles.categoryDot, { backgroundColor: selectedCategory.color || '#3B82F6' }]} />
               )}
-            />
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCategoryModal(false)}>
-              <Text style={styles.modalCloseText}>Vazgeç</Text>
+              <Text style={selectedCategory ? styles.dateText : styles.datePlaceholder}>
+                {selectedCategory ? selectedCategory.name : 'Kategori seç'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-down" size={18} color="#6B7280" />
+          </View>
+        </TouchableOpacity>
+
+        <Text style={styles.label}>Etkinlik Görseli (isteğe bağlı)</Text>
+        {imageUri ? (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
+            <TouchableOpacity style={styles.removeImageButton} onPress={() => setImageUri(null)}>
+              <Ionicons name="close" size={18} color="#FFF" />
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        ) : (
+          <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
+            <Ionicons name="image-outline" size={28} color="#6B7280" />
+            <Text style={styles.imagePickerText}>Galeriden görsel seç</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && { opacity: 0.7 }]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.submitButtonText}>Etkinliği Paylaş</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+
+        <Modal visible={showCategoryModal} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Kategori Seç</Text>
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.categoryRow}
+                    onPress={() => {
+                      setCategoryId(item.id);
+                      setShowCategoryModal(false);
+                    }}
+                  >
+                    <View style={[styles.categoryDot, { backgroundColor: item.color || '#3B82F6' }]} />
+                    <Text style={styles.categoryRowText}>{item.name}</Text>
+                    {categoryId === item.id && <Ionicons name="checkmark" size={20} color="#3B82F6" />}
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowCategoryModal(false)}>
+                <Text style={styles.modalCloseText}>Vazgeç</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -247,7 +250,7 @@ function formatDate(date: Date) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6', padding: 16 },
+  container: { flex: 1, padding: 16 },
   label: { fontSize: 14, fontWeight: 'bold', color: '#4B5563', marginBottom: 6, marginLeft: 4 },
   input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16 },
   textArea: { height: 100, textAlignVertical: 'top' },
