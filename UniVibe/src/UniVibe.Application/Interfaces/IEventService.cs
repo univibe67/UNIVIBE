@@ -9,5 +9,7 @@ namespace UniVibe.Application.Interfaces
         Task CreateEventAsync(CreateEventDto createEventDto, Guid userId);
         Task<List<EventCategoryDto>> GetCategoriesAsync();
         Task DeleteEventAsync(Guid eventId, Guid userId);
+        Task<EventDto> GetEventByIdAsync(Guid eventId, Guid currentUserId);
+        Task<EventDto?> GetMyActiveEventAsync(Guid userId);
     }
 }

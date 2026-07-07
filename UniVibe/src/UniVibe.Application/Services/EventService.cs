@@ -99,5 +99,38 @@ namespace UniVibe.Application.Services
 
             await _eventRepository.UpdateAsync(existingEvent);
         }
+        public async Task<EventDto> GetEventByIdAsync(Guid eventId, Guid currentUserId)
+        {
+            var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+
+            if (eventEntity == null)
+                throw new Exception("Etkinlik bulunamadı.");
+
+            var eventDto = _mapper.Map<EventDto>(eventEntity);
+
+            if (eventEntity.User != null)
+                eventDto.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+
+            if (eventEntity.Category != null)
+                eventDto.CategoryName = eventEntity.Category.Name;
+
+            eventDto.IsCreator = (eventEntity.UserId == currentUserId);
+
+            return eventDto;
+        }
+        public async Task<EventDto?> GetMyActiveEventAsync(Guid userId)
+        {
+            var activeEvent = await _eventRepository.GetActiveEventByUserIdAsync(userId);
+
+            if (activeEvent == null)
+                return null;
+
+            var eventDto = _mapper.Map<EventDto>(activeEvent);
+
+            if (activeEvent.Category != null)
+                eventDto.CategoryName = activeEvent.Category.Name;
+
+            return eventDto;
+        }
     }
 }
