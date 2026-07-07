@@ -12,6 +12,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -56,7 +57,15 @@ export default function CreateEventScreen() {
         setCheckingEvent(true);
         try {
           const response = await api.get("/Events/my-active-event");
-          setActiveEvent(response.data || response || null);
+          
+          const eventData = response.data?.data || response.data || response;
+
+          if (eventData && eventData.id) {
+            setActiveEvent(eventData);
+          } else {
+            setActiveEvent(null);
+          }
+          
         } catch (error) {
           console.log("Kontrol hatası", error);
           setActiveEvent(null);
@@ -68,6 +77,61 @@ export default function CreateEventScreen() {
       checkMyEvent();
     }, [])
   );
+
+  // 🚨 İŞTE EKSİK OLAN VE SENİN İÇİN EKLENEN İPTAL ETME FONKSİYONU
+  const handleCancelEvent = () => {
+    if (!activeEvent) return;
+
+    const eventDateObj = new Date(activeEvent.eventDate);
+    const now = new Date();
+    
+    // Saat farkını hesaplıyoruz
+    const timeDiffMs = eventDateObj.getTime() - now.getTime();
+    const hoursLeft = timeDiffMs / (1000 * 60 * 60);
+
+    if (hoursLeft < 0) {
+      Alert.alert("Uyarı", "Başlamış veya geçmiş bir etkinlik iptal edilemez.");
+      return;
+    }
+
+    if (hoursLeft < 4) {
+      Alert.alert("Kritik Süre!", "Etkinliğe 4 saatten az kaldığı için iptal işlemi yapılamaz.");
+      return;
+    }
+
+    // Onay Penceresi
+    Alert.alert(
+      "Etkinliği İptal Et",
+      "Bu etkinliği iptal etmek istediğine emin misin? Bu işlem geri alınamaz.",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Evet, İptal Et",
+          style: "destructive", // iOS'ta kırmızı buton yapar
+          onPress: async () => {
+            setCheckingEvent(true);
+            try {
+              await api.delete(`/Events/delete-event/${activeEvent.id}`);
+              
+              Toast.show({
+                type: "success",
+                text1: "İptal Edildi",
+                text2: "Etkinliğin başarıyla yayından kaldırıldı.",
+              });
+              
+              // İptal başarılı olunca sayfayı yeni etkinlik oluşturulacak şekilde sıfırla
+              setActiveEvent(null); 
+            } catch (error: any) {
+              const msg = typeof error === "string" ? error : "Etkinlik iptal edilemedi.";
+              Alert.alert("Hata", msg);
+            } finally {
+              setCheckingEvent(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -189,6 +253,14 @@ export default function CreateEventScreen() {
             >
               <Text style={styles.submitButtonText}>Etkinliğini Yönet</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.submitButton, { backgroundColor: "#EF4444", marginTop: 12 }]}
+              onPress={handleCancelEvent}
+            >
+              <Text style={styles.submitButtonText}>Etkinliği İptal Et</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       </SafeAreaView>
