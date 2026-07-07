@@ -29,6 +29,22 @@ namespace UniVibe.Infrastructure.Repositories
 
             return (items, totalCount);
         }
+        public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId)
+        {
+            return await _context.Events
+                .Include(e => e.User)
+                .Include(e => e.Category)
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.IsDeleted == false);
+        }
+        public async Task<Event?> GetActiveEventByUserIdAsync(Guid userId)
+        {
+            return await _context.Events
+                .Include(e => e.Category)
+                .FirstOrDefaultAsync(e =>
+                    e.UserId == userId &&
+                    e.EventDate > DateTime.UtcNow &&
+                    e.IsDeleted == false);
+        }
 
     }
 }

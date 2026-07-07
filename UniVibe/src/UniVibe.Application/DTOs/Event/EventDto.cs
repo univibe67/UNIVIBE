@@ -11,5 +11,8 @@ namespace UniVibe.Application.DTOs.Event
         public string Location { get; set; } = string.Empty;
         public Guid CategoryId { get; set; }
         public string? ImageUrl { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string CreatorName { get; set; } = string.Empty;
+        public bool IsCreator { get; set; }
     }
 }
