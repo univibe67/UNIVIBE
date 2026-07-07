@@ -86,6 +86,14 @@ namespace UniVibe.Application.Services
             if (existingEvent.UserId != userId)
                 throw new Exception("Bu etkinliği silmeye yetkiniz yok.");
 
+            var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
+
+            if (timeDifference.TotalHours < 0)
+                throw new Exception("Başlamış veya geçmiş bir etkinlik iptal edilemez.");
+
+            if (timeDifference.TotalHours < 4)
+                throw new Exception("Etkinliğe 4 saatten az bir süre kaldığı için iptal işlemi yapılamaz.");
+
             if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
             {
                 await _imageService.DeleteImageAsync(existingEvent.ImagePublicId);
