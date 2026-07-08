@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using UniVibe.Application.Common;
-using UniVibe.Application.DTOs.Event;
+using UniVibe.Application.DTOs.Event.Requests;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
@@ -22,7 +23,7 @@ namespace UniVibe.Application.Services
             _mapper = mapper;
         }
 
-        public async Task CreateEventAsync(CreateEventDto createEventDto, Guid userId)
+        public async Task CreateEventAsync(CreateEventRequest request, Guid userId)
         {
 
 
@@ -34,20 +35,20 @@ namespace UniVibe.Application.Services
             if (hasActiveEvent)
                 throw new Exception("Aktif bir etkinliğin varken yeni bir tane oluşturamazsın.");
 
-            var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == createEventDto.CategoryId);
+            var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
                 throw new Exception("Seçilen kategori bulunamadı!");
 
             string? imageUrl = null;
             string? imagePublicId = null;
-            if (createEventDto.ImageFile != null)
+            if (request.ImageFile != null)
             {
-                var uploadResult = await _imageService.UploadImageAsync(createEventDto.ImageFile, "Events");
+                var uploadResult = await _imageService.UploadImageAsync(request.ImageFile, "Events");
                 imageUrl = uploadResult.Url;
                 imagePublicId = uploadResult.PublicId;
             }
 
-            var newEvent = _mapper.Map<Event>(createEventDto);
+            var newEvent = _mapper.Map<Event>(request);
             newEvent.UserId = userId;
             newEvent.ImageUrl = imageUrl;
             newEvent.ImagePublicId = imagePublicId;
@@ -55,26 +56,26 @@ namespace UniVibe.Application.Services
             await _eventRepository.AddAsync(newEvent);
         }
 
-        public async Task<PaginatedResult<EventDto>> GetAllEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
+        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
         {
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(pageNumber, pageSize, onlyActive);
 
-            var eventDtos = _mapper.Map<List<EventDto>>(items);
+            var EventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
-            return new PaginatedResult<EventDto>
+            return new PaginatedResult<EventDetailResponse>
             {
-                Items = eventDtos,
+                Items = EventDetailResponses,
                 TotalCount = totalCount,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
         }
 
-        public async Task<List<EventCategoryDto>> GetCategoriesAsync()
+        public async Task<List<EventCategoryResponse>> GetCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllAsync();
 
-            return _mapper.Map<List<EventCategoryDto>>(categories);
+            return _mapper.Map<List<EventCategoryResponse>>(categories);
         }
         public async Task DeleteEventAsync(Guid eventId, Guid userId)
         {
@@ -107,38 +108,38 @@ namespace UniVibe.Application.Services
 
             await _eventRepository.UpdateAsync(existingEvent);
         }
-        public async Task<EventDto> GetEventByIdAsync(Guid eventId, Guid currentUserId)
+        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
             if (eventEntity == null)
                 throw new Exception("Etkinlik bulunamadı.");
 
-            var eventDto = _mapper.Map<EventDto>(eventEntity);
+            var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
-                eventDto.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                EventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
 
             if (eventEntity.Category != null)
-                eventDto.CategoryName = eventEntity.Category.Name;
+                EventDetailResponse.CategoryName = eventEntity.Category.Name;
 
-            eventDto.IsCreator = (eventEntity.UserId == currentUserId);
+            EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
 
-            return eventDto;
+            return EventDetailResponse;
         }
-        public async Task<EventDto?> GetMyActiveEventAsync(Guid userId)
+        public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)
         {
             var activeEvent = await _eventRepository.GetActiveEventByUserIdAsync(userId);
 
             if (activeEvent == null)
                 return null;
 
-            var eventDto = _mapper.Map<EventDto>(activeEvent);
+            var EventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
 
             if (activeEvent.Category != null)
-                eventDto.CategoryName = activeEvent.Category.Name;
+                EventDetailResponse.CategoryName = activeEvent.Category.Name;
 
-            return eventDto;
+            return EventDetailResponse;
         }
     }
 }

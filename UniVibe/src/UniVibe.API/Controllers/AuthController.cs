@@ -1,7 +1,8 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
-using UniVibe.Application.DTOs.Auth;
+using UniVibe.Application.DTOs.Auth.Requests;
+using UniVibe.Application.DTOs.Auth.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers

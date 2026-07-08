@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
-using UniVibe.Application.DTOs.Event;
+using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -14,9 +14,9 @@ namespace UniVibe.API.Controllers
     {
         private readonly IEventService _eventService;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
-        private readonly IValidator<CreateEventDto> _createEventValidator;
+        private readonly IValidator<CreateEventRequest> _createEventValidator;
 
-        public EventsController(IEventService eventService, IValidator<CreateEventDto> createEventValidator, IValidator<GetAllEventsRequest> getAllEventsValidator)
+        public EventsController(IEventService eventService, IValidator<CreateEventRequest> createEventValidator, IValidator<GetAllEventsRequest> getAllEventsValidator)
         {
             this._eventService = eventService;
             _createEventValidator = createEventValidator;
@@ -43,9 +43,9 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("create-event")]
-        public async Task<IActionResult> CreateEvent([FromForm] CreateEventDto createEventDto)
+        public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest createEventDetailResponse)
         {
-            var validationResult = await _createEventValidator.ValidateAsync(createEventDto);
+            var validationResult = await _createEventValidator.ValidateAsync(createEventDetailResponse);
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
@@ -53,7 +53,7 @@ namespace UniVibe.API.Controllers
             }
 
             var userId = User.GetUserId();
-            await _eventService.CreateEventAsync(createEventDto, userId);
+            await _eventService.CreateEventAsync(createEventDetailResponse, userId);
             return Ok(ApiResponse<string>.Success("Etkinlik başarıyla oluşturuldu."));
         }
 
@@ -83,21 +83,6 @@ namespace UniVibe.API.Controllers
             var myEvent = await _eventService.GetMyActiveEventAsync(userId);
 
             return Ok(ApiResponse<object>.Success(myEvent));
-        }
-
-        [HttpPost("extract-from-poster")]
-        public async Task<IActionResult> ExtractFromPoster(IFormFile imageFile, [FromServices] IAiService aiService)
-        {
-            try
-            {
-                var extractedData = await aiService.ExtractEventDetailsFromImageAsync(imageFile);
-
-                return Ok(ApiResponse<AiEventExtractionDto>.Success(extractedData));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { isSuccessful = false, message = ex.Message });
-            }
         }
     }
 }

@@ -1,13 +1,13 @@
-﻿using UniVibe.Application.DTOs.University;
+﻿using UniVibe.Application.DTOs.University.Responses;
 
 namespace UniVibe.Application.Interfaces
 {
     public interface IUniversityService
     {
-        Task<List<UniversityLookupDto>> GetAllUniversitiesAsync();
+        Task<List<UniversityLookupResponse>> GetAllUniversitiesAsync();
 
-        Task<List<FacultyLookupDto>> GetFacultiesByUniversityIdAsync(Guid universityId);
+        Task<List<FacultyLookupResponse>> GetFacultiesByUniversityIdAsync(Guid universityId);
 
-        Task<List<DepartmentLookupDto>> GetDepartmentsByFacultyIdAsync(Guid facultyId);
+        Task<List<DepartmentLookupResponse>> GetDepartmentsByFacultyIdAsync(Guid facultyId);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace UniVibe.Application.DTOs.Auth
+﻿namespace UniVibe.Application.DTOs.Auth.Responses
 {
     public class LoginResponse
     {

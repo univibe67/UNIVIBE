@@ -1,6 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.University
+﻿namespace UniVibe.Application.DTOs.University.Responses
 {
-    public class DepartmentLookupDto
+    public class DepartmentLookupResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;

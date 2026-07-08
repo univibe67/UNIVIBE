@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.DTOs.Auth;
+﻿using UniVibe.Application.DTOs.Auth.Requests;
+using UniVibe.Application.DTOs.Auth.Responses;
 
 namespace UniVibe.Application.Interfaces
 {

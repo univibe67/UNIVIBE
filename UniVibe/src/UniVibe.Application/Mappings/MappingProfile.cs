@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
-using UniVibe.Application.DTOs.Event;
-using UniVibe.Application.DTOs.University;
+using UniVibe.Application.DTOs.Event.Requests;
+using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.DTOs.University.Responses;
 using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Mappings
@@ -10,14 +11,14 @@ namespace UniVibe.Application.Mappings
         public MappingProfile()
         {
             // University Mappings
-            CreateMap<University, UniversityLookupDto>();
-            CreateMap<Faculty, FacultyLookupDto>();
-            CreateMap<Department, DepartmentLookupDto>();
+            CreateMap<University, UniversityLookupResponse>();
+            CreateMap<Faculty, FacultyLookupResponse>();
+            CreateMap<Department, DepartmentLookupResponse>();
 
             //Event Mappings
-            CreateMap<CreateEventDto, Event>();
-            CreateMap<Event, EventDto>();
-            CreateMap<EventCategory, EventCategoryDto>();
+            CreateMap<CreateEventRequest, Event>();
+            CreateMap<Event, EventDetailResponse>();
+            CreateMap<EventCategory, EventCategoryResponse>();
 
         }
     }

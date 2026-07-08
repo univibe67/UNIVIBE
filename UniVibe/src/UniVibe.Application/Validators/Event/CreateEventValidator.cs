@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
 using UniVibe.Application.DTOs.Event;
+using UniVibe.Application.DTOs.Event.Requests;
 
 namespace UniVibe.Application.Validators.Event
 {
-    public class CreateEventValidator : AbstractValidator<CreateEventDto>
+    public class CreateEventValidator : AbstractValidator<CreateEventRequest>
     {
         public CreateEventValidator()
         {

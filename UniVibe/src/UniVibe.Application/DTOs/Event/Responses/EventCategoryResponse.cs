@@ -1,6 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.Event
+﻿namespace UniVibe.Application.DTOs.Event.Responses
 {
-    public class EventCategoryDto
+    public class EventCategoryResponse
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;

@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.DTOs.Auth;
+﻿using UniVibe.Application.DTOs.Auth.Requests;
+using UniVibe.Application.DTOs.Auth.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
