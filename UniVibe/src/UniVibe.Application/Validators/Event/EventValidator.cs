@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using UniVibe.Application.DTOs.Event;
+using UniVibe.Application.DTOs.Event.Requests;
 
 namespace UniVibe.Application.Validators.Event
 {

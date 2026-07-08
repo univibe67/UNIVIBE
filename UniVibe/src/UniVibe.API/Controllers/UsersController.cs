@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User;
+using UniVibe.Application.DTOs.User.Requests;
+using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -13,9 +15,9 @@ namespace UniVibe.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly IValidator<UpdateUserProfileDto> _updateProfileValidator;
+        private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
 
-        public UsersController(IUserService userService, IValidator<UpdateUserProfileDto> updateProfileValidator)
+        public UsersController(IUserService userService, IValidator<UpdateUserProfileRequest> updateProfileValidator)
         {
             _userService = userService;
             _updateProfileValidator = updateProfileValidator;
@@ -31,7 +33,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPut("update-profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto updateDto)
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest updateDto)
         {
             var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
 
@@ -53,14 +55,14 @@ namespace UniVibe.API.Controllers
 
             var profileData = await _userService.GetUserProfileAsync(userId);
 
-            return Ok(ApiResponse<UserProfileDto>.Success(profileData));
+            return Ok(ApiResponse<UserProfileResponse>.Success(profileData));
         }
 
         [HttpGet("profile/{username}")]
         public async Task<IActionResult> GetProfileByUsername(string username)
         {
             var profileData = await _userService.GetProfileByUsernameAsync(username);
-            return Ok(ApiResponse<PublicUserProfileDto>.Success(profileData));
+            return Ok(ApiResponse<PublicUserProfileResponse>.Success(profileData));
         }
 
         [HttpDelete("delete-account")]

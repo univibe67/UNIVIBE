@@ -1,4 +1,4 @@
-﻿namespace UniVibe.Application.DTOs.Event
+﻿namespace UniVibe.Application.DTOs.Event.Requests
 {
     public class GetAllEventsRequest
     {

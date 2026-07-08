@@ -1,11 +1,11 @@
 ﻿using FluentValidation;
-using UniVibe.Application.DTOs.User;
+using UniVibe.Application.DTOs.User.Requests;
 
 namespace UniVibe.Application.Validators.User
 {
-    public class UpdateUserProfileDtoValidator : AbstractValidator<UpdateUserProfileDto>
+    public class UpdateUserProfileRequestValidator : AbstractValidator<UpdateUserProfileRequest>
     {
-        public UpdateUserProfileDtoValidator()
+        public UpdateUserProfileRequestValidator()
         {
             RuleFor(x => x.Username)
                 .MinimumLength(3).WithMessage("Kullanıcı adı en az 3 karakter olmalıdır.")

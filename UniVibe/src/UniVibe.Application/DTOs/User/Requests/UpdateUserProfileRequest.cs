@@ -1,6 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.User
+﻿namespace UniVibe.Application.DTOs.User.Requests
 {
-    public class UpdateUserProfileDto
+    public class UpdateUserProfileRequest
     {
         public string? Username { get; set; }
         public string? Bio { get; set; }

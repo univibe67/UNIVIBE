@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-
-namespace UniVibe.Application.DTOs.Event
+﻿namespace UniVibe.Application.DTOs.Event.Responses
 {
-    public class EventDto
+    public class EventDetailResponse
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;

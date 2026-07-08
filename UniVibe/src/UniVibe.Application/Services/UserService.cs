@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using UniVibe.Application.DTOs.User;
+using UniVibe.Application.DTOs.User.Requests;
+using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 
@@ -10,13 +12,11 @@ namespace UniVibe.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
-        private readonly IMapper _mapper;
 
         public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper)
         {
             _userRepository = userRepository;
             _imageService = imageService;
-            _mapper = mapper;
         }
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
@@ -39,7 +39,7 @@ namespace UniVibe.Application.Services
 
             return user.ProfilePictureUrl;
         }
-        public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileDto updateDto)
+        public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -72,14 +72,14 @@ namespace UniVibe.Application.Services
 
             await _userRepository.UpdateAsync(user);
         }
-        public async Task<UserProfileDto> GetUserProfileAsync(Guid userId)
+        public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
         {
             var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
 
-            return new UserProfileDto
+            return new UserProfileResponse
             {
                 Id = user.Id,
                 Username = user.Username,
@@ -97,14 +97,14 @@ namespace UniVibe.Application.Services
                 UniversityName = user.Department.Faculty.University.Name
             };
         }
-        public async Task<PublicUserProfileDto> GetProfileByUsernameAsync(string username)
+        public async Task<PublicUserProfileResponse> GetProfileByUsernameAsync(string username)
         {
             var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
 
-            return new PublicUserProfileDto
+            return new PublicUserProfileResponse
             {
                 Id = user.Id,
                 Username = user.Username,
