@@ -172,7 +172,7 @@ export default function MyEventsScreen() {
         ) : (
           <TouchableOpacity 
             style={styles.createBox} 
-            onPress={() => router.push('/create-event')} 
+            onPress={() => router.push('../event/create-event')} 
           >
             <Ionicons name="add-circle-outline" size={48} color="#999" />
             <Text style={styles.createText}>Oluştur</Text>

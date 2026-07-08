@@ -18,8 +18,8 @@ import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../services/api";
-import { eventService, EventCategoryDto } from "../services/eventService";
+import { api } from "../../services/api";
+import { eventService, EventCategoryDto } from "../../services/eventService";
 import Toast from "react-native-toast-message";
 
 export default function CreateEventScreen() {
