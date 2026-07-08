@@ -84,5 +84,20 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<object>.Success(myEvent));
         }
+
+        [HttpPost("extract-from-poster")]
+        public async Task<IActionResult> ExtractFromPoster(IFormFile imageFile, [FromServices] IAiService aiService)
+        {
+            try
+            {
+                var extractedData = await aiService.ExtractEventDetailsFromImageAsync(imageFile);
+
+                return Ok(ApiResponse<AiEventExtractionDto>.Success(extractedData));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { isSuccessful = false, message = ex.Message });
+            }
+        }
     }
 }
