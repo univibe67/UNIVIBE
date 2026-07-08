@@ -7,7 +7,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#2c57e6', 
-        tabBarInactiveTintColor: '#f00f0f', 
+        tabBarInactiveTintColor: '#999999', 
         headerStyle: { backgroundColor: '#bebcbc' },
         headerTitleStyle: { fontWeight: 'bold', color: '#1F2937' },
         tabBarStyle: { paddingBottom: 5, height: 60 },
@@ -16,7 +16,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Etkinlikler',
+          title: 'AnaSayfa',
           tabBarLabel: 'Ana Sayfa',
           tabBarIcon: ({ color }) => <Ionicons name="home" size={26} color={color} />,
         }}
@@ -25,9 +25,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          title: 'Yeni Etkinlik',
-          tabBarLabel: 'Oluştur',
-          tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={28} color={color} />,
+          title: 'Etkinlikler',
+          tabBarLabel: 'Etkinlikler',
+          tabBarIcon: ({ color }) => <Ionicons name="calendar" size={28} color={color} />,
         }}
       />
 
