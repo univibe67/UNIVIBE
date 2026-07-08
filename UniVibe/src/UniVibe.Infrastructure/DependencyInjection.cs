@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
+using UniVibe.Application.Services;
 using UniVibe.Infrastructure.Persistence.Context;
 using UniVibe.Infrastructure.Repositories;
 using UniVibe.Infrastructure.Services;
@@ -33,6 +34,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IAiService, AiService>();
 
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             services.AddScoped<IImageService, CloudinaryImageService>();
