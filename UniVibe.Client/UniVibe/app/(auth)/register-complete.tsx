@@ -1,175 +1,353 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView 
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { api } from '../../services/api';
-import { useAuthStore } from '../../store/useAuthStore';
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { api } from "../../services/api";
+import { useAuthStore } from "../../store/useAuthStore";
+
+const GRADES = [
+  { id: 0, name: "Hazırlık" },
+  { id: 1, name: "1. Sınıf" },
+  { id: 2, name: "2. Sınıf" },
+  { id: 3, name: "3. Sınıf" },
+  { id: 4, name: "4. Sınıf" },
+  { id: 5, name: "5. Sınıf" },
+  { id: 6, name: "6. Sınıf" },
+  { id: 7, name: "Mezun" },
+];
 
 export default function RegisterCompleteScreen() {
   const router = useRouter();
-  
   const { token } = useLocalSearchParams<{ token: string }>();
   const loginAction = useAuthStore((state) => state.login);
 
-  const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [grade, setGrade] = useState('');
-  
-  const [departmentId, setDepartmentId] = useState('1'); 
+  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
-  const [isValidatingToken, setIsValidatingToken] = useState(true);
+  const [universities, setUniversities] = useState<any[]>([]);
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+
+  const [selectedUni, setSelectedUni] = useState<any>(null);
+  const [selectedFac, setSelectedFac] = useState<any>(null);
+  const [selectedDep, setSelectedDep] = useState<any>(null);
+
+  const [selectedGrade, setSelectedGrade] = useState<any>(null);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<
+    "grade" | "uni" | "fac" | "dep" | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        Alert.alert("Hata", "Geçersiz kayıt linki.");
-        router.replace('/(auth)/login');
-        return;
-      }
-
+    const init = async () => {
       try {
         await api.get(`/Auth/verify-token?token=${token}`);
-        setIsValidatingToken(false);
-      } catch (error: any) {
-        Alert.alert("Bağlantı Süresi Dolmuş", "Bu kayıt linki geçersiz veya süresi dolmuş.");
-        router.replace('/(auth)/register');
+        const res = await api.get("/University");
+        setUniversities(res);
+      } catch {
+        Alert.alert("Hata", "Token geçersiz.");
+        router.replace("/(auth)/register");
       }
     };
-
-    verifyToken();
+    init();
   }, [token]);
 
+  useEffect(() => {
+    if (selectedUni) {
+      api
+        .get(`/University/${selectedUni.id}/faculties`)
+        .then((res: any) => setFaculties(res));
+    }
+  }, [selectedUni]);
+
+  useEffect(() => {
+    if (selectedFac) {
+      api
+        .get(`/University/faculties/${selectedFac.id}/departments`)
+        .then((res: any) => setDepartments(res));
+    }
+  }, [selectedFac]);
+
   const handleCompleteRegistration = async () => {
-    if (!username || !firstName || !lastName || !password || !departmentId) {
-      Alert.alert("Eksik Bilgi", "Lütfen zorunlu alanları doldurun.");
+    if (!username || !selectedDep || !phoneNumber || selectedGrade === null) {
+      Alert.alert("Eksik", "Lütfen tüm alanları doldurun.");
       return;
     }
-
     setIsSubmitting(true);
     try {
-      const requestData = {
-        token: token,              
-        username: username.trim(),
-        password: password,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phoneNumber: phoneNumber.trim() || null, 
-        departmentId: departmentId, 
-        grade: parseInt(grade) || 0 
-      };
-
-      const registerData = await api.post('/Auth/complete-registration', requestData);
-      
-      const receivedToken = registerData.token || registerData.Token || registerData.accessToken;
-      const refreshToken = registerData.refreshToken || registerData.RefreshToken;
-      const resName = registerData.firstName || registerData.FirstName;
-      const resLastName = registerData.lastName || registerData.LastName;
-
-      if (!receivedToken || typeof receivedToken !== 'string') {
-        throw new Error("Sunucudan geçerli bir token alınamadı.");
-      }
-
-      await loginAction(receivedToken, refreshToken, resName, resLastName);
-      router.replace('/(tabs)');
-
-    } catch (error: any) {
-      const errorMessage = Array.isArray(error) 
-        ? error.join('\n') 
-        : (typeof error === 'string' ? error : "Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
-        
-      Alert.alert("Form Hatası", errorMessage);
-      
-    } finally {
-      setIsSubmitting(false);
+      await api.post("/Auth/complete-registration", {
+        token,
+        username,
+        password,
+        firstName,
+        lastName,
+        phoneNumber: phoneNumber.trim(),
+        departmentId: selectedDep.id,
+        grade: selectedGrade.id,
+      });
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      Alert.alert("Hata", "Kayıt tamamlanamadı.");
     }
+    setIsSubmitting(false);
   };
 
-  if (isValidatingToken) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Bağlantı doğrulanıyor...</Text>
-      </View>
-    );
-  }
-
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Hoş Geldin!</Text>
-          <Text style={styles.subtitle}>Profilini tamamla ve kampüse katıl</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>Kaydı Tamamla</Text>
 
-          {/* Form Alanları */}
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Ad</Text>
-              <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
-            </View>
-            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Soyad</Text>
-              <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
-            </View>
+          <View style={styles.card}>
+            <TextInput
+              style={styles.input}
+              placeholder="Ad"
+              value={firstName}
+              onChangeText={setFirstName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Soyad"
+              value={lastName}
+              onChangeText={setLastName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Kullanıcı Adı"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Şifre"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Telefon Numarası"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+            />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Kullanıcı Adı</Text>
-            <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" />
+          <Text style={styles.sectionTitle}>Eğitim Bilgileri</Text>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => {
+                setModalType("uni");
+                setModalVisible(true);
+              }}
+            >
+              <Text style={styles.dropdownText}>
+                {selectedUni ? selectedUni.name : "Üniversite Seç"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dropdown, !selectedUni && { opacity: 0.5 }]}
+              onPress={() =>
+                selectedUni && (setModalType("fac"), setModalVisible(true))
+              }
+            >
+              <Text style={styles.dropdownText}>
+                {selectedFac ? selectedFac.name : "Fakülte Seç"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dropdown, !selectedFac && { opacity: 0.5 }]}
+              onPress={() =>
+                selectedFac && (setModalType("dep"), setModalVisible(true))
+              }
+            >
+              <Text style={styles.dropdownText}>
+                {selectedDep ? selectedDep.name : "Bölüm Seç"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => {
+                setModalType("grade");
+                setModalVisible(true);
+              }}
+            >
+              <Text style={styles.dropdownText}>
+                {selectedGrade ? selectedGrade.name : "Sınıf Seç"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre Belirle</Text>
-            <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Sınıf (Örn: 3)</Text>
-              <TextInput style={styles.input} value={grade} onChangeText={setGrade} keyboardType="numeric" />
-            </View>
-            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.label}>Telefon (Opsiyonel)</Text>
-              <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-            </View>
-          </View>
-
-          {/* BURAYA BİR SONRAKİ ADIMDA CASCADING DROPDOWN GELECEK */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Bölüm ID (Şimdilik Elle Gir - Örn: 1)</Text>
-            <TextInput style={styles.input} value={departmentId} onChangeText={setDepartmentId} keyboardType="numeric" />
-          </View>
-
-          <TouchableOpacity 
-            style={[styles.submitButton, isSubmitting && { opacity: 0.7 }]} 
-            onPress={handleCompleteRegistration} 
-            disabled={isSubmitting}
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleCompleteRegistration}
           >
-            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>Kaydı Tamamla</Text>}
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.submitText}>Kaydı Tamamla</Text>
+            )}
           </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seçim Yap</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={
+                modalType === "grade"
+                  ? GRADES
+                  : modalType === "uni"
+                    ? universities
+                    : modalType === "fac"
+                      ? faculties
+                      : departments
+              }
+              keyExtractor={(item, index) =>
+                item.id?.toString() || index.toString()
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={() => {
+                    if (modalType === "grade") {
+                      setSelectedGrade(item);
+                    } else if (modalType === "uni") {
+                      setSelectedUni(item);
+                      setSelectedFac(null);
+                      setSelectedDep(null);
+                    } else if (modalType === "fac") {
+                      setSelectedFac(item);
+                      setSelectedDep(null);
+                    } else setSelectedDep(item);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.itemText}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
-  loadingText: { marginTop: 12, fontSize: 16, color: '#6B7280' },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
-  formContainer: { paddingHorizontal: 24, paddingVertical: 40 },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#1F2937', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#6B7280', textAlign: 'center', marginBottom: 32 },
-  inputContainer: { marginBottom: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: '#1F2937' },
-  submitButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10, shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  safeArea: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1 },
+  scrollContent: { padding: 20 },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "#FFF",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+    color: "#374151",
+  },
+  input: {
+    backgroundColor: "#F3F4F6",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    fontSize: 15,
+  },
+  dropdown: {
+    backgroundColor: "#F3F4F6",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dropdownText: { fontSize: 15, color: "#374151" },
+  submitButton: {
+    backgroundColor: "#3B82F6",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 40,
+  },
+  submitText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFF",
+    height: "50%",
+    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "bold" },
+  item: { paddingVertical: 15, borderBottomWidth: 1, borderColor: "#F3F4F6" },
+  itemText: { fontSize: 16, color: "#1F2937" },
 });
