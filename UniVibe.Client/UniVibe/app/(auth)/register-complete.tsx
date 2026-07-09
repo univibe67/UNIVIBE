@@ -20,7 +20,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/useAuthStore";
 
-// Backend'deki Enum ile birebir eşleşen sabit sınıf listemiz
 const GRADES = [
   { id: 0, name: "Hazırlık" },
   { id: 1, name: "1. Sınıf" },
@@ -51,11 +50,9 @@ export default function RegisterCompleteScreen() {
   const [selectedFac, setSelectedFac] = useState<any>(null);
   const [selectedDep, setSelectedDep] = useState<any>(null);
 
-  // Sınıf seçimi için yeni state
   const [selectedGrade, setSelectedGrade] = useState<any>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
-  // modalType'a "grade" seçeneğini ekledik
   const [modalType, setModalType] = useState<
     "grade" | "uni" | "fac" | "dep" | null
   >(null);
@@ -92,7 +89,6 @@ export default function RegisterCompleteScreen() {
   }, [selectedFac]);
 
   const handleCompleteRegistration = async () => {
-    // Sınıfın seçilip seçilmediğini de kontrol ediyoruz
     if (!username || !selectedDep || !phoneNumber || selectedGrade === null) {
       Alert.alert("Eksik", "Lütfen tüm alanları doldurun.");
       return;
@@ -107,7 +103,7 @@ export default function RegisterCompleteScreen() {
         lastName,
         phoneNumber: phoneNumber.trim(),
         departmentId: selectedDep.id,
-        grade: selectedGrade.id, // Enum değerini (0-7 arası) gönderiyoruz
+        grade: selectedGrade.id,
       });
       router.replace("/(tabs)");
     } catch (e: any) {
