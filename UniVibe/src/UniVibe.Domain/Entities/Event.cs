@@ -13,15 +13,14 @@ namespace UniVibe.Domain.Entities
         public string? TargetFaculty { get; set; }
         public int? MinGrade { get; set; }
         public int? MaxGrade { get; set; }
-
         public string? ImageUrl { get; set; }
         public string? ImagePublicId { get; set; }
 
         public Guid UserId { get; set; }
+        [ForeignKey(nameof(UserId))]
         public virtual User User { get; set; } = default!;
 
         public Guid CategoryId { get; set; }
-
         [ForeignKey(nameof(CategoryId))]
         public EventCategory Category { get; set; } = default!;
     }
