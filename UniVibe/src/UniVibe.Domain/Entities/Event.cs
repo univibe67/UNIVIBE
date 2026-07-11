@@ -12,6 +12,8 @@ namespace UniVibe.Domain.Entities
         public string? TargetDepartment { get; set; } 
         public string? TargetFaculty { get; set; }
         public int? MinGrade { get; set; }
+        public int? MaxGrade { get; set; }
+
         public string? ImageUrl { get; set; }
         public string? ImagePublicId { get; set; }
 
