@@ -10,7 +10,7 @@ namespace UniVibe.Infrastructure.Extensions
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
                 .Enrich.FromLogContext()
-                .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+                .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day,retainedFileCountLimit:7)
                 .CreateLogger();
         }
     }
