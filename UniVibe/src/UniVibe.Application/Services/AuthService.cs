@@ -207,6 +207,7 @@ namespace UniVibe.Application.Services
                 DepartmentId = request.DepartmentId,
                 Grade = request.Grade,
                 IsActive = true,
+                ProfilePictureUrl = $"https://ui-avatars.com/api/?name={request.FirstName}+{request.LastName}&background=random&color=fff",
 
                 RefreshToken = _tokenService.GenerateRefreshToken(),
                 RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30)
