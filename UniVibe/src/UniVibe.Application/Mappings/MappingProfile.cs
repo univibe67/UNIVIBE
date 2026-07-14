@@ -2,6 +2,7 @@
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.DTOs.University.Responses;
+using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Mappings
@@ -20,6 +21,9 @@ namespace UniVibe.Application.Mappings
             CreateMap<Event, EventDetailResponse>();
             CreateMap<EventCategory, EventCategoryResponse>();
 
+            // User Mappings
+            CreateMap<User, UserProfileResponse>();
+            CreateMap<User, PublicUserProfileResponse>();
         }
     }
 }

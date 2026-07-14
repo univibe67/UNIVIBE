@@ -12,11 +12,13 @@ namespace UniVibe.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
+        private readonly IMapper _mapper;
 
         public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper)
         {
             _userRepository = userRepository;
             _imageService = imageService;
+            _mapper = mapper;
         }
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
@@ -79,23 +81,7 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
 
-            return new UserProfileResponse
-            {
-                Id = user.Id,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
-                    ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
-                    : user.ProfilePictureUrl,
-                Bio = user.Bio,
-                SocialMediaLink = user.SocialMediaLink,
-                DepartmentName = user.Department.Name,
-                FacultyName = user.Department.Faculty.Name,
-                UniversityName = user.Department.Faculty.University.Name
-            };
+            return _mapper.Map<UserProfileResponse>(user);
         }
         public async Task<PublicUserProfileResponse> GetProfileByUsernameAsync(string username)
         {
@@ -104,21 +90,7 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new Exception("Kullanıcı bulunamadı.");
 
-            return new PublicUserProfileResponse
-            {
-                Id = user.Id,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
-                    ? $"https://ui-avatars.com/api/?name={user.FirstName}+{user.LastName}&background=random&color=fff"
-                    : user.ProfilePictureUrl,
-                Bio = user.Bio,
-                SocialMediaLink = user.SocialMediaLink,
-                Department = user.Department.Name,
-                Faculty = user.Department.Faculty.Name
-            };
+            return _mapper.Map<PublicUserProfileResponse>(user);
         }
         public async Task DeleteAccountAsync(Guid userId)
         {
