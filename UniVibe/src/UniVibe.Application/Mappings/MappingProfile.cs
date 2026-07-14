@@ -28,7 +28,7 @@ namespace UniVibe.Application.Mappings
                 .ForMember(dest => dest.UniversityName, opt => opt.MapFrom(src => src.Department.Faculty.University.Name));
 
             CreateMap<User, PublicUserProfileResponse>()
-                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name)) // .ToString() yapmasını engelledik
+                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name))
                 .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department.Faculty.Name));
         }
     }
