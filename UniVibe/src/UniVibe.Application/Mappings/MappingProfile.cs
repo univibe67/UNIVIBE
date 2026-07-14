@@ -22,8 +22,14 @@ namespace UniVibe.Application.Mappings
             CreateMap<EventCategory, EventCategoryResponse>();
 
             // User Mappings
-            CreateMap<User, UserProfileResponse>();
-            CreateMap<User, PublicUserProfileResponse>();
+            CreateMap<User, UserProfileResponse>()
+                .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name))
+                .ForMember(dest => dest.FacultyName, opt => opt.MapFrom(src => src.Department.Faculty.Name))
+                .ForMember(dest => dest.UniversityName, opt => opt.MapFrom(src => src.Department.Faculty.University.Name));
+
+            CreateMap<User, PublicUserProfileResponse>()
+                .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name)) // .ToString() yapmasını engelledik
+                .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department.Faculty.Name));
         }
     }
 }
