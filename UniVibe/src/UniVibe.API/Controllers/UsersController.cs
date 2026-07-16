@@ -12,7 +12,7 @@ namespace UniVibe.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class UsersController : ControllerBase
+    public sealed class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
         private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;

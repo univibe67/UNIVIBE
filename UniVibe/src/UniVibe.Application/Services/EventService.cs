@@ -8,7 +8,7 @@ using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Services
 {
-    public class EventService : IEventService
+    public sealed class EventService : IEventService
     {
         private readonly IEventRepository _eventRepository;
         private readonly IEventCategoryRepository _categoryRepository;

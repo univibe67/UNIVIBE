@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using UniVibe.Application.DTOs.User;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
@@ -8,7 +7,7 @@ using UniVibe.Application.Interfaces.Repositories;
 
 namespace UniVibe.Application.Services
 {
-    public class UserService : IUserService
+    public sealed class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
