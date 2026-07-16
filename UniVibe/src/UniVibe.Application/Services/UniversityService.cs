@@ -6,7 +6,7 @@ using UniVibe.Application.Interfaces.Repositories;
 
 namespace UniVibe.Application.Services
 {
-    public class UniversityService : IUniversityService
+    public sealed class UniversityService : IUniversityService
     {
         private readonly IUniversityRepository _universityRepository;
         private readonly IFacultyRepository _facultyRepository;

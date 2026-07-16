@@ -8,7 +8,7 @@ namespace UniVibe.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [AllowAnonymous]
-    public class UniversityController : ControllerBase
+    public sealed class UniversityController : ControllerBase
     {
         private readonly IUniversityService _universityService;
 

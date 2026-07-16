@@ -6,7 +6,7 @@ using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Services
 {
-    public class AuthService : IAuthService
+    public sealed class AuthService : IAuthService
     {
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;

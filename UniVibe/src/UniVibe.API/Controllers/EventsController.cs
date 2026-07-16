@@ -10,7 +10,7 @@ namespace UniVibe.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class EventsController : ControllerBase
+    public sealed class EventsController : ControllerBase
     {
         private readonly IEventService _eventService;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;

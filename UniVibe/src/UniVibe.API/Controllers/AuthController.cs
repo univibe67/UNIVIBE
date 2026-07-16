@@ -9,7 +9,7 @@ namespace UniVibe.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public sealed class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;

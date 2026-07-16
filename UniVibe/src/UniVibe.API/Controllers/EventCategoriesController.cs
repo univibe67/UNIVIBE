@@ -6,7 +6,7 @@ namespace UniVibe.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventCategoriesController : ControllerBase
+    public sealed class EventCategoriesController : ControllerBase
     {
         private readonly IEventService _eventService;
 
