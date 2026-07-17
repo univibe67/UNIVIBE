@@ -32,9 +32,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminEventService.ApproveEventAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Onaylanacak etkinlik bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.Event.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla onaylandı ve yayına alındı!"));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Approved));
         }
 
         [HttpPut("reject/{id}")]
@@ -43,9 +43,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminEventService.RejectEventAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Reddedilecek etkinlik bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.Event.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla reddedildi!"));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Rejected));
         }
 
         [HttpGet("all")]

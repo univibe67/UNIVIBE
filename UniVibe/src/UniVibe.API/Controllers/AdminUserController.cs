@@ -32,9 +32,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.SuspendUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Askıya alınacak kullanıcı bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Kullanıcı başarıyla askıya alındı."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Suspended));
         }
 
         [HttpPut("activate/{id}")]
@@ -43,9 +43,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ActivateUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Aktif edilecek kullanıcı bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Kullanıcının hesabı tekrar aktif edildi."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Activated));
         }
 
         [HttpDelete("delete/{id}")] 
@@ -54,9 +54,10 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.DeleteUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Silinecek kullanıcı bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Kullanıcı sistemden kalıcı olarak (Soft Delete) silindi."));
+
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Deleted));
         }
 
         [HttpPut("change-role/{id}")]
@@ -65,9 +66,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ChangeUserRoleAsync(id, newRole);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail("Kullanıcı bulunamadı."));
+                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
 
-            return Ok(ApiResponse<string>.Success("Kullanıcının rolü başarıyla değiştirildi."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.RoleChanged));
         }
     }
 }

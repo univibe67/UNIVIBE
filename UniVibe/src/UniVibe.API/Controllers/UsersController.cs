@@ -40,12 +40,12 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(new { isSuccessful = false, errors = errors });
+                return BadRequest(ApiResponse<string>.Fail(errors));
             }
 
             var userId = User.GetUserId();
             await _userService.UpdateProfileAsync(userId, updateDto);
-            return Ok(ApiResponse<string>.Success("Profil bilgileri başarıyla güncellendi!"));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.ProfileUpdated));
         }
 
         [HttpGet("profile")]
@@ -72,7 +72,7 @@ namespace UniVibe.API.Controllers
 
             await _userService.DeleteAccountAsync(userId);
 
-            return Ok(ApiResponse<string>.Success("Hesabınız başarıyla donduruldu. 15 gün içinde giriş yaparak geri kurtarabilirsiniz."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.User.AccountFrozen));
         }
     }
 }
