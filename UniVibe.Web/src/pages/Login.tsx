@@ -4,6 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { tokenService } from '../services/tokenService';
 
+// JWT'nin içini açıp Payload (Data) kısmını okuyan fonksiyon
+const decodeToken = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,51 +32,86 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // API'ye giriş isteği gönder
-      const response = await api.post('/Auth/login', { email, password });
-
-      // Gelen tokenları kaydet (response.data kullanıyoruz)
-      tokenService.saveTokens(response.data.token, response.data.refreshToken);
+      const response = await api.post('/Auth/login', { email, password }) as any;
       
-      // Kullanıcı tipine göre yönlendir
+      // 1. İNTERCEPTOR DÜZELTMESİ: API'den gelen veriyi güvenli alıyoruz
+      const token = response.token || response.data?.token;
+      const refreshToken = response.refreshToken || response.data?.refreshToken;
+
+      if (!token) {
+        throw new Error("Sunucudan token alınamadı, e-posta veya şifre hatalı.");
+      }
+      
+      // 2. Token'ı çöz ve konsola yazdır (Backend'den hangi roller geliyor görmek için)
+      const decoded = decodeToken(token);
+      console.log("Token İçeriği (Roller):", decoded); 
+
+      // 3. Rolü Yakala (.NET standartlarına uygun olarak)
+      const userRole = decoded?.role || decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+      // 4. Beklenen Rol (Backend'deki rollerin "Admin" ve "Student" olduğunu varsayıyoruz. Farklıysa burayı değiştir)
+      const expectedRole = userType === 'admin' ? 'Admin' : 'Student'; 
+
+      // 5. GÜVENLİK DUVARI
+      if (!userRole || (Array.isArray(userRole) ? !userRole.includes(expectedRole) : userRole !== expectedRole)) {
+        // Eğer rol uymuyorsa hata fırlat, alt satırlara inip token'ı kaydetmesin!
+        throw new Error(`Yetkisiz giriş! Bu hesap bir ${expectedRole} hesabı değil.`);
+      }
+
+      // 6. Her şey doğruysa kaydet ve yönlendir
+      tokenService.saveTokens(token, refreshToken);
       navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard');
       
     } catch (err: any) {
-      setError(err || 'Giriş yapılamadı.');
+      // 7. REACT ÇÖKME KORUMASI: Gelen hata bir obje ise string'e çeviriyoruz
+      const errorMessage = typeof err === 'string' ? err : (err?.message || 'Giriş işlemi sırasında bir hata oluştu.');
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Tema Sınıfları (Aynı harika animasyonlar duruyor)
+  const isStudent = userType === 'student';
+  const bgClass = isStudent ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" : "bg-gray-50";
+  const boxClass = isStudent ? "bg-white/95 backdrop-blur-sm shadow-2xl shadow-purple-500/20" : "bg-white shadow-xl";
+  const titleClass = isStudent ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600" : "text-blue-600";
+  const buttonClass = isStudent ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-pink-500/30" : "bg-blue-600 hover:bg-blue-700";
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
+    <div className={`min-h-screen flex items-center justify-center p-4 transition-all duration-700 ease-in-out ${bgClass}`}>
+      <div className={`max-w-md w-full rounded-2xl p-8 space-y-6 transition-all duration-500 ${boxClass}`}>
         
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-blue-600">UniVibe</h1>
+          <h1 className={`text-3xl font-bold transition-colors duration-500 ${titleClass}`}>
+            UniVibe
+          </h1>
           <p className="text-gray-500">Giriş tipini seçin</p>
         </div>
 
-        {/* Admin/Öğrenci Seçimi */}
-        <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="flex bg-gray-100/80 p-1 rounded-lg backdrop-blur-md">
           <button
             type="button"
-            onClick={() => setUserType('student')}
-            className={`flex-1 py-2 rounded-md flex items-center justify-center gap-2 transition-all ${userType === 'student' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+            onClick={() => { setError(''); setUserType('student'); }}
+            className={`flex-1 py-2 rounded-md flex items-center justify-center gap-2 transition-all duration-300 ${
+              isStudent ? 'bg-white shadow-sm text-purple-600 font-medium scale-105' : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
             <User className="w-4 h-4" /> Öğrenci
           </button>
           <button
             type="button"
-            onClick={() => setUserType('admin')}
-            className={`flex-1 py-2 rounded-md flex items-center justify-center gap-2 transition-all ${userType === 'admin' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+            onClick={() => { setError(''); setUserType('admin'); }}
+            className={`flex-1 py-2 rounded-md flex items-center justify-center gap-2 transition-all duration-300 ${
+              !isStudent ? 'bg-white shadow-sm text-blue-600 font-medium scale-105' : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
             <ShieldCheck className="w-4 h-4" /> Admin
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center">
+          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm text-center animate-pulse">
             {error}
           </div>
         )}
@@ -78,7 +127,9 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all ${
+                  isStudent ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-blue-500 focus:border-blue-500'
+                }`}
                 placeholder="ornek@univibe.com"
                 required
               />
@@ -95,7 +146,9 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all ${
+                  isStudent ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-blue-500 focus:border-blue-500'
+                }`}
                 placeholder="••••••••"
                 required
               />
@@ -105,9 +158,9 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+            className={`w-full text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-70 ${buttonClass}`}
           >
-            {isLoading ? 'Giriş yapılıyor...' : (
+            {isLoading ? 'Kontrol ediliyor...' : (
               <>
                 <LogIn className="w-5 h-5" /> Giriş Yap
               </>
