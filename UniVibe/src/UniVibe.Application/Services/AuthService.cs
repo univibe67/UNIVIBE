@@ -43,7 +43,8 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            // Kullanıcıyı veritabanından buluyoruz (Eğer IsDeleted = true ise zaten Repository getirmemeli, ama biz yine de güvendeyiz)
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
 
             if (user == null)
                 throw new Exception("E-posta veya şifre hatalı.");
@@ -67,6 +68,10 @@ namespace UniVibe.Application.Services
                     {
                         throw new Exception("Hesabınızı silmenizin üzerinden 15 günden fazla zaman geçmiş. Lütfen yeni bir hesap açın.");
                     }
+                }
+                else
+                {
+                    throw new Exception("Hesabınız topluluk kurallarına uymadığınız için sistem yöneticileri tarafından askıya alınmıştır. İtiraz için lütfen destek ile iletişime geçin.");
                 }
             }
 

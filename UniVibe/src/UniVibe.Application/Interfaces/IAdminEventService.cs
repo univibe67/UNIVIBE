@@ -1,12 +1,14 @@
-﻿using UniVibe.Domain.Entities;
+﻿using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Interfaces
 {
     public interface IAdminEventService
     {
-        Task<List<Event>> GetPendingEventsAsync();
+        Task<List<EventListResponse>> GetPendingEventsAsync();
+        Task<List<EventListResponse>> GetAllEventsAsync();
         Task<bool> ApproveEventAsync(Guid eventId);
         Task<bool> RejectEventAsync(Guid eventId);
-        Task<List<Event>> GetAllEventsAsync();
+
     }
 }
