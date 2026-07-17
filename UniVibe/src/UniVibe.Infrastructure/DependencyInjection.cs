@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
-using UniVibe.Application.Services;
 using UniVibe.Infrastructure.Persistence.Context;
 using UniVibe.Infrastructure.Repositories;
 using UniVibe.Infrastructure.Services;

@@ -1,5 +1,5 @@
 ﻿using System.Linq.Expressions;
-using UniVibe.Domain.Common;
+using UniVibe.Domain.Entities;
 
 namespace UniVibe.Application.Interfaces.Repositories
 {

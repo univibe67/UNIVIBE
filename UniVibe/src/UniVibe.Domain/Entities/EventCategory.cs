@@ -1,8 +1,6 @@
-﻿using UniVibe.Domain.Common;
-
-namespace UniVibe.Domain.Entities
+﻿namespace UniVibe.Domain.Entities
 {
-    public class EventCategory : BaseEntity
+    public sealed class EventCategory : BaseEntity
     {
         public string Name { get; set; } = string.Empty;
         public string Icon { get; set; } = string.Empty;

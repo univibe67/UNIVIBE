@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using UniVibe.Domain.Common;
 
 namespace UniVibe.Domain.Entities
 {
