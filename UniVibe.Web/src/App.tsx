@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -12,7 +13,7 @@ function App() {
         
         <Route element={<ProtectedRoute allowedRole="Admin" />}>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<div className="text-2xl font-bold">Admin Ana Sayfa</div>} />
+            <Route path="dashboard" element={<AdminDashboard />} />
           </Route>
         </Route>
 

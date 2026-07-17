@@ -34,7 +34,6 @@ export default function Login() {
     try {
       const response = await api.post('/Auth/login', { email, password }) as any;
       
-      // 1. İNTERCEPTOR DÜZELTMESİ: API'den gelen veriyi güvenli alıyoruz
       const token = response.token || response.data?.token;
       const refreshToken = response.refreshToken || response.data?.refreshToken;
 
@@ -42,28 +41,21 @@ export default function Login() {
         throw new Error("Sunucudan token alınamadı, e-posta veya şifre hatalı.");
       }
       
-      // 2. Token'ı çöz ve konsola yazdır (Backend'den hangi roller geliyor görmek için)
       const decoded = decodeToken(token);
       console.log("Token İçeriği (Roller):", decoded); 
 
-      // 3. Rolü Yakala (.NET standartlarına uygun olarak)
       const userRole = decoded?.role || decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
 
-      // 4. Beklenen Rol (Backend'deki rollerin "Admin" ve "Student" olduğunu varsayıyoruz. Farklıysa burayı değiştir)
       const expectedRole = userType === 'admin' ? 'Admin' : 'Student'; 
 
-      // 5. GÜVENLİK DUVARI
       if (!userRole || (Array.isArray(userRole) ? !userRole.includes(expectedRole) : userRole !== expectedRole)) {
-        // Eğer rol uymuyorsa hata fırlat, alt satırlara inip token'ı kaydetmesin!
         throw new Error(`Yetkisiz giriş! Bu hesap bir ${expectedRole} hesabı değil.`);
       }
 
-      // 6. Her şey doğruysa kaydet ve yönlendir
       tokenService.saveTokens(token, refreshToken);
       navigate(userType === 'admin' ? '/admin/dashboard' : '/student/dashboard');
       
     } catch (err: any) {
-      // 7. REACT ÇÖKME KORUMASI: Gelen hata bir obje ise string'e çeviriyoruz
       const errorMessage = typeof err === 'string' ? err : (err?.message || 'Giriş işlemi sırasında bir hata oluştu.');
       setError(errorMessage);
     } finally {
@@ -71,7 +63,6 @@ export default function Login() {
     }
   };
 
-  // Tema Sınıfları (Aynı harika animasyonlar duruyor)
   const isStudent = userType === 'student';
   const bgClass = isStudent ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" : "bg-gray-50";
   const boxClass = isStudent ? "bg-white/95 backdrop-blur-sm shadow-2xl shadow-purple-500/20" : "bg-white shadow-xl";

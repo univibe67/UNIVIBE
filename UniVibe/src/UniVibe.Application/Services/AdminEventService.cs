@@ -23,14 +23,14 @@ namespace UniVibe.Application.Services
         {
             var pendingEvents = await _eventRepository.GetAllAsync(e => e.Status == EventStatus.Pending);
 
-            return _mapper.Map<List<EventListResponse>>(pendingEvents.OrderByDescending(e => e.CreatedAt));
+            return _mapper.Map<List<EventListResponse>>(pendingEvents.OrderByDescending(e => e.CreatedAt)).ToList();
         }
 
         public async Task<List<EventListResponse>> GetAllEventsAsync()
         {
-            var allEvents = await _eventRepository.GetAllAsync();
+            var allEvents = await _eventRepository.GetAllWithUsersAsync();
 
-            return _mapper.Map<List<EventListResponse>>(allEvents.OrderByDescending(e => e.CreatedAt));
+            return _mapper.Map<List<EventListResponse>>(allEvents.OrderByDescending(e => e.CreatedAt)).ToList();
         }
 
         public async Task<bool> ApproveEventAsync(Guid eventId)
