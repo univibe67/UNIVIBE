@@ -1,6 +1,7 @@
-﻿using UniVibe.Application.Interfaces;
+﻿using AutoMapper;
+using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
-using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
@@ -9,18 +10,27 @@ namespace UniVibe.Application.Services
     {
         private readonly IEventRepository _eventRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public AdminEventService(IEventRepository eventRepository, IUnitOfWork unitOfWork)
+        public AdminEventService(IEventRepository eventRepository, IUnitOfWork unitOfWork, IMapper mapper)
         {
             _eventRepository = eventRepository;
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
-        public async Task<List<Event>> GetPendingEventsAsync()
+        public async Task<List<EventListResponse>> GetPendingEventsAsync()
         {
             var pendingEvents = await _eventRepository.GetAllAsync(e => e.Status == EventStatus.Pending);
 
-            return pendingEvents.ToList();
+            return _mapper.Map<List<EventListResponse>>(pendingEvents.OrderByDescending(e => e.CreatedAt));
+        }
+
+        public async Task<List<EventListResponse>> GetAllEventsAsync()
+        {
+            var allEvents = await _eventRepository.GetAllAsync();
+
+            return _mapper.Map<List<EventListResponse>>(allEvents.OrderByDescending(e => e.CreatedAt));
         }
 
         public async Task<bool> ApproveEventAsync(Guid eventId)
@@ -51,11 +61,6 @@ namespace UniVibe.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return true;
-        }
-        public async Task<List<Event>> GetAllEventsAsync()
-        {
-            var allEvents = await _eventRepository.GetAllAsync();
-            return allEvents.ToList();
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
-using UniVibe.Domain.Entities;
 
 namespace UniVibe.API.Controllers
 {
@@ -23,7 +23,7 @@ namespace UniVibe.API.Controllers
         {
             var events = await _adminEventService.GetPendingEventsAsync();
 
-            return Ok(ApiResponse<List<Event>>.Success(events));
+            return Ok(ApiResponse<List<EventListResponse>>.Success(events));
         }
 
         [HttpPut("approve/{id}")]
@@ -32,7 +32,7 @@ namespace UniVibe.API.Controllers
             var result = await _adminEventService.ApproveEventAsync(id);
 
             if (!result)
-                return NotFound(new { isSuccessful = false, errors = new[] { "Onaylanacak etkinlik bulunamadı." } });
+                return NotFound(ApiResponse<string>.Fail("Onaylanacak etkinlik bulunamadı."));
 
             return Ok(ApiResponse<string>.Success("Etkinlik başarıyla onaylandı ve yayına alındı!"));
         }
@@ -43,7 +43,7 @@ namespace UniVibe.API.Controllers
             var result = await _adminEventService.RejectEventAsync(id);
 
             if (!result)
-                return NotFound(new { isSuccessful = false, errors = new[] { "Reddedilecek etkinlik bulunamadı." } });
+                return NotFound(ApiResponse<string>.Fail("Reddedilecek etkinlik bulunamadı."));
 
             return Ok(ApiResponse<string>.Success("Etkinlik başarıyla reddedildi!"));
         }
@@ -52,7 +52,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAllEvents()
         {
             var events = await _adminEventService.GetAllEventsAsync();
-            return Ok(ApiResponse<List<Event>>.Success(events));
+            return Ok(ApiResponse<List<EventListResponse>>.Success(events));
         }
     }
 }
