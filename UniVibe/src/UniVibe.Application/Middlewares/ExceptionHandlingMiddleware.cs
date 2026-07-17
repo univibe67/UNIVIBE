@@ -52,4 +52,5 @@ namespace UniVibe.Application.Middlewares
             return context.Response.WriteAsync(jsonResponse);
         }
     }
+
 }

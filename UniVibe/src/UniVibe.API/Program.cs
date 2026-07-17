@@ -6,12 +6,13 @@ using System.Text;
 using UniVibe.API.Extensions;
 using UniVibe.Application;
 using UniVibe.Application.Middlewares;
+using UniVibe.Application.Middlewares.UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
 using UniVibe.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddUniVibeSerilog();
+builder.Services.AddUniVibeSerilog(builder.Configuration);
 builder.Host.UseSerilog();
 
 builder.Services.AddApplicationServices();
@@ -84,6 +85,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();  
