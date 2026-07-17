@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using UniVibe.Domain.Common;
 using UniVibe.Domain.Entities;
 
 namespace UniVibe.Infrastructure.Persistence.Context

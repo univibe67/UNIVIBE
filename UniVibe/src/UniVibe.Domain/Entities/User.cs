@@ -1,10 +1,8 @@
-﻿using System.Diagnostics;
-using UniVibe.Domain.Common;
-using UniVibe.Domain.Enums;
+﻿using UniVibe.Domain.Enums;
 
 namespace UniVibe.Domain.Entities
 {
-    public class User : BaseEntity
+    public sealed class User : BaseEntity
     {
         public string Username { get; set; } = string.Empty;
         public DateTime? LastUsernameUpdatedAt { get; set; }
@@ -24,6 +22,6 @@ namespace UniVibe.Domain.Entities
 
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; } = null!;
-        public virtual ICollection<Event> Events { get; set; } = new List<Event>();
+        public ICollection<Event> Events { get; set; } = new List<Event>();
     }
 }

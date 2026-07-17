@@ -1,4 +1,4 @@
-﻿namespace UniVibe.Domain.Common
+﻿namespace UniVibe.Domain.Entities
 {
     public abstract class BaseEntity
     {

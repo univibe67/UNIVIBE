@@ -1,8 +1,6 @@
-﻿using UniVibe.Domain.Common;
-
-namespace UniVibe.Domain.Entities
+﻿namespace UniVibe.Domain.Entities
 {
-    public class Faculty : BaseEntity
+    public sealed class Faculty : BaseEntity
     {
         public string Name { get; set; } = string.Empty;
 

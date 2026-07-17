@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using UniVibe.Application.Interfaces.Repositories;
-using UniVibe.Domain.Common;
+using UniVibe.Domain.Entities;
 using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
