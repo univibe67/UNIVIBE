@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 
 namespace UniVibe.Application.Validators.User
@@ -8,13 +9,13 @@ namespace UniVibe.Application.Validators.User
         public UpdateUserProfileRequestValidator()
         {
             RuleFor(x => x.Username)
-                .MinimumLength(3).WithMessage("Kullanıcı adı en az 3 karakter olmalıdır.")
-                .MaximumLength(20).WithMessage("Kullanıcı adı en fazla 20 karakter olabilir.")
-                .Matches("^[a-zA-Z0-9_]*$").WithMessage("Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.")
+                .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
+                .MaximumLength(20).WithMessage(ValidationMessages.MaxLength)
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage(ValidationMessages.InvalidUsernameFormat)
                 .When(x => !string.IsNullOrWhiteSpace(x.Username));
 
             RuleFor(x => x.Bio)
-                .MaximumLength(150).WithMessage("Biyografi en fazla 150 karakter olabilir.")
+                .MaximumLength(150).WithMessage(ValidationMessages.MaxLength)
                 .When(x => !string.IsNullOrWhiteSpace(x.Bio));
         }
     }
