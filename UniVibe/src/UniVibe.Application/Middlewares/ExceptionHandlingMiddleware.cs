@@ -34,7 +34,16 @@ namespace UniVibe.Application.Middlewares
         {
             context.Response.ContentType = "application/json";
 
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            context.Response.StatusCode = exception switch
+            {
+                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+
+                KeyNotFoundException => (int)HttpStatusCode.NotFound,
+
+                Exception => (int)HttpStatusCode.BadRequest,
+
+                _ => (int)HttpStatusCode.InternalServerError
+            };
 
             var response = ApiResponse<object>.Fail(exception.Message);
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

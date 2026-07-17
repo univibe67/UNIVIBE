@@ -9,13 +9,13 @@ namespace UniVibe.Application.Validators.Auth
         public RegisterCompleteValidator()
         {
             RuleFor(x => x.Token)
-                .NotEmpty().WithMessage("Token bilgisi eksik.");
+                .NotEmpty().WithMessage(ValidationMessages.MissingToken);
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage(ValidationMessages.Required)
-                .MinimumLength(8).WithMessage("Şifre en az 8 karakter olmalıdır.")
-                .Matches(@"[A-Z]").WithMessage("Şifre en az bir büyük harf içermelidir.")
-                .Matches(@"[0-9]").WithMessage("Şifre en az bir rakam içermelidir.");
+                .MinimumLength(8).WithMessage(ValidationMessages.PasswordMinLength)
+                .Matches(@"[A-Z]").WithMessage(ValidationMessages.PasswordRequiresUppercase)
+                .Matches(@"[0-9]").WithMessage(ValidationMessages.PasswordRequiresDigit);
 
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage(ValidationMessages.Required);
@@ -23,19 +23,19 @@ namespace UniVibe.Application.Validators.Auth
             RuleFor(x => x.LastName)
                 .NotEmpty().WithMessage(ValidationMessages.Required);
             RuleFor(x => x.DepartmentId)
-                .NotEmpty().WithMessage("Lütfen bir bölüm seçiniz.");
+                .NotEmpty().WithMessage(ValidationMessages.SelectDepartment);
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage(ValidationMessages.Required)
-                .Matches(@"^5\d{9}$").WithMessage("Telefon 5 ile başlamalı ve 10 haneli olmalıdır.");
+                .Matches(@"^5\d{9}$").WithMessage(ValidationMessages.InvalidPhone);
 
             RuleFor(x => x.Grade)
-                .IsInEnum().WithMessage("Lütfen geçerli bir sınıf seviyesi seçiniz");
+                .IsInEnum().WithMessage(ValidationMessages.InvalidGrade);
             RuleFor(x => x.Username)
                 .NotEmpty().WithMessage(ValidationMessages.Required)
                 .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
                 .MaximumLength(20).WithMessage(ValidationMessages.MaxLength)
-                .Matches("^[a-zA-Z0-9_]*$").WithMessage("Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.");
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage(ValidationMessages.InvalidUsernameFormat);
         }
     }
 }

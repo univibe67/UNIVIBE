@@ -14,13 +14,15 @@ namespace UniVibe.Application.Services
         private readonly IEventCategoryRepository _categoryRepository;
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService, IMapper mapper)
+        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService, IMapper mapper, IUnitOfWork unitOfWork)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
             _imageService = imageService;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -54,6 +56,7 @@ namespace UniVibe.Application.Services
             newEvent.ImagePublicId = imagePublicId;
 
             await _eventRepository.AddAsync(newEvent);
+            await _unitOfWork.SaveChangesAsync();
         }
 
         public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
@@ -106,7 +109,8 @@ namespace UniVibe.Application.Services
             existingEvent.IsDeleted = true;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
-            await _eventRepository.UpdateAsync(existingEvent);
+             _eventRepository.Update(existingEvent);
+            await _unitOfWork.SaveChangesAsync();
         }
         public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
         {
