@@ -3,6 +3,7 @@ using UniVibe.Application.DTOs.Auth.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
 {
@@ -83,6 +84,14 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(string email)
         {
+
+            // CANLIYA CIKARKEN ACILACAK: Sadece .edu.tr uzantılı mailleri kabul etme kurali
+            /*
+            if (!email.EndsWith(".edu.tr"))
+            {
+                throw new Exception("Sisteme sadece '.edu.tr' uzantili üniversite e-posta adresinizle kayit olabilirsiniz.");
+            }
+            */
             var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
 
             if (existingUser != null)
@@ -202,6 +211,25 @@ namespace UniVibe.Application.Services
             if (faculty == null || faculty.UniversityId != university.Id)
                 throw new Exception("Seçtiğiniz bölüm, e-posta adresinizin bağlı olduğu üniversiteye ait değil! Lütfen kendi üniversitenizin bölümlerinden birini seçin.");
             */
+            var assignedRole = UserRole.Student;
+            if (pendingUser.Email.Contains("@beun.edu.tr"))
+            {
+                assignedRole = UserRole.Teacher;
+            }
+            if (assignedRole == UserRole.Student)
+            {
+                if (!request.Grade.HasValue)
+                    throw new Exception("Öğrenciler için sınıf (Grade) bilgisi zorunludur.");
+
+                request.Title = null;
+            }
+            if (assignedRole == UserRole.Teacher)
+            {
+                if (string.IsNullOrWhiteSpace(request.Title))
+                    throw new Exception("Akademisyenler için ünvan (Title) bilgisi zorunludur.");
+
+                request.Grade = null;
+            }
 
             var newUser = new User
             {
@@ -211,8 +239,10 @@ namespace UniVibe.Application.Services
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
+                Title = request.Title,
                 DepartmentId = request.DepartmentId,
                 Grade = request.Grade,
+                Role = assignedRole,
                 IsActive = true,
                 ProfilePictureUrl = $"https://ui-avatars.com/api/?name={request.FirstName}+{request.LastName}&background=random&color=fff",
 
