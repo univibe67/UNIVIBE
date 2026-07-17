@@ -38,10 +38,10 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(new { isSuccessful = false, errors = errors });
+                return BadRequest(ApiResponse<string>.Fail(errors));
             }
             await _authService.InitiateRegistrationAsync(request.Email);
-            return Ok(ApiResponse<string>.Success("Kayıt doğrulama linki mail adresine gönderildi."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Auth.VerificationLinkSent));
         }
 
         [HttpGet("verify-token")]
@@ -50,9 +50,9 @@ namespace UniVibe.API.Controllers
             var isValid = await _authService.VerifyTokenAsync(token);
 
             if (!isValid)
-                return BadRequest(ApiResponse<string>.Fail("Token geçersiz veya süresi dolmuş."));
+                return BadRequest(ApiResponse<string>.Fail(ResponseMessages.Auth.TokenInvalid));
 
-            return Ok(ApiResponse<string>.Success("Token doğrulandı."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Auth.TokenVerified));
         }
 
         [HttpPost("complete-registration")]
@@ -63,7 +63,7 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(new { isSuccessful = false, errors = errors });
+                return BadRequest(ApiResponse<string>.Fail(errors));
             }
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));

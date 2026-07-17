@@ -30,7 +30,7 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(new { isSuccessful = false, errors = errors });
+                return BadRequest(ApiResponse<string>.Fail(errors));
             }
 
             var pagedEvents = await _eventService.GetAllEventsAsync(
@@ -49,12 +49,12 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(new { isSuccessful = false, errors = errors });
+                return BadRequest(ApiResponse<string>.Fail(errors));
             }
 
             var userId = User.GetUserId();
             await _eventService.CreateEventAsync(createEventDetailResponse, userId);
-            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla oluşturuldu."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Created));
         }
 
         [HttpDelete("delete-event/{id}")]
@@ -64,7 +64,7 @@ namespace UniVibe.API.Controllers
 
             await _eventService.DeleteEventAsync(id, userId);
 
-            return Ok(ApiResponse<string>.Success("Etkinlik başarıyla silindi."));
+            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Deleted));
         }
 
         [HttpGet("{id}")]
