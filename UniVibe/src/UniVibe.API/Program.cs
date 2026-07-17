@@ -87,6 +87,8 @@ app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
+app.UseCors("WebFrontendPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();  
 

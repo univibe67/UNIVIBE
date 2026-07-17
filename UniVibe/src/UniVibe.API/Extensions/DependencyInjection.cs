@@ -8,6 +8,18 @@ namespace UniVibe.API.Extensions
         public static IServiceCollection AddWebAPIServices(this IServiceCollection services)
         {
             services.AddControllers();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("WebFrontendPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
             services.Configure<ApiBehaviorOptions>(options =>
             {
                 options.InvalidModelStateResponseFactory = context =>
