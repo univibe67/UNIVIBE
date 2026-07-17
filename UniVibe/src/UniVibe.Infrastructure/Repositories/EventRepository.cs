@@ -45,6 +45,13 @@ namespace UniVibe.Infrastructure.Repositories
                     e.EventDate > DateTime.UtcNow &&
                     e.IsDeleted == false);
         }
+        public async Task<List<Event>> GetAllWithUsersAsync()
+        {
+            return await _context.Events
+                .Include(e => e.User)
+                .OrderByDescending(e => e.CreatedAt)
+                .ToListAsync();
+        }
 
     }
 }

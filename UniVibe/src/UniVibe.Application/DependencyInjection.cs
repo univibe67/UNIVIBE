@@ -19,6 +19,7 @@ namespace UniVibe.Application
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUniversityService, UniversityService>();
             services.AddScoped<IAdminEventService, AdminEventService>();
+            services.AddScoped<IAdminUserService, AdminUserService>();
 
             services.AddAutoMapper(cfg => { cfg.AddProfile<MappingProfile>(); });
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

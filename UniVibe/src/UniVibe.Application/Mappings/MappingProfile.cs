@@ -30,6 +30,10 @@ namespace UniVibe.Application.Mappings
             CreateMap<User, PublicUserProfileResponse>()
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name))
                 .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department.Faculty.Name));
+            // Adim Mapping
+            CreateMap<User, UserListResponse>();
+            CreateMap<Event, EventListResponse>()
+                .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName)); ;
         }
     }
 }

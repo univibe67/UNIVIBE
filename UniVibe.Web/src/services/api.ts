@@ -21,7 +21,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Senin mobildeki cevabı karşılama (Response) ve Hata yakalama mantığın
 api.interceptors.response.use(
   (response: any) => {
     const apiResponse = response.data;
