@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Domain.Entities
 {
@@ -14,6 +15,7 @@ namespace UniVibe.Domain.Entities
         public int? MaxGrade { get; set; }
         public string? ImageUrl { get; set; }
         public string? ImagePublicId { get; set; }
+        public EventStatus Status { get; set; } = EventStatus.Pending;
 
         public Guid UserId { get; set; }
         [ForeignKey(nameof(UserId))]

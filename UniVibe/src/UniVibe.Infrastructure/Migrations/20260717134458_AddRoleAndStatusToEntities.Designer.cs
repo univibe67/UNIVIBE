@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniVibe.Infrastructure.Persistence.Context;
@@ -11,9 +12,11 @@ using UniVibe.Infrastructure.Persistence.Context;
 namespace UniVibe.Infrastructure.Migrations
 {
     [DbContext(typeof(UniVibeDbContext))]
-    partial class UniVibeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260717134458_AddRoleAndStatusToEntities")]
+    partial class AddRoleAndStatusToEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -293,7 +296,7 @@ namespace UniVibe.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<int?>("Grade")
+                    b.Property<int>("Grade")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
@@ -335,9 +338,6 @@ namespace UniVibe.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("SocialMediaLink")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
