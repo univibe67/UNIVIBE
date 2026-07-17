@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using UniVibe.Application.DTOs.Event;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 
 namespace UniVibe.Application.Validators.Event
@@ -9,15 +9,19 @@ namespace UniVibe.Application.Validators.Event
         public CreateEventValidator()
         {
             RuleFor(x => x.Title)
-                .NotEmpty().WithMessage("Başlık boş olamaz.")
-                .MinimumLength(3).WithMessage("Başlık en az 3 karakter olmalı.");
+                .NotEmpty().WithMessage(ValidationMessages.Required)
+                .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
+                .MaximumLength(100).WithMessage(ValidationMessages.MaxLength);
 
             RuleFor(x => x.EventDate)
-                .NotEmpty().WithMessage("Tarih girilmelidir.")
-                .GreaterThan(DateTime.UtcNow).WithMessage("Geçmiş bir tarihe etkinlik oluşturamazsın.");
+                .NotEmpty().WithMessage(ValidationMessages.Required)
+                .GreaterThan(DateTime.UtcNow).WithMessage(ValidationMessages.EventDatePast);
 
             RuleFor(x => x.Location)
-                .NotEmpty().WithMessage("Lokasyon belirtilmelidir.");
+                .NotEmpty().WithMessage(ValidationMessages.Required);
+
+            RuleFor(x => x.Description)
+                .NotEmpty().WithMessage(ValidationMessages.Required);
         }
     }
 }

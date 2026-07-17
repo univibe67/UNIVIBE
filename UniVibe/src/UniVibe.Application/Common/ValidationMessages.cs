@@ -17,5 +17,11 @@
         public const string InvalidUsernameFormat = "Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.";
         // RegisterInitValidator Messages
         /*public const string MustBeEduTr = "Sadece .edu.tr uzantılı e-posta adresleri kabul edilir.";*/
+        // Event (Etkinlik) Messages
+        public const string EventDatePast = "Etkinlik tarihi geçmiş bir tarih olamaz.";
+        public const string PageNumberMin = "Sayfa numarası en az 1 olmalı.";
+        public const string PageSizeRange = "Sayfa boyutu {From} ile {To} arasında olmalı.";
+        // User Messages
+
     }
 }
