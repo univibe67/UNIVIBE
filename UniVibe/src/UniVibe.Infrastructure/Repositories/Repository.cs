@@ -20,19 +20,16 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(T entity)
+        public void Delete(T entity)
         {
             _dbSet.Remove(entity);
-            await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateAsync(T entity)
+        public void Update(T entity)
         {
             _dbSet.Update(entity);
-            await _context.SaveChangesAsync();
         }
 
         public async Task<T?> GetAsync(Expression<Func<T, bool>> filter)
@@ -46,14 +43,17 @@ namespace UniVibe.Infrastructure.Repositories
                 ? await _dbSet.ToListAsync()
                 : await _dbSet.Where(filter).ToListAsync();
         }
+
         public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.FirstOrDefaultAsync(predicate);
         }
+
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.AnyAsync(predicate);
         }
+
         public IQueryable<T> AsQueryable()
         {
             return _dbSet.AsQueryable();

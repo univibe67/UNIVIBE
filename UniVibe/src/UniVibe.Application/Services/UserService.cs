@@ -12,12 +12,14 @@ namespace UniVibe.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper)
+        public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper, IUnitOfWork unitOfWork)
         {
             _userRepository = userRepository;
             _imageService = imageService;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
@@ -36,7 +38,8 @@ namespace UniVibe.Application.Services
             user.ProfilePicturePublicId = uploadResult.PublicId;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _userRepository.UpdateAsync(user);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return user.ProfilePictureUrl;
         }
@@ -71,7 +74,8 @@ namespace UniVibe.Application.Services
             user.SocialMediaLink = updateDto.SocialMediaLink;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _userRepository.UpdateAsync(user);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
         }
         public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
         {
@@ -106,7 +110,8 @@ namespace UniVibe.Application.Services
             user.DeletedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _userRepository.UpdateAsync(user);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
         }
 
     }

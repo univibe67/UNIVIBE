@@ -11,11 +11,12 @@ namespace UniVibe.Application.Services
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepartmentRepository _departmentRepository;
-        private readonly IUniversityRepository _universityRepository; 
-        private readonly IFacultyRepository _facultyRepository;       
+        private readonly IUniversityRepository _universityRepository;
+        private readonly IFacultyRepository _facultyRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public AuthService(
             IPendingUserRepository pendingUserRepository,
@@ -25,7 +26,8 @@ namespace UniVibe.Application.Services
             ITokenService tokenService,
             IDepartmentRepository departmentRepository,
             IUniversityRepository universityRepository,
-            IFacultyRepository facultyRepository)
+            IFacultyRepository facultyRepository,
+            IUnitOfWork unitOfWork)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -35,6 +37,7 @@ namespace UniVibe.Application.Services
             _departmentRepository = departmentRepository;
             _universityRepository = universityRepository;
             _facultyRepository = facultyRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -72,7 +75,8 @@ namespace UniVibe.Application.Services
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
-            await _userRepository.UpdateAsync(user);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
         }
@@ -109,7 +113,7 @@ namespace UniVibe.Application.Services
                         existingUser.SocialMediaLink = null;
                         existingUser.ProfilePictureUrl = null;
 
-                        await _userRepository.UpdateAsync(existingUser);
+                        _userRepository.Update(existingUser);
                     }
                 }
             }
@@ -117,7 +121,7 @@ namespace UniVibe.Application.Services
             var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email);
             if (existingPending != null)
             {
-                await _pendingUserRepository.DeleteAsync(existingPending);
+                _pendingUserRepository.Delete(existingPending);
             }
 
             var token = Guid.NewGuid().ToString();
@@ -130,6 +134,7 @@ namespace UniVibe.Application.Services
             };
 
             await _pendingUserRepository.AddAsync(pendingUser);
+            await _unitOfWork.SaveChangesAsync();
 
             try
             {
@@ -146,7 +151,8 @@ namespace UniVibe.Application.Services
             }
             catch (Exception ex)
             {
-                await _pendingUserRepository.DeleteAsync(pendingUser);
+                _pendingUserRepository.Delete(pendingUser);
+                await _unitOfWork.SaveChangesAsync();
                 throw new Exception("Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: " + ex.Message);
             }
 
@@ -162,7 +168,8 @@ namespace UniVibe.Application.Services
             }
 
             pendingUser.IsUsed = true;
-            await _pendingUserRepository.UpdateAsync(pendingUser);
+             _pendingUserRepository.Update(pendingUser);
+            await _unitOfWork.SaveChangesAsync();
 
             return true;
         }
@@ -214,7 +221,8 @@ namespace UniVibe.Application.Services
             };
 
             await _userRepository.AddAsync(newUser);
-            await _pendingUserRepository.DeleteAsync(pendingUser);
+             _pendingUserRepository.Delete(pendingUser);
+            await _unitOfWork.SaveChangesAsync();
 
             var accessToken = _tokenService.GenerateToken(newUser);
             return new LoginResponse(accessToken, newUser.RefreshToken, newUser.FirstName, newUser.LastName);
@@ -233,7 +241,8 @@ namespace UniVibe.Application.Services
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
-            await _userRepository.UpdateAsync(user);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
         }
