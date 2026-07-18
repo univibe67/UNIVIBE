@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.Common;
+﻿using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
 using UniVibe.Application.Interfaces;
@@ -19,6 +20,7 @@ namespace UniVibe.Application.Services
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public AuthService(
             IPendingUserRepository pendingUserRepository,
@@ -29,7 +31,8 @@ namespace UniVibe.Application.Services
             IDepartmentRepository departmentRepository,
             IUniversityRepository universityRepository,
             IFacultyRepository facultyRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IStringLocalizer<SharedResources> localizer)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -40,6 +43,7 @@ namespace UniVibe.Application.Services
             _universityRepository = universityRepository;
             _facultyRepository = facultyRepository;
             _unitOfWork = unitOfWork;
+            _localizer = localizer;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -47,11 +51,11 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
 
             if (user == null)
-                throw new Exception(ServicesMessages.AuthMessages.InvalidCredentials);
+                throw new Exception(_localizer["Auth_InvalidCredentials"].Value);
 
             var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid)
-                throw new Exception(ServicesMessages.AuthMessages.InvalidCredentials);
+                throw new Exception(_localizer["Auth_InvalidCredentials"].Value);
 
             if (!user.IsActive)
             {
@@ -66,12 +70,12 @@ namespace UniVibe.Application.Services
                     }
                     else
                     {
-                        throw new Exception(ServicesMessages.AuthMessages.AccountDeletedTooLong);
+                        throw new Exception(_localizer["Auth_DeletedTooLong"].Value);
                     }
                 }
                 else
                 {
-                    throw new Exception(ServicesMessages.AuthMessages.AccountSuspended);
+                    throw new Exception(_localizer["Auth_Suspended"].Value);
                 }
             }
 
@@ -89,12 +93,11 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(string email)
         {
-
             // CANLIYA CIKARKEN ACILACAK: Sadece .edu.tr uzantılı mailleri kabul etme kurali
             /*
             if (!email.EndsWith(".edu.tr"))
             {
-                throw new Exception("Sisteme sadece '.edu.tr' uzantili üniversite e-posta adresinizle kayit olabilirsiniz.");
+                throw new Exception(_localizer["Auth_EduMailRequired"].Value);
             }
             */
             var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
@@ -103,7 +106,7 @@ namespace UniVibe.Application.Services
             {
                 if (existingUser.IsActive)
                 {
-                    throw new Exception(ServicesMessages.AuthMessages.EmailAlreadyActive);
+                    throw new Exception(_localizer["Auth_EmailAlreadyActive"].Value);
                 }
 
                 if (!existingUser.IsActive && existingUser.DeletedAt.HasValue)
@@ -113,7 +116,7 @@ namespace UniVibe.Application.Services
                     if (gecenSure < 15)
                     {
                         int kalanGun = 15 - (int)gecenSure;
-                        throw new Exception(ServicesMessages.AuthMessages.AccountInDeletionProcess.Replace("{0}", kalanGun.ToString()));
+                        throw new Exception(_localizer["Auth_InDeletionProcess", kalanGun].Value);
                     }
                     else
                     {
@@ -167,7 +170,7 @@ namespace UniVibe.Application.Services
             {
                 _pendingUserRepository.Delete(pendingUser);
                 await _unitOfWork.SaveChangesAsync();
-                throw new Exception(ServicesMessages.AuthMessages.EmailSendFailed.Replace("{0}", ex.Message));
+                throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
             }
 
             return token;
@@ -182,7 +185,7 @@ namespace UniVibe.Application.Services
             }
 
             pendingUser.IsUsed = true;
-             _pendingUserRepository.Update(pendingUser);
+            _pendingUserRepository.Update(pendingUser);
             await _unitOfWork.SaveChangesAsync();
 
             return true;
@@ -192,30 +195,30 @@ namespace UniVibe.Application.Services
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
             if (pendingUser == null)
-                throw new Exception(ServicesMessages.AuthMessages.InvalidOrExpiredToken);
+                throw new Exception(_localizer["Auth_InvalidToken"].Value);
 
             /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
             var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
             var university = await _universityRepository.FirstOrDefaultAsync(u => u.EmailDomain.ToLower() == emailDomain!.ToLower());
             if (university == null)
-                 throw new Exception($"Sistemimizde '{emailDomain}' uzantısına tanımlı bir üniversite bulunmamaktadır.");
+                 throw new Exception(_localizer["Auth_UniversityNotFound", emailDomain].Value);
             */
 
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
-                throw new Exception(ServicesMessages.AuthMessages.UsernameTaken);
+                throw new Exception(_localizer["Auth_UsernameTaken"].Value);
 
             var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
             if (department == null)
-                throw new Exception(ServicesMessages.AuthMessages.DepartmentNotFound);
+                throw new Exception(_localizer["Auth_DepartmentNotFound"].Value);
 
-            // TEST İÇİN KAPATILDI: Seçilen bölümün, adamın e-postasındaki üniversiteye ait olup olmadığı kontrolü
-            // (Çünkü yukarıdaki university değişkenini kapattık, burası patlar)
+            // TEST İÇİN KAPATILDI
             /*
             var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.Id == department.FacultyId);
             if (faculty == null || faculty.UniversityId != university.Id)
-                throw new Exception("Seçtiğiniz bölüm, e-posta adresinizin bağlı olduğu üniversiteye ait değil! Lütfen kendi üniversitenizin bölümlerinden birini seçin.");
+                throw new Exception(_localizer["Auth_FacultyMismatch"].Value);
             */
+
             var assignedRole = UserRole.Student;
             if (pendingUser.Email.Contains("@beun.edu.tr"))
             {
@@ -224,14 +227,14 @@ namespace UniVibe.Application.Services
             if (assignedRole == UserRole.Student)
             {
                 if (!request.Grade.HasValue)
-                    throw new Exception(ServicesMessages.AuthMessages.StudentGradeRequired);
+                    throw new Exception(_localizer["Auth_StudentGradeReq"].Value);
 
                 request.Title = null;
             }
             if (assignedRole == UserRole.Teacher)
             {
                 if (string.IsNullOrWhiteSpace(request.Title))
-                    throw new Exception(ServicesMessages.AuthMessages.TeacherTitleRequired);
+                    throw new Exception(_localizer["Auth_TeacherTitleReq"].Value);
 
                 request.Grade = null;
             }
@@ -256,18 +259,19 @@ namespace UniVibe.Application.Services
             };
 
             await _userRepository.AddAsync(newUser);
-             _pendingUserRepository.Delete(pendingUser);
+            _pendingUserRepository.Delete(pendingUser);
             await _unitOfWork.SaveChangesAsync();
 
             var accessToken = _tokenService.GenerateToken(newUser);
             return new LoginResponse(accessToken, newUser.RefreshToken, newUser.FirstName, newUser.LastName);
         }
+
         public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
-                throw new Exception(ServicesMessages.AuthMessages.SessionExpired);
+                throw new Exception(_localizer["Auth_SessionExpired"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
 

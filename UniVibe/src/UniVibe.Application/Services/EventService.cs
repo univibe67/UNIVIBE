@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
@@ -15,31 +16,37 @@ namespace UniVibe.Application.Services
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService, IMapper mapper, IUnitOfWork unitOfWork)
+        public EventService(
+            IEventRepository eventRepository,
+            IEventCategoryRepository categoryRepository,
+            IImageService imageService,
+            IMapper mapper,
+            IUnitOfWork unitOfWork,
+            IStringLocalizer<SharedResources> localizer)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
             _imageService = imageService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _localizer = localizer;
         }
 
         public async Task CreateEventAsync(CreateEventRequest request, Guid userId)
         {
-
-
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
                 e.EventDate > DateTime.UtcNow &&
                 e.IsDeleted == false);
 
             if (hasActiveEvent)
-                throw new Exception(ServicesMessages.EventMessages.HasActiveEvent);
+                throw new Exception(_localizer["Event_HasActiveEvent"].Value);
 
             var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
-                throw new Exception(ServicesMessages.EventMessages.CategoryNotFound);
+                throw new Exception(_localizer["Event_CategoryNotFound"].Value);
 
             string? imageUrl = null;
             string? imagePublicId = null;
@@ -80,23 +87,24 @@ namespace UniVibe.Application.Services
 
             return _mapper.Map<List<EventCategoryResponse>>(categories);
         }
+
         public async Task DeleteEventAsync(Guid eventId, Guid userId)
         {
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e =>e.Id == eventId);
+            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
             if (existingEvent == null)
-                throw new Exception(ServicesMessages.EventMessages.EventNotFound);
+                throw new Exception(_localizer["Event_NotFound"].Value);
 
             if (existingEvent.UserId != userId)
-                throw new Exception(ServicesMessages.EventMessages.UnauthorizedDelete);
+                throw new Exception(_localizer["Event_UnauthorizedDelete"].Value);
 
             var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
 
             if (timeDifference.TotalHours < 0)
-                throw new Exception(ServicesMessages.EventMessages.CannotCancelPastEvent);
+                throw new Exception(_localizer["Event_CannotCancelPast"].Value);
 
             if (timeDifference.TotalHours < 4)
-                throw new Exception(ServicesMessages.EventMessages.CannotCancelTooClose);
+                throw new Exception(_localizer["Event_CannotCancelClose"].Value);
 
             if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
             {
@@ -109,15 +117,16 @@ namespace UniVibe.Application.Services
             existingEvent.IsDeleted = true;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
-             _eventRepository.Update(existingEvent);
+            _eventRepository.Update(existingEvent);
             await _unitOfWork.SaveChangesAsync();
         }
+
         public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
             if (eventEntity == null)
-                throw new Exception("Etkinlik bulunamadı.");
+                throw new Exception(_localizer["Event_NotFound"].Value);
 
             var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
@@ -131,6 +140,7 @@ namespace UniVibe.Application.Services
 
             return EventDetailResponse;
         }
+
         public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)
         {
             var activeEvent = await _eventRepository.GetActiveEventByUserIdAsync(userId);

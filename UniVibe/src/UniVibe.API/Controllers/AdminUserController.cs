@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
@@ -13,10 +14,12 @@ namespace UniVibe.API.Controllers
     public sealed class AdminUserController : ControllerBase
     {
         private readonly IAdminUserService _adminUserService;
+        private readonly IStringLocalizer<SharedResources> _sharedResources;
 
-        public AdminUserController(IAdminUserService adminUserService)
+        public AdminUserController(IAdminUserService adminUserService, IStringLocalizer<SharedResources> sharedResources)
         {
             _adminUserService = adminUserService;
+            _sharedResources = sharedResources;
         }
 
         [HttpGet("all")]
@@ -32,9 +35,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.SuspendUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
+                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Suspended));
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Suspended"].Value));
         }
 
         [HttpPut("activate/{id}")]
@@ -43,21 +46,20 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ActivateUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
+                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Activated));
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Activated"].Value));
         }
 
-        [HttpDelete("delete/{id}")] 
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             var result = await _adminUserService.DeleteUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
+                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
 
-
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.Deleted));
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Deleted"].Value));
         }
 
         [HttpPut("change-role/{id}")]
@@ -66,9 +68,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ChangeUserRoleAsync(id, newRole);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(ResponseMessages.User.NotFound));
+                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.RoleChanged));
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_RoleChanged"].Value));
         }
     }
 }

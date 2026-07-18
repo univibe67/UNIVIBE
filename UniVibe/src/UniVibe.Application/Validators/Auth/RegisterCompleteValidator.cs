@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 
@@ -6,36 +7,38 @@ namespace UniVibe.Application.Validators.Auth
 {
     public class RegisterCompleteValidator : AbstractValidator<RegisterCompleteRequest>
     {
-        public RegisterCompleteValidator()
+        public RegisterCompleteValidator(IStringLocalizer<SharedResources> localizer)
         {
             RuleFor(x => x.Token)
-                .NotEmpty().WithMessage(ValidationMessages.MissingToken);
+                .NotEmpty().WithMessage(x => localizer["Val_MissingToken"].Value);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .MinimumLength(8).WithMessage(ValidationMessages.PasswordMinLength)
-                .Matches(@"[A-Z]").WithMessage(ValidationMessages.PasswordRequiresUppercase)
-                .Matches(@"[0-9]").WithMessage(ValidationMessages.PasswordRequiresDigit);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .MinimumLength(8).WithMessage(x => localizer["Val_PasswordMinLength"].Value)
+                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PasswordReqUppercase"].Value)
+                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PasswordReqDigit"].Value);
 
             RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
 
             RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
+
             RuleFor(x => x.DepartmentId)
-                .NotEmpty().WithMessage(ValidationMessages.SelectDepartment);
+                .NotEmpty().WithMessage(x => localizer["Val_SelectDepartment"].Value);
 
             RuleFor(x => x.PhoneNumber)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .Matches(@"^5\d{9}$").WithMessage(ValidationMessages.InvalidPhone);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .Matches(@"^5\d{9}$").WithMessage(x => localizer["Val_InvalidPhone"].Value);
 
             RuleFor(x => x.Grade)
-                .IsInEnum().WithMessage(ValidationMessages.InvalidGrade);
+                .IsInEnum().WithMessage(x => localizer["Val_InvalidGrade"].Value);
+
             RuleFor(x => x.Username)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
-                .MaximumLength(20).WithMessage(ValidationMessages.MaxLength)
-                .Matches("^[a-zA-Z0-9_]*$").WithMessage(ValidationMessages.InvalidUsernameFormat);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .MinimumLength(3).WithMessage(x => localizer["Val_MinLength"].Value)
+                .MaximumLength(20).WithMessage(x => localizer["Val_MaxLength"].Value)
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage(x => localizer["Val_InvalidUsernameFormat"].Value);
         }
     }
 }

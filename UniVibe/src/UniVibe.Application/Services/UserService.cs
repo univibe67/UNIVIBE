@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
@@ -14,19 +15,27 @@ namespace UniVibe.Application.Services
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public UserService(IUserRepository userRepository, IImageService imageService, IMapper mapper, IUnitOfWork unitOfWork)
+        public UserService(
+            IUserRepository userRepository,
+            IImageService imageService,
+            IMapper mapper,
+            IUnitOfWork unitOfWork,
+            IStringLocalizer<SharedResources> localizer)
         {
             _userRepository = userRepository;
             _imageService = imageService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _localizer = localizer;
         }
+
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
+                throw new Exception(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrEmpty(user.ProfilePicturePublicId))
             {
@@ -44,12 +53,13 @@ namespace UniVibe.Application.Services
 
             return user.ProfilePictureUrl;
         }
+
         public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
+                throw new Exception(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
             {
@@ -59,13 +69,13 @@ namespace UniVibe.Application.Services
                     if (daysSinceLastUpdate < 30)
                     {
                         var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new Exception(string.Format(ServicesMessages.UserMessages.UsernameUpdateWaitTime, remainingDays));
+                        throw new Exception(_localizer["User_UsernameWaitTime", remainingDays].Value);
                     }
                 }
                 var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == updateDto.Username.ToLower());
 
                 if (isUsernameTaken)
-                    throw new Exception(ServicesMessages.UserMessages.UsernameTaken);
+                    throw new Exception(_localizer["User_UsernameTaken"].Value);
 
                 user.Username = updateDto.Username;
                 user.LastUsernameUpdatedAt = DateTime.UtcNow;
@@ -78,30 +88,33 @@ namespace UniVibe.Application.Services
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
         }
+
         public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
         {
             var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
-                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
+                throw new Exception(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<UserProfileResponse>(user);
         }
+
         public async Task<PublicUserProfileResponse> GetProfileByUsernameAsync(string username)
         {
             var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
-                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
+                throw new Exception(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
+
         public async Task DeleteAccountAsync(Guid userId)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
+                throw new Exception(_localizer["User_NotFound"].Value);
 
             user.IsActive = false;
 
@@ -114,6 +127,5 @@ namespace UniVibe.Application.Services
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
         }
-
     }
 }
