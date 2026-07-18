@@ -11,21 +11,46 @@ import {
 import { api } from "../services/api";
 
 interface EventItem {
-  id: string; 
+  id: string;
   title: string;
-  organizerName?: string; 
+  organizerName?: string;
   eventDate: string;
-  status: string | number; 
+  status: string | number;
 }
 
 interface UserItem {
   id: string;
-  firstName: string; 
+  firstName: string;
   lastName: string;
   email: string;
-  role: string | number; 
+  role: string | number;
   isActive: boolean;
 }
+
+const getAdminIdFromToken = () => {
+  try {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+
+    const decoded = JSON.parse(jsonPayload);
+    return decoded[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    ];
+  } catch (error) {
+    console.error("Token çözülemedi", error);
+    return null;
+  }
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"events" | "users">("events");
@@ -33,6 +58,9 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const currentAdminId = getAdminIdFromToken();
+  const safeAdminId = currentAdminId ? currentAdminId.toLowerCase() : null;
 
   const fetchEvents = async () => {
     try {
@@ -62,7 +90,7 @@ export default function AdminDashboard() {
   const handleApproveEvent = async (id: string) => {
     try {
       await api.put(`/AdminEvent/approve/${id}`);
-      fetchEvents(); // Başarılı olursa listeyi yenile
+      fetchEvents();
     } catch (error: any) {
       alert(error || "Onaylama başarısız.");
     }
@@ -105,10 +133,10 @@ export default function AdminDashboard() {
 
   const totalUsers = users.length;
   const pendingEventsCount = events.filter(
-    (e) => e.status === 0 || String(e.status).toLowerCase() === "pending",
+    (e) => e.status === 1 || String(e.status).toLowerCase() === "pending",
   ).length;
   const activeEventsCount = events.filter(
-    (e) => e.status === 1 || String(e.status).toLowerCase() === "approved",
+    (e) => e.status === 2 || String(e.status).toLowerCase() === "approved",
   ).length;
 
   return (
@@ -124,9 +152,7 @@ export default function AdminDashboard() {
             <Users size={28} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Toplam Kullanıcı
-            </p>
+            <p className="text-sm text-gray-500 font-medium">Toplam Kullanıcı</p>
             <p className="text-2xl font-bold text-gray-800">{totalUsers}</p>
           </div>
         </div>
@@ -136,12 +162,8 @@ export default function AdminDashboard() {
             <Clock size={28} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Onay Bekleyen Etkinlik
-            </p>
-            <p className="text-2xl font-bold text-gray-800">
-              {pendingEventsCount}
-            </p>
+            <p className="text-sm text-gray-500 font-medium">Onay Bekleyen Etkinlik</p>
+            <p className="text-2xl font-bold text-gray-800">{pendingEventsCount}</p>
           </div>
         </div>
 
@@ -150,12 +172,8 @@ export default function AdminDashboard() {
             <CalendarDays size={28} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Aktif Etkinlikler
-            </p>
-            <p className="text-2xl font-bold text-gray-800">
-              {activeEventsCount}
-            </p>
+            <p className="text-sm text-gray-500 font-medium">Aktif Etkinlikler</p>
+            <p className="text-2xl font-bold text-gray-800">{activeEventsCount}</p>
           </div>
         </div>
       </div>
@@ -184,188 +202,212 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {activeTab === "events" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-500 text-sm">
-                    <th className="pb-3 font-medium">Etkinlik Adı</th>
-                    <th className="pb-3 font-medium">Düzenleyen</th>
-                    <th className="pb-3 font-medium">Tarih</th>
-                    <th className="pb-3 font-medium">Durum</th>
-                    <th className="pb-3 font-medium text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.length === 0 && !isLoading && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-4 text-center text-gray-500"
-                      >
-                        Kayıtlı etkinlik bulunamadı.
-                      </td>
-                    </tr>
-                  )}
-                  {events.map((event) => {
-                    const statusStr = String(event.status).toLowerCase();
+            <>
+              {events.length === 0 && !isLoading && (
+                <p className="text-center text-gray-500 py-4">Kayıtlı etkinlik bulunamadı.</p>
+              )}
+              
+              <div className="md:hidden space-y-4">
+                {events.map((event) => {
+                  const statusStr = String(event.status).toLowerCase();
+                  const isPending = event.status === 1 || statusStr === "pending";
+                  const isApproved = event.status === 2 || statusStr === "approved";
+                  const isRejected = event.status === 3 || statusStr === "rejected";
 
-                    const isPending =
-                      event.status === 1 || statusStr === "pending";
-                    const isApproved =
-                      event.status === 2 || statusStr === "approved";
-                    const isRejected =
-                      event.status === 3 || statusStr === "rejected";
-
-                    return (
-                      <tr
-                        key={event.id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="py-4 font-medium text-gray-800">
-                          {event.title}
-                        </td>
-                        <td className="py-4 text-gray-600">
-                          {event.organizerName || "Bilinmiyor"}
-                        </td>
-                        <td className="py-4 text-gray-600">
-                          {event.eventDate
-                            ? new Date(event.eventDate).toLocaleDateString(
-                                "tr-TR",
-                                {
-                                  day: "2-digit",
-                                  month: "long",
-                                  year: "numeric",
-                                },
-                              )
-                            : "Tarih Yok"}
-                        </td>
-                        <td className="py-4">
-                          {isPending && (
-                            <span className="bg-orange-100 text-orange-700 py-1 px-3 rounded-full text-xs font-medium">
-                              Bekliyor
-                            </span>
-                          )}
-                          {isApproved && (
-                            <span className="bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-medium">
-                              Onaylandı
-                            </span>
-                          )}
-                          {isRejected && (
-                            <span className="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-medium">
-                              Reddedildi
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 text-right flex justify-end gap-2">
+                  return (
+                    <div key={event.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-800 text-lg">{event.title}</h3>
+                          <p className="text-sm text-gray-500">{event.organizerName || "Bilinmiyor"}</p>
+                        </div>
+                        <div>
+                          {isPending && <span className="bg-orange-100 text-orange-700 py-1 px-3 rounded-full text-xs font-medium">Bekliyor</span>}
+                          {isApproved && <span className="bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-medium">Onaylandı</span>}
+                          {isRejected && <span className="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-medium">Reddedildi</span>}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-50">
+                        <span className="text-sm text-gray-500">
+                          {event.eventDate ? new Date(event.eventDate).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" }) : "Tarih Yok"}
+                        </span>
+                        <div className="flex gap-2">
                           {isPending && (
                             <>
-                              <button
-                                onClick={() => handleApproveEvent(event.id)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Onayla"
-                              >
-                                <CheckCircle size={20} />
-                              </button>
-                              <button
-                                onClick={() => handleRejectEvent(event.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Reddet"
-                              >
-                                <XCircle size={20} />
-                              </button>
+                              <button onClick={() => handleApproveEvent(event.id)} className="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors"><CheckCircle size={20} /></button>
+                              <button onClick={() => handleRejectEvent(event.id)} className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"><XCircle size={20} /></button>
                             </>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-500 text-sm">
+                      <th className="pb-3 font-medium">Etkinlik Adı</th>
+                      <th className="pb-3 font-medium">Düzenleyen</th>
+                      <th className="pb-3 font-medium">Tarih</th>
+                      <th className="pb-3 font-medium">Durum</th>
+                      <th className="pb-3 font-medium text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.map((event) => {
+                      const statusStr = String(event.status).toLowerCase();
+                      const isPending = event.status === 1 || statusStr === "pending";
+                      const isApproved = event.status === 2 || statusStr === "approved";
+                      const isRejected = event.status === 3 || statusStr === "rejected";
+
+                      return (
+                        <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 font-medium text-gray-800">{event.title}</td>
+                          <td className="py-4 text-gray-600">{event.organizerName || "Bilinmiyor"}</td>
+                          <td className="py-4 text-gray-600">
+                            {event.eventDate ? new Date(event.eventDate).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" }) : "Tarih Yok"}
+                          </td>
+                          <td className="py-4">
+                            {isPending && <span className="bg-orange-100 text-orange-700 py-1 px-3 rounded-full text-xs font-medium">Bekliyor</span>}
+                            {isApproved && <span className="bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-medium">Onaylandı</span>}
+                            {isRejected && <span className="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-medium">Reddedildi</span>}
+                          </td>
+                          <td className="py-4 text-right flex justify-end gap-2">
+                            {isPending && (
+                              <>
+                                <button onClick={() => handleApproveEvent(event.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Onayla"><CheckCircle size={20} /></button>
+                                <button onClick={() => handleRejectEvent(event.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reddet"><XCircle size={20} /></button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {activeTab === "users" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-500 text-sm">
-                    <th className="pb-3 font-medium">Kullanıcı</th>
-                    <th className="pb-3 font-medium">E-posta</th>
-                    <th className="pb-3 font-medium">Rol</th>
-                    <th className="pb-3 font-medium">Durum</th>
-                    <th className="pb-3 font-medium text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.length === 0 && !isLoading && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-4 text-center text-gray-500"
-                      >
-                        Kayıtlı kullanıcı bulunamadı.
-                      </td>
-                    </tr>
-                  )}
-                  {users.map((user) => {
-                    const isActive = user.isActive;
+            <>
+              {users.length === 0 && !isLoading && (
+                <p className="text-center text-gray-500 py-4">Kayıtlı kullanıcı bulunamadı.</p>
+              )}
 
-                    return (
-                      <tr
-                        key={user.id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="py-4 font-medium text-gray-800">
-                          {user.firstName} {user.lastName}
-                        </td>
-                        <td className="py-4 text-gray-600">{user.email}</td>
-                        <td className="py-4 text-gray-600">
-                          <span
-                            className={`py-1 px-2 rounded-md text-xs font-medium ${user.role === "Admin" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-700"}`}
-                          >
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-4">
+              {/* MOBİL KULLANICI KARTLARI (< md) */}
+              <div className="md:hidden space-y-4">
+                {users.map((user) => {
+                  const isActive = user.isActive;
+                  const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
+                  
+                  const roleStr = String(user.role).toLowerCase();
+                  const isAdmin = user.role === 3 || roleStr === "admin";
+                  const isTeacher = user.role === 2 || roleStr === "teacher";
+                  const isStudent = user.role === 1 || roleStr === "student";
+                  
+                  const displayRole = isAdmin ? "Admin" : isTeacher ? "Öğretmen" : isStudent ? "Öğrenci" : roleStr;
+
+                  return (
+                    <div key={user.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-800 text-lg">{user.firstName} {user.lastName}</h3>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                        <span className={`py-1 px-2 rounded-md text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : isTeacher ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+                          {displayRole}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-50">
+                        <div>
                           {isActive ? (
-                            <span className="text-green-600 flex items-center gap-1 text-sm">
-                              <CheckCircle size={16} /> Aktif
-                            </span>
+                            <span className="text-green-600 flex items-center gap-1 text-sm"><CheckCircle size={16} /> Aktif</span>
                           ) : (
-                            <span className="text-red-600 flex items-center gap-1 text-sm">
-                              <Ban size={16} /> Banlı
-                            </span>
+                            <span className="text-red-600 flex items-center gap-1 text-sm"><Ban size={16} /> Banlı</span>
                           )}
-                        </td>
-                        <td className="py-4 text-right flex justify-end gap-2">
-                          {user.role !== "Admin" &&
-                            (isActive ? (
-                              <button
-                                onClick={() => handleSuspendUser(user.id)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors ml-auto"
-                              >
-                                <Ban size={16} /> Banla
-                              </button>
+                        </div>
+                        <div className="flex gap-2">
+                          {isCurrentAdmin ? (
+                            <span className="bg-blue-50 text-blue-600 py-1.5 px-3 rounded-lg text-xs font-semibold">Senin Hesabın</span>
+                          ) : isAdmin ? (
+                            <span className="text-gray-400 text-xs py-1.5 px-3 font-medium">Admin Banlanamaz</span>
+                          ) : isActive ? (
+                            <button onClick={() => handleSuspendUser(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 bg-red-50 rounded-lg"><Ban size={16} /> Banla</button>
+                          ) : (
+                            <button onClick={() => handleActivateUser(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-green-600 bg-green-50 rounded-lg"><CheckCircle size={16} /> Kaldır</button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-500 text-sm">
+                      <th className="pb-3 font-medium">Kullanıcı</th>
+                      <th className="pb-3 font-medium">E-posta</th>
+                      <th className="pb-3 font-medium">Rol</th>
+                      <th className="pb-3 font-medium">Durum</th>
+                      <th className="pb-3 font-medium text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => {
+                      const isActive = user.isActive;
+                      const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
+
+                      const roleStr = String(user.role).toLowerCase();
+                      const isAdmin = user.role === 3 || roleStr === "admin";
+                      const isTeacher = user.role === 2 || roleStr === "teacher";
+                      const isStudent = user.role === 1 || roleStr === "student";
+                      
+                      const displayRole = isAdmin ? "Admin" : isTeacher ? "Öğretmen" : isStudent ? "Öğrenci" : roleStr;
+
+                      return (
+                        <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 font-medium text-gray-800">{user.firstName} {user.lastName}</td>
+                          <td className="py-4 text-gray-600">{user.email}</td>
+                          <td className="py-4 text-gray-600">
+                            <span className={`py-1 px-2 rounded-md text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : isTeacher ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+                              {displayRole}
+                            </span>
+                          </td>
+                          <td className="py-4">
+                            {isActive ? (
+                              <span className="text-green-600 flex items-center gap-1 text-sm"><CheckCircle size={16} /> Aktif</span>
                             ) : (
-                              <button
-                                onClick={() => handleActivateUser(user.id)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 border border-green-200 rounded-lg transition-colors ml-auto"
-                              >
-                                <CheckCircle size={16} /> Banı Kaldır
-                              </button>
-                            ))}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              <span className="text-red-600 flex items-center gap-1 text-sm"><Ban size={16} /> Banlı</span>
+                            )}
+                          </td>
+                          <td className="py-4 text-right flex justify-end gap-2">
+                            {isCurrentAdmin ? (
+                              <span className="bg-blue-50 text-blue-600 py-1.5 px-3 rounded-lg text-sm font-semibold cursor-not-allowed ml-auto flex items-center">Senin Hesabın</span>
+                            ) : isAdmin ? (
+                              <span className="text-gray-400 text-sm py-1.5 px-3 ml-auto flex items-center font-medium">Admin Banlanamaz</span>
+                            ) : isActive ? (
+                              <button onClick={() => handleSuspendUser(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors ml-auto"><Ban size={16} /> Banla</button>
+                            ) : (
+                              <button onClick={() => handleActivateUser(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 border border-green-200 rounded-lg transition-colors ml-auto"><CheckCircle size={16} /> Banı Kaldır</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
     </div>
-  );
-}
+  )};

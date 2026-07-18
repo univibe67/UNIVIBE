@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { tokenService } from '../services/tokenService';
 
-// JWT'nin içini açıp Payload (Data) kısmını okuyan fonksiyon
 const decodeToken = (token: string) => {
   try {
     const base64Url = token.split('.')[1];
