@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
@@ -25,7 +26,7 @@ namespace UniVibe.Application.Services
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-                throw new Exception("Kullanıcı bulunamadı.");
+                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
 
             if (!string.IsNullOrEmpty(user.ProfilePicturePublicId))
             {
@@ -48,7 +49,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception("Kullanıcı bulunamadı.");
+                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
 
             if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
             {
@@ -58,13 +59,13 @@ namespace UniVibe.Application.Services
                     if (daysSinceLastUpdate < 30)
                     {
                         var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new Exception($"Kullanıcı adınızı değiştirmek için {remainingDays} gün daha beklemelisiniz.");
+                        throw new Exception(string.Format(ServicesMessages.UserMessages.UsernameUpdateWaitTime, remainingDays));
                     }
                 }
                 var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == updateDto.Username.ToLower());
 
                 if (isUsernameTaken)
-                    throw new Exception("Bu kullanıcı adı zaten kullanılıyor, lütfen başka bir tane belirleyin.");
+                    throw new Exception(ServicesMessages.UserMessages.UsernameTaken);
 
                 user.Username = updateDto.Username;
                 user.LastUsernameUpdatedAt = DateTime.UtcNow;
@@ -82,7 +83,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
-                throw new Exception("Kullanıcı bulunamadı.");
+                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
 
             return _mapper.Map<UserProfileResponse>(user);
         }
@@ -91,7 +92,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
-                throw new Exception("Kullanıcı bulunamadı.");
+                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
 
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
@@ -100,7 +101,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception("Kullanıcı bulunamadı.");
+                throw new Exception(ServicesMessages.UserMessages.UserNotFound);
 
             user.IsActive = false;
 
