@@ -1,8 +1,8 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
-using UniVibe.Application.DTOs.User;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
@@ -16,11 +16,16 @@ namespace UniVibe.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public UsersController(IUserService userService, IValidator<UpdateUserProfileRequest> updateProfileValidator)
+        public UsersController(
+            IUserService userService,
+            IValidator<UpdateUserProfileRequest> updateProfileValidator,
+            IStringLocalizer<SharedResources> localizer)
         {
             _userService = userService;
             _updateProfileValidator = updateProfileValidator;
+            _localizer = localizer;
         }
 
         [HttpPost("upload-profile-picture")]
@@ -45,7 +50,7 @@ namespace UniVibe.API.Controllers
 
             var userId = User.GetUserId();
             await _userService.UpdateProfileAsync(userId, updateDto);
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.ProfileUpdated));
+            return Ok(ApiResponse<string>.Success(_localizer["Res_User_ProfileUpdated"].Value));
         }
 
         [HttpGet("profile")]
@@ -72,7 +77,7 @@ namespace UniVibe.API.Controllers
 
             await _userService.DeleteAccountAsync(userId);
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.User.AccountFrozen));
+            return Ok(ApiResponse<string>.Success(_localizer["Res_User_AccountFrozen"].Value));
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.Interfaces;
@@ -15,12 +16,18 @@ namespace UniVibe.API.Controllers
         private readonly IEventService _eventService;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
         private readonly IValidator<CreateEventRequest> _createEventValidator;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public EventsController(IEventService eventService, IValidator<CreateEventRequest> createEventValidator, IValidator<GetAllEventsRequest> getAllEventsValidator)
+        public EventsController(
+            IEventService eventService,
+            IValidator<CreateEventRequest> createEventValidator,
+            IValidator<GetAllEventsRequest> getAllEventsValidator,
+            IStringLocalizer<SharedResources> localizer)
         {
-            this._eventService = eventService;
+            _eventService = eventService;
             _createEventValidator = createEventValidator;
             _getAllEventsValidator = getAllEventsValidator;
+            _localizer = localizer;
         }
 
         [HttpGet("all-events")]
@@ -54,7 +61,8 @@ namespace UniVibe.API.Controllers
 
             var userId = User.GetUserId();
             await _eventService.CreateEventAsync(createEventDetailResponse, userId);
-            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Created));
+
+            return Ok(ApiResponse<string>.Success(_localizer["Res_Event_Created"].Value));
         }
 
         [HttpDelete("delete-event/{id}")]
@@ -64,7 +72,7 @@ namespace UniVibe.API.Controllers
 
             await _eventService.DeleteEventAsync(id, userId);
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.Event.Deleted));
+            return Ok(ApiResponse<string>.Success(_localizer["Res_Event_Deleted"].Value));
         }
 
         [HttpGet("{id}")]

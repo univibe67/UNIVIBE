@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
@@ -15,13 +16,20 @@ namespace UniVibe.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly IValidator<RegisterInitRequest> _registerInitValidator;
         private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
+        private readonly IStringLocalizer<SharedResources> _sharedResources;
 
-        public AuthController(IAuthService authService, IConfiguration configuration, IValidator<RegisterInitRequest> registerInitValidator, IValidator<RegisterCompleteRequest> registerCompleteValidator)
+        public AuthController(
+            IAuthService authService,
+            IConfiguration configuration,
+            IValidator<RegisterInitRequest> registerInitValidator,
+            IValidator<RegisterCompleteRequest> registerCompleteValidator,
+            IStringLocalizer<SharedResources> sharedResources)
         {
             _authService = authService;
             _configuration = configuration;
             _registerInitValidator = registerInitValidator;
             _registerCompleteValidator = registerCompleteValidator;
+            _sharedResources = sharedResources;
         }
 
         [HttpPost("login")]
@@ -41,7 +49,8 @@ namespace UniVibe.API.Controllers
                 return BadRequest(ApiResponse<string>.Fail(errors));
             }
             await _authService.InitiateRegistrationAsync(request.Email);
-            return Ok(ApiResponse<string>.Success(ResponseMessages.Auth.VerificationLinkSent));
+
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_Auth_LinkSent"].Value));
         }
 
         [HttpGet("verify-token")]
@@ -50,9 +59,9 @@ namespace UniVibe.API.Controllers
             var isValid = await _authService.VerifyTokenAsync(token);
 
             if (!isValid)
-                return BadRequest(ApiResponse<string>.Fail(ResponseMessages.Auth.TokenInvalid));
+                return BadRequest(ApiResponse<string>.Fail(_sharedResources["Res_Auth_TokenInvalid"].Value));
 
-            return Ok(ApiResponse<string>.Success(ResponseMessages.Auth.TokenVerified));
+            return Ok(ApiResponse<string>.Success(_sharedResources["Res_Auth_TokenVerified"].Value));
         }
 
         [HttpPost("complete-registration")]

@@ -30,6 +30,7 @@ app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
+app.UseRequestLocalization();
 app.UseCors("WebFrontendPolicy");
 
 app.UseAuthentication();
