@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
+using UniVibe.Domain.Enums;
 using UniVibe.Infrastructure.Persistence.Context;
 
 namespace UniVibe.Infrastructure.Repositories
@@ -15,7 +16,9 @@ namespace UniVibe.Infrastructure.Repositories
 
             if (onlyActive)
             {
-                query = query.Where(e => e.IsActive && e.EventDate >= DateTime.UtcNow);
+                query = query.Where(e => e.IsActive &&
+                                         e.EventDate >= DateTime.UtcNow &&
+                                         e.Status == EventStatus.Approved);
             }
 
 
