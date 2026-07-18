@@ -35,11 +35,11 @@ namespace UniVibe.Application.Services
                 e.IsDeleted == false);
 
             if (hasActiveEvent)
-                throw new Exception("Aktif bir etkinliğin varken yeni bir tane oluşturamazsın.");
+                throw new Exception(ServicesMessages.EventMessages.HasActiveEvent);
 
             var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
-                throw new Exception("Seçilen kategori bulunamadı!");
+                throw new Exception(ServicesMessages.EventMessages.CategoryNotFound);
 
             string? imageUrl = null;
             string? imagePublicId = null;
@@ -85,18 +85,18 @@ namespace UniVibe.Application.Services
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e =>e.Id == eventId);
 
             if (existingEvent == null)
-                throw new Exception("Etkinlik bulunamadı.");
+                throw new Exception(ServicesMessages.EventMessages.EventNotFound);
 
             if (existingEvent.UserId != userId)
-                throw new Exception("Bu etkinliği silmeye yetkiniz yok.");
+                throw new Exception(ServicesMessages.EventMessages.UnauthorizedDelete);
 
             var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
 
             if (timeDifference.TotalHours < 0)
-                throw new Exception("Başlamış veya geçmiş bir etkinlik iptal edilemez.");
+                throw new Exception(ServicesMessages.EventMessages.CannotCancelPastEvent);
 
             if (timeDifference.TotalHours < 4)
-                throw new Exception("Etkinliğe 4 saatten az bir süre kaldığı için iptal işlemi yapılamaz.");
+                throw new Exception(ServicesMessages.EventMessages.CannotCancelTooClose);
 
             if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
             {

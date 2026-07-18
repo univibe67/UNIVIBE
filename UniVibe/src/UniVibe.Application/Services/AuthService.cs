@@ -1,4 +1,5 @@
-﻿using UniVibe.Application.DTOs.Auth.Requests;
+﻿using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -43,15 +44,14 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            // Kullanıcıyı veritabanından buluyoruz (Eğer IsDeleted = true ise zaten Repository getirmemeli, ama biz yine de güvendeyiz)
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
 
             if (user == null)
-                throw new Exception("E-posta veya şifre hatalı.");
+                throw new Exception(ServicesMessages.AuthMessages.InvalidCredentials);
 
             var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid)
-                throw new Exception("E-posta veya şifre hatalı.");
+                throw new Exception(ServicesMessages.AuthMessages.InvalidCredentials);
 
             if (!user.IsActive)
             {
@@ -66,12 +66,12 @@ namespace UniVibe.Application.Services
                     }
                     else
                     {
-                        throw new Exception("Hesabınızı silmenizin üzerinden 15 günden fazla zaman geçmiş. Lütfen yeni bir hesap açın.");
+                        throw new Exception(ServicesMessages.AuthMessages.AccountDeletedTooLong);
                     }
                 }
                 else
                 {
-                    throw new Exception("Hesabınız topluluk kurallarına uymadığınız için sistem yöneticileri tarafından askıya alınmıştır. İtiraz için lütfen destek ile iletişime geçin.");
+                    throw new Exception(ServicesMessages.AuthMessages.AccountSuspended);
                 }
             }
 
@@ -103,7 +103,7 @@ namespace UniVibe.Application.Services
             {
                 if (existingUser.IsActive)
                 {
-                    throw new Exception("Bu e-posta adresi ile zaten kayıtlı aktif bir kullanıcı bulunuyor.");
+                    throw new Exception(ServicesMessages.AuthMessages.EmailAlreadyActive);
                 }
 
                 if (!existingUser.IsActive && existingUser.DeletedAt.HasValue)
@@ -113,7 +113,7 @@ namespace UniVibe.Application.Services
                     if (gecenSure < 15)
                     {
                         int kalanGun = 15 - (int)gecenSure;
-                        throw new Exception($"Bu e-posta ile silinme sürecinde olan bir hesap var. Hesabınızı 'Giriş Yap' ekranından kurtarabilir veya tamamen silinmesi için {kalanGun} gün bekleyebilirsiniz.");
+                        throw new Exception(ServicesMessages.AuthMessages.AccountInDeletionProcess.Replace("{0}", kalanGun.ToString()));
                     }
                     else
                     {
@@ -167,7 +167,7 @@ namespace UniVibe.Application.Services
             {
                 _pendingUserRepository.Delete(pendingUser);
                 await _unitOfWork.SaveChangesAsync();
-                throw new Exception("Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: " + ex.Message);
+                throw new Exception(ServicesMessages.AuthMessages.EmailSendFailed.Replace("{0}", ex.Message));
             }
 
             return token;
@@ -192,7 +192,7 @@ namespace UniVibe.Application.Services
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
             if (pendingUser == null)
-                throw new Exception("Geçersiz veya süresi dolmuş işlem.");
+                throw new Exception(ServicesMessages.AuthMessages.InvalidOrExpiredToken);
 
             /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
             var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
@@ -203,11 +203,11 @@ namespace UniVibe.Application.Services
 
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
-                throw new Exception("Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.");
+                throw new Exception(ServicesMessages.AuthMessages.UsernameTaken);
 
             var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
             if (department == null)
-                throw new Exception("Seçilen bölüm sistemde bulunamadı.");
+                throw new Exception(ServicesMessages.AuthMessages.DepartmentNotFound);
 
             // TEST İÇİN KAPATILDI: Seçilen bölümün, adamın e-postasındaki üniversiteye ait olup olmadığı kontrolü
             // (Çünkü yukarıdaki university değişkenini kapattık, burası patlar)
@@ -224,14 +224,14 @@ namespace UniVibe.Application.Services
             if (assignedRole == UserRole.Student)
             {
                 if (!request.Grade.HasValue)
-                    throw new Exception("Öğrenciler için sınıf (Grade) bilgisi zorunludur.");
+                    throw new Exception(ServicesMessages.AuthMessages.StudentGradeRequired);
 
                 request.Title = null;
             }
             if (assignedRole == UserRole.Teacher)
             {
                 if (string.IsNullOrWhiteSpace(request.Title))
-                    throw new Exception("Akademisyenler için ünvan (Title) bilgisi zorunludur.");
+                    throw new Exception(ServicesMessages.AuthMessages.TeacherTitleRequired);
 
                 request.Grade = null;
             }
@@ -267,7 +267,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
-                throw new Exception("Oturum süreniz dolmuş. Lütfen tekrar giriş yapınız.");
+                throw new Exception(ServicesMessages.AuthMessages.SessionExpired);
 
             var newAccessToken = _tokenService.GenerateToken(user);
 
