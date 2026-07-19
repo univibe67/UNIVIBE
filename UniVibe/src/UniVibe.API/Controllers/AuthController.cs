@@ -48,7 +48,24 @@ namespace UniVibe.API.Controllers
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<string>.Fail(errors));
             }
-            await _authService.InitiateRegistrationAsync(request.Email);
+
+            var userAgent = Request.Headers["User-Agent"].ToString().ToLower();
+            var clientPlatform = Request.Headers["X-Client-Platform"].ToString().ToLower();
+
+            bool isMobile = clientPlatform == "mobile" || userAgent.Contains("dart") || userAgent.Contains("react-native") || (!userAgent.Contains("mozilla") && !userAgent.Contains("chrome"));
+            string targetUrl;
+            if (isMobile)
+            {
+                string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
+                targetUrl = $"{expoBaseUrl}/--/register-complete";
+            }
+            else
+            {
+                string webBaseUrl = _configuration["WebBaseUrl"] ?? "http://localhost:3000";
+                targetUrl = $"{webBaseUrl}/register-complete";
+            }
+
+            await _authService.InitiateRegistrationAsync(request.Email, targetUrl);
 
             return Ok(ApiResponse<string>.Success(_sharedResources["Res_Auth_LinkSent"].Value));
         }
@@ -72,7 +89,7 @@ namespace UniVibe.API.Controllers
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(errors));
+                return BadRequest(ApiResponse<string>.Fail(string.Join(" • ", errors)));
             }
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
