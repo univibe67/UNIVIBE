@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
+import RegisterComplete from './pages/RegisterComplete';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/" element={<Login />} />
         
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/register-complete" element={<RegisterComplete />} />
         
         <Route element={<ProtectedRoute allowedRole="Admin" />}>
           <Route path="/admin" element={<AdminLayout />}>

@@ -95,7 +95,7 @@ namespace UniVibe.Application.Services
             return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
         }
 
-        public async Task<string> InitiateRegistrationAsync(string email)
+        public async Task<string> InitiateRegistrationAsync(string email, string targetUrl)
         {
             // CANLIYA CIKARKEN ACILACAK: Sadece .edu.tr uzantılı mailleri kabul etme kurali
             /*
@@ -162,10 +162,11 @@ namespace UniVibe.Application.Services
                 var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
 
                 string webBridgeLink = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}";
+                string finalLink = $"{targetUrl}?token={token}";
 
                 string subject = _localizer["Auth_RegisterEmailSubject"].Value;
                 string template = _localizer["Auth_RegisterEmailBody"].Value;
-                string mailBody = string.Format(template, webBridgeLink);
+                string mailBody = string.Format(template, finalLink);
 
                 await _emailService.SendEmailAsync(email, "UniVibe Kayıt Onayı", mailBody);
             }
@@ -187,7 +188,6 @@ namespace UniVibe.Application.Services
                 return false;
             }
 
-            pendingUser.IsUsed = true;
             _pendingUserRepository.Update(pendingUser);
             await _unitOfWork.SaveChangesAsync();
 
@@ -196,9 +196,11 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
-            var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && u.IsUsed);
+            var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && !u.IsUsed);
             if (pendingUser == null)
                 throw new Exception(_localizer["Auth_InvalidToken"].Value);
+            if (pendingUser.ExpiryDate < DateTime.UtcNow)
+                throw new Exception(_localizer["Auth_TokenExpired"].Value);
 
             /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
             var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
