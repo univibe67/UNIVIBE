@@ -7,6 +7,9 @@ using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace UniVibe.Application.Services
 {
@@ -150,7 +153,7 @@ namespace UniVibe.Application.Services
             {
                 Email = email,
                 Token = token,
-                ExpiryDate = DateTime.UtcNow.AddMinutes(5),
+                ExpiryDate = DateTime.UtcNow.AddMinutes(15), // 15 dakika yapıldı
                 IsUsed = false
             };
 
@@ -160,15 +163,23 @@ namespace UniVibe.Application.Services
             try
             {
                 var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
+                string linkForEmail;
 
-                string webBridgeLink = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}";
-                string finalLink = $"{targetUrl}?token={token}";
+                // Webden mi Mobilden mi geldiğini anlayan akıllı yönlendirme (Web Bridge)
+                if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    linkForEmail = $"{targetUrl}?token={token}";
+                }
+                else
+                {
+                    linkForEmail = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}&redirectUrl={Uri.EscapeDataString(targetUrl)}";
+                }
 
                 string subject = _localizer["Auth_RegisterEmailSubject"].Value;
                 string template = _localizer["Auth_RegisterEmailBody"].Value;
-                string mailBody = string.Format(template, finalLink);
+                string mailBody = string.Format(template, linkForEmail);
 
-                await _emailService.SendEmailAsync(email, "UniVibe Kayıt Onayı", mailBody);
+                await _emailService.SendEmailAsync(email, subject, mailBody);
             }
             catch (Exception ex)
             {
@@ -187,15 +198,15 @@ namespace UniVibe.Application.Services
             {
                 return false;
             }
-
-            _pendingUserRepository.Update(pendingUser);
-            await _unitOfWork.SaveChangesAsync();
-
             return true;
         }
 
         public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
+            // React Native boş gönderirse patlamaması için koruma
+            if (string.IsNullOrWhiteSpace(request.Token))
+                throw new Exception(_localizer["Auth_InvalidToken"].Value);
+
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && !u.IsUsed);
             if (pendingUser == null)
                 throw new Exception(_localizer["Auth_InvalidToken"].Value);
@@ -290,6 +301,7 @@ namespace UniVibe.Application.Services
 
             return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
         }
+
         public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -323,6 +335,9 @@ namespace UniVibe.Application.Services
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Token))
+                throw new Exception(_localizer["Auth_InvalidOrExpiredToken"].Value);
+
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
