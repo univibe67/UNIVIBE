@@ -17,6 +17,8 @@ namespace UniVibe.Domain.Entities
         public string? Bio { get; set; }
         public string? SocialMediaLink { get; set; }
         public string? RefreshToken { get; set; }
+        public string? PasswordResetToken { get; set; }
+        public DateTime? ResetTokenExpires { get; set; }
         public string? Title { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public DateTime? DeletedAt { get; set; }
