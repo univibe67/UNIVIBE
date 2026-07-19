@@ -3,18 +3,11 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { tokenService } from '../services/tokenService';
-import { GraduationCap, AlertCircle, ChevronDown, X, ShieldAlert } from 'lucide-react';
+import { GraduationCap, AlertCircle, ChevronDown } from 'lucide-react';
 
-const GRADES = [
-  { id: 0, name: "Hazırlık" },
-  { id: 1, name: "1. Sınıf" },
-  { id: 2, name: "2. Sınıf" },
-  { id: 3, name: "3. Sınıf" },
-  { id: 4, name: "4. Sınıf" },
-  { id: 5, name: "5. Sınıf" },
-  { id: 6, name: "6. Sınıf" },
-  { id: 7, name: "Mezun" },
-];
+import { useRegistrationData } from '../hooks/useRegistrationData';
+import { TokenCheckingView, TokenErrorView } from '../components/TokenStatusViews';
+import { SelectionModal } from '../components/SelectionModal';
 
 export default function RegisterComplete() {
   const { t } = useTranslation();
@@ -23,7 +16,6 @@ export default function RegisterComplete() {
 
   const token = searchParams.get('token') || '';
 
-  // 🌟 Token Durum Kontrolü İçin Stateler
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [tokenErrorMessage, setTokenErrorMessage] = useState('');
 
@@ -32,66 +24,42 @@ export default function RegisterComplete() {
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [grade, setGrade] = useState<any>(null);
-
-  const [universities, setUniversities] = useState<any[]>([]);
-  const [faculties, setFaculties] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-
-  const [selectedUni, setSelectedUni] = useState<any>(null);
-  const [selectedFac, setSelectedFac] = useState<any>(null);
-  const [selectedDep, setSelectedDep] = useState<any>(null);
-
-  const [modalType, setModalType] = useState<'grade' | 'uni' | 'fac' | 'dep' | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 🌟 SAYFA AÇILDIĞINDA TOKEN GEÇERLİLİK KONTROLÜ
+  const {
+    selectedUni,
+    selectedFac,
+    selectedDep,
+    grade,
+    modalType,
+    isModalOpen,
+    setModalType,
+    setIsModalOpen,
+    getModalData,
+    handleSelectModalItem,
+  } = useRegistrationData(t);
+
   useEffect(() => {
     const checkTokenValidity = async () => {
       if (!token) {
         setIsTokenValid(false);
-        setTokenErrorMessage("Geçersiz veya eksik bağlantı.");
+        setTokenErrorMessage(t('RegComplete_InvalidLinkTitle'));
         return;
       }
 
       try {
-        // Backend'deki verify-token endpoint'ine soruyoruz
         await api.get(`/Auth/verify-token?token=${token}`);
-        setIsTokenValid(true); // Token sağlam, form açılabilir
+        setIsTokenValid(true); 
       } catch (err: any) {
-        setIsTokenValid(false); // Token yanmış, kullanılmış veya süresi dolmuş!
+        setIsTokenValid(false);
         setTokenErrorMessage("Bu bağlantı geçerliliğini yitirmiştir, süresi dolmuş veya daha önce kullanılmıştır.");
       }
     };
 
     checkTokenValidity();
-  }, [token]);
-
-  // Üniversiteleri çekme
-  useEffect(() => {
-    api.get("/University")
-      .then((res: any) => setUniversities(res.data || res))
-      .catch(() => setUniversities([]));
-  }, []);
-
-  useEffect(() => {
-    if (selectedUni) {
-      api.get(`/University/${selectedUni.id}/faculties`)
-        .then((res: any) => setFaculties(res.data || res))
-        .catch(() => setFaculties([]));
-    }
-  }, [selectedUni]);
-
-  useEffect(() => {
-    if (selectedFac) {
-      api.get(`/University/faculties/${selectedFac.id}/departments`)
-        .then((res: any) => setDepartments(res.data || res))
-        .catch(() => setDepartments([]));
-    }
-  }, [selectedFac]);
+  }, [token, t]);
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,8 +93,6 @@ export default function RegisterComplete() {
         navigate('/');
       }
     } catch (err: any) {
-      console.log("YAKALANAN HATA:", err);
-
       let rawMessage = "Kayıt tamamlama başarısız.";
 
       if (typeof err === "string") {
@@ -154,52 +120,26 @@ export default function RegisterComplete() {
         .join(' • ');
 
       setErrorMessage(finalMessage);
-    }finally {
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const getModalData = () => {
-    switch (modalType) {
-      case 'grade': return GRADES;
-      case 'uni': return universities;
-      case 'fac': return faculties;
-      case 'dep': return departments;
-      default: return [];
-    }
-  };
-
-  // 🌟 1. DURUM: TOKEN KONTROL EDİLİYOR (Yükleniyor Ekranı)
   if (isTokenValid === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-medium">
-        Bağlantı kontrol ediliyor...
-      </div>
-    );
+    return <TokenCheckingView message={t('RegComplete_Checking')} />;
   }
 
-  // 🌟 2. DURUM: TOKEN GEÇERSİZ VEYA KULLANILMIŞ (Formu Göstermiyoruz!)
   if (isTokenValid === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-        <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl p-8 text-center space-y-4 shadow-2xl">
-          <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center text-red-600">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">Bağlantı Geçersiz</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">{tokenErrorMessage}</p>
-          <button 
-            onClick={() => navigate('/')} 
-            className="w-full bg-gray-900 text-white font-medium py-2.5 rounded-lg hover:bg-black transition-all mt-4"
-          >
-            Giriş Sayfasına Dön
-          </button>
-        </div>
-      </div>
+      <TokenErrorView 
+        title={t('RegComplete_InvalidLinkTitle')}
+        errorMessage={tokenErrorMessage}
+        buttonText={t('RegComplete_BackToLogin')}
+        onBackToLogin={() => navigate('/')}
+      />
     );
   }
 
-  // 🌟 3. DURUM: TOKEN SAĞLAM (Kayıt Formu Ekranda)
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
       <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl p-8 space-y-6 shadow-2xl shadow-purple-500/20">
@@ -283,44 +223,14 @@ export default function RegisterComplete() {
         </form>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[70vh] flex flex-col shadow-2xl overflow-hidden">
-            
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800">
-                {modalType === 'uni' ? t('RegComplete_SelectUni') : modalType === 'fac' ? t('RegComplete_SelectFac') : modalType === 'dep' ? t('RegComplete_SelectDep') : t('RegComplete_SelectGrade')}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto p-2 divide-y divide-gray-50">
-              {getModalData().map((item, idx) => (
-                <button
-                  key={item.id || idx}
-                  onClick={() => {
-                    if (modalType === 'grade') setGrade(item);
-                    else if (modalType === 'uni') { setSelectedUni(item); setSelectedFac(null); setSelectedDep(null); }
-                    else if (modalType === 'fac') { setSelectedFac(item); setSelectedDep(null); }
-                    else if (modalType === 'dep') setSelectedDep(item);
-                    setIsModalOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-purple-50 hover:text-purple-700 rounded-lg text-sm transition-colors font-medium text-gray-700"
-                >
-                  {item.name}
-                </button>
-              ))}
-              {getModalData().length === 0 && (
-                <p className="text-center text-gray-400 py-8 text-sm">Önce üst seçimi yapmalısınız.</p>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
-
+      <SelectionModal 
+        isOpen={isModalOpen}
+        modalType={modalType}
+        data={getModalData()}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={handleSelectModalItem}
+        t={t}
+      />
     </div>
   );
 }

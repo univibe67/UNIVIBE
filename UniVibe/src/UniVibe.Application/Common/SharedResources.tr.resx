@@ -300,4 +300,13 @@
   <data name="Auth_ResetEmailBody" xml:space="preserve">
     <value>&lt;div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'&gt;&lt;h2 style='color: #4F46E5;'&gt;UniVibe Şifre Sıfırlama&lt;/h2&gt;&lt;p&gt;Hesabının şifresini yenilemek için talepte bulundun. Şifreni sıfırlamak üzere aşağıdaki bağlantıya tıklayabilirsin:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; margin: 10px 0;'&gt;Şifremi Sıfırla&lt;/a&gt;&lt;p style='color: #666; font-size: 14px;'&gt;Bu bağlantı güvenlik nedeniyle &lt;strong&gt;15 dakika&lt;/strong&gt; geçerlidir.&lt;/p&gt;&lt;br&gt;&lt;small style='color: #999;'&gt;Eğer bu talebi sen yapmadıysan, bu e-postayı dikkate almayabilirsin.&lt;/small&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;Buton çalışmıyorsa bu bağlantıyı tarayıcına yapıştırabilirsin: &lt;br&gt;{0}&lt;/small&gt;&lt;/div&gt;</value>
   </data>
+  <data name="Auth_RedirectTitle" xml:space="preserve">
+    <value>UniVibe'a Yönlendiriliyorsunuz</value>
+  </data>
+  <data name="Auth_RedirectMessage" xml:space="preserve">
+    <value>E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.</value>
+  </data>
+  <data name="Auth_RedirectButton" xml:space="preserve">
+    <value>UniVibe Uygulamasını Aç</value>
+  </data>
 </root>

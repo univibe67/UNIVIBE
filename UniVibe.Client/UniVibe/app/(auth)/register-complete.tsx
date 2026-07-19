@@ -60,16 +60,27 @@ export default function RegisterCompleteScreen() {
 
   useEffect(() => {
     const init = async () => {
+      console.log("--> Gelen Token Parametresi:", token);
       try {
-        await api.get(`/Auth/verify-token?token=${token}`);
-        const res = await api.get("/University");
-        setUniversities(res);
-      } catch {
-        Alert.alert("Hata", "Token geçersiz.");
+        const verifyRes = await api.get(`/Auth/verify-token?token=${token}`);
+        console.log("--> Token Doğrulama Başarılı:", verifyRes);
+
+        const res: any = await api.get("/University");
+        setUniversities(res.data || res);
+      } catch (err: any) {
+        console.log(
+          "--> Token Doğrulama VEYA Üniversite Çekme Hatası:",
+          err.response?.data || err.message,
+        );
+        Alert.alert("Hata", "Token geçersiz veya süresi dolmuş.");
         router.replace("/(auth)/register");
       }
     };
-    init();
+    if (token) {
+      init();
+    } else {
+      console.log("--> HATA: Hiç token gelmedi!");
+    }
   }, [token]);
 
   useEffect(() => {
@@ -95,7 +106,7 @@ export default function RegisterCompleteScreen() {
     }
     setIsSubmitting(true);
     try {
-      await api.post("/Auth/complete-registration", {
+      const response: any = await api.post("/Auth/complete-registration", {
         token,
         username,
         password,
@@ -105,11 +116,20 @@ export default function RegisterCompleteScreen() {
         departmentId: selectedDep.id,
         grade: selectedGrade.id,
       });
+
+      const accessToken = response.token || response.data?.token;
+      const refreshToken = response.refreshToken || response.data?.refreshToken;
+
+      if (accessToken) {
+        loginAction(accessToken, refreshToken, firstName, lastName);
+      }
+
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Hata", "Kayıt tamamlanamadı.");
+      Alert.alert("Hata", "Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (

@@ -14,12 +14,12 @@ namespace UniVibe.API.Controllers
     public sealed class AdminUserController : ControllerBase
     {
         private readonly IAdminUserService _adminUserService;
-        private readonly IStringLocalizer<SharedResources> _sharedResources;
+        private readonly IStringLocalizer<SharedResources> _localization;
 
         public AdminUserController(IAdminUserService adminUserService, IStringLocalizer<SharedResources> sharedResources)
         {
             _adminUserService = adminUserService;
-            _sharedResources = sharedResources;
+            _localization = sharedResources;
         }
 
         [HttpGet("all")]
@@ -35,9 +35,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.SuspendUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
+                return NotFound(ApiResponse<string>.Fail(_localization["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Suspended"].Value));
+            return Ok(ApiResponse<string>.Success(_localization["Res_User_Suspended"].Value));
         }
 
         [HttpPut("activate/{id}")]
@@ -46,9 +46,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ActivateUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
+                return NotFound(ApiResponse<string>.Fail(_localization["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Activated"].Value));
+            return Ok(ApiResponse<string>.Success(_localization["Res_User_Activated"].Value));
         }
 
         [HttpDelete("delete/{id}")]
@@ -57,9 +57,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.DeleteUserAsync(id);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
+                return NotFound(ApiResponse<string>.Fail(_localization["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_Deleted"].Value));
+            return Ok(ApiResponse<string>.Success(_localization["Res_User_Deleted"].Value));
         }
 
         [HttpPut("change-role/{id}")]
@@ -68,9 +68,9 @@ namespace UniVibe.API.Controllers
             var result = await _adminUserService.ChangeUserRoleAsync(id, newRole);
 
             if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_User_NotFound"].Value));
+                return NotFound(ApiResponse<string>.Fail(_localization["Res_User_NotFound"].Value));
 
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_User_RoleChanged"].Value));
+            return Ok(ApiResponse<string>.Success(_localization["Res_User_RoleChanged"].Value));
         }
     }
 }

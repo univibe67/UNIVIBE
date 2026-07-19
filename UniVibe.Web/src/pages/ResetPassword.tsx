@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Lock, KeyRound, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, KeyRound, AlertCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import { ResetSuccessView } from '../components/ResetSuccessView';
 
 export default function ResetPassword() {
   const { t } = useTranslation();
@@ -80,25 +81,7 @@ export default function ResetPassword() {
         )}
 
         {isSuccess ? (
-          <div className="space-y-6 text-center py-4">
-            <div className="w-16 h-16 mx-auto bg-green-100 text-green-600 rounded-full flex items-center justify-center animate-bounce">
-              <CheckCircle className="w-10 h-10" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-gray-800">
-                {t('Reset_SuccessTitle') || 'Şifreniz Başarıyla Güncellendi!'}
-              </h3>
-              <p className="text-sm text-gray-500">
-                {t('Reset_SuccessDesc') || 'Yeni şifrenizle artık giriş yapabilirsiniz.'}
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium py-2.5 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md shadow-pink-500/30 flex items-center justify-center gap-2"
-            >
-              {t('Reset_LoginButton') || 'Giriş Sayfasına Dön'} <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <ResetSuccessView onNavigateHome={() => navigate('/')} t={t} />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             

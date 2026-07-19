@@ -300,4 +300,13 @@
   <data name="Auth_ResetEmailBody" xml:space="preserve">
     <value>&lt;div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'&gt;&lt;h2 style='color: #4F46E5;'&gt;UniVibe Password Reset&lt;/h2&gt;&lt;p&gt;You requested to reset your password. You can click the link below to reset it:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; margin: 10px 0;'&gt;Reset My Password&lt;/a&gt;&lt;p style='color: #666; font-size: 14px;'&gt;This link is valid for &lt;strong&gt;15 minutes&lt;/strong&gt; for security reasons.&lt;/p&gt;&lt;br&gt;&lt;small style='color: #999;'&gt;If you didn't request this, you can safely ignore this email.&lt;/small&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;If the button doesn't work, you can paste this link into your browser: &lt;br&gt;{0}&lt;/small&gt;&lt;/div&gt;</value>
   </data>
+  <data name="Auth_RedirectTitle" xml:space="preserve">
+    <value>Redirecting to UniVibe</value>
+  </data>
+  <data name="Auth_RedirectMessage" xml:space="preserve">
+    <value>Your email address has been successfully verified! Click the button below to complete the registration process.</value>
+  </data>
+  <data name="Auth_RedirectButton" xml:space="preserve">
+    <value>Open UniVibe App</value>
+  </data>
 </root>
