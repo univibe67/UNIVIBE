@@ -60,26 +60,17 @@ export default function RegisterCompleteScreen() {
 
   useEffect(() => {
     const init = async () => {
-      console.log("--> Gelen Token Parametresi:", token);
       try {
-        const verifyRes = await api.get(`/Auth/verify-token?token=${token}`);
-        console.log("--> Token Doğrulama Başarılı:", verifyRes);
+        await api.get(`/Auth/verify-token?token=${token}`);
 
         const res: any = await api.get("/University");
         setUniversities(res.data || res);
       } catch (err: any) {
-        console.log(
-          "--> Token Doğrulama VEYA Üniversite Çekme Hatası:",
-          err.response?.data || err.message,
-        );
-        Alert.alert("Hata", "Token geçersiz veya süresi dolmuş.");
         router.replace("/(auth)/register");
       }
     };
     if (token) {
       init();
-    } else {
-      console.log("--> HATA: Hiç token gelmedi!");
     }
   }, [token]);
 
@@ -87,7 +78,16 @@ export default function RegisterCompleteScreen() {
     if (selectedUni) {
       api
         .get(`/University/${selectedUni.id}/faculties`)
-        .then((res: any) => setFaculties(res));
+        .then((res: any) => {
+          setFaculties(res.data || res);
+        })
+        .catch((err: any) => {
+          setFaculties([]);
+        });
+    } else {
+      setFaculties([]);
+      setSelectedFac(null);
+      setSelectedDep(null);
     }
   }, [selectedUni]);
 
@@ -95,7 +95,15 @@ export default function RegisterCompleteScreen() {
     if (selectedFac) {
       api
         .get(`/University/faculties/${selectedFac.id}/departments`)
-        .then((res: any) => setDepartments(res));
+        .then((res: any) => {
+          setDepartments(res.data || res);
+        })
+        .catch((err: any) => {
+          setDepartments([]);
+        });
+    } else {
+      setDepartments([]);
+      setSelectedDep(null);
     }
   }, [selectedFac]);
 
@@ -126,7 +134,14 @@ export default function RegisterCompleteScreen() {
 
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Hata", "Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
+      const errorMessage =
+        e.response?.data?.message || e.response?.data || e.message;
+      Alert.alert(
+        "Hata",
+        typeof errorMessage === "string"
+          ? errorMessage
+          : "Kayıt tamamlanamadı. Lütfen tekrar deneyin.",
+      );
     } finally {
       setIsSubmitting(false);
     }
