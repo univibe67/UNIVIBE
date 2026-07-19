@@ -60,14 +60,22 @@ export default function Login() {
   };
 
   const isStudent = userType === 'student';
-  const bgClass = isStudent ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" : "bg-gray-50";
-  const boxClass = isStudent ? "bg-white/95 backdrop-blur-sm shadow-2xl shadow-purple-500/20" : "bg-white shadow-xl";
-  const titleClass = isStudent ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600" : "text-blue-600";
-  const buttonClass = isStudent ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-pink-500/30" : "bg-blue-600 hover:bg-blue-700";
+  const bgClass = isStudent 
+    ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" 
+    : "bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500";
+  const boxClass = isStudent 
+    ? "bg-white/95 backdrop-blur-sm shadow-2xl shadow-purple-500/20" 
+    : "bg-white/95 backdrop-blur-sm shadow-2xl shadow-blue-500/20";
+  const titleClass = isStudent 
+    ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600" 
+    : "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600";
+  const buttonClass = isStudent 
+    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-pink-500/30" 
+    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md shadow-blue-500/30";
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 transition-all duration-700 ease-in-out ${bgClass}`}>
-      <div className="absolute top-6 right-6 flex bg-white/20 backdrop-blur-md rounded-lg p-1 border border-white/30">
+      <div className="absolute top-6 right-6 flex bg-white/20 backdrop-blur-md rounded-lg p-1 border border-black/30">
         <button onClick={() => i18n.changeLanguage('tr')} className={`px-3 py-1 rounded text-sm font-bold ${i18n.language === 'tr' ? 'bg-white text-gray-800 shadow' : 'text-white'}`}>TR</button>
         <button onClick={() => i18n.changeLanguage('en')} className={`px-3 py-1 rounded text-sm font-bold ${i18n.language === 'en' ? 'bg-white text-gray-800 shadow' : 'text-white'}`}>EN</button>
       </div>
