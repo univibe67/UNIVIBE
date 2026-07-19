@@ -118,17 +118,7 @@ export default function AdminDashboard() {
       return true;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.eventDate).getTime();
-      const dateB = new Date(b.eventDate).getTime();
-      const now = new Date().getTime();
-
-      const isPastA = dateA < now;
-      const isPastB = dateB < now;
-
-      if (isPastA && !isPastB) return 1;
-      if (!isPastA && isPastB) return -1;
-
-      return dateA - dateB;
+      return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
     });
 
   const totalEventPages = Math.ceil(processedEvents.length / eventsPerPage);
