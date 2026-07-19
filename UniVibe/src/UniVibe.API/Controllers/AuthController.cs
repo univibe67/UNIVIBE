@@ -105,11 +105,13 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("verify-redirect")]
-        public IActionResult VerifyRedirect([FromQuery] string token, [FromQuery] string redirectUrl)
+        public IActionResult VerifyRedirect([FromQuery] string token, [FromQuery] string? redirectUrl = null)
         {
-            string linkToOpen = string.IsNullOrEmpty(redirectUrl)
-                ? $"{_configuration["ExpoBaseUrl"]}/--/register-complete?token={token}"
-                : $"{redirectUrl}?token={token}";
+            string target = string.IsNullOrEmpty(redirectUrl)
+                ? $"{_configuration["ExpoBaseUrl"] ?? "exp://localhost:8081"}/--/register-complete"
+                : redirectUrl;
+
+            string linkToOpen = $"{target}?token={token}";
 
             string title = _localization["Auth_RedirectTitle"].Value ?? "UniVibe'a Yönlendiriliyorsunuz";
             string message = _localization["Auth_RedirectMessage"].Value ?? "E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.";
