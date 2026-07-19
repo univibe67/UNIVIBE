@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Localization;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
@@ -21,6 +22,7 @@ namespace UniVibe.Application.Services
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IConfiguration _configuration;
 
         public AuthService(
             IPendingUserRepository pendingUserRepository,
@@ -32,7 +34,8 @@ namespace UniVibe.Application.Services
             IUniversityRepository universityRepository,
             IFacultyRepository facultyRepository,
             IUnitOfWork unitOfWork,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IConfiguration configuration)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -44,11 +47,12 @@ namespace UniVibe.Application.Services
             _facultyRepository = facultyRepository;
             _unitOfWork = unitOfWork;
             _localizer = localizer;
+            _configuration = configuration;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
                 throw new Exception(_localizer["Auth_InvalidCredentials"].Value);
@@ -155,14 +159,13 @@ namespace UniVibe.Application.Services
 
             try
             {
-                string webBridgeLink = $"http://192.168.1.110:5000/api/Auth/verify-redirect?token={token}";
+                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
 
-                string mailBody = $@"
-                    <h3>UniVibe'a Hoş Geldin!</h3>
-                    <p>Kampüsün nabzını tutmaya çok az kaldı. Kaydını tamamlamak için lütfen aşağıdaki bağlantıya tıkla:</p>
-                    <a href='{webBridgeLink}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;'>Hesabımı Doğrula</a>
-                    <br><br>
-                    <small>Eğer buton çalışmazsa bu linki tarayıcına yapıştırabilirsin: {webBridgeLink}</small>";
+                string webBridgeLink = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}";
+
+                string subject = _localizer["Auth_RegisterEmailSubject"].Value;
+                string template = _localizer["Auth_RegisterEmailBody"].Value;
+                string mailBody = string.Format(template, webBridgeLink);
 
                 await _emailService.SendEmailAsync(email, "UniVibe Kayıt Onayı", mailBody);
             }
@@ -284,6 +287,54 @@ namespace UniVibe.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
+        }
+        public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (user == null) return;
+
+            var resetToken = Guid.NewGuid().ToString();
+            user.PasswordResetToken = resetToken;
+            user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
+
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : "http://localhost:3000/reset-password";
+
+            var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
+
+            string subject = _localizer["Auth_ResetEmailSubject"].Value;
+            string template = _localizer["Auth_ResetEmailBody"].Value;
+            string mailBody = string.Format(template, resetLink);
+
+            try
+            {
+                await _emailService.SendEmailAsync(user.Email, subject, mailBody);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+            }
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
+            {
+                throw new Exception(_localizer["Auth_InvalidOrExpiredToken"].Value);
+            }
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+
+            user.PasswordResetToken = null;
+            user.ResetTokenExpires = null;
+
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
         }
     }
 }

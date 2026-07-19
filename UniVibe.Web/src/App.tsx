@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -10,6 +11,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        
+        <Route path="/reset-password" element={<ResetPassword />} />
         
         <Route element={<ProtectedRoute allowedRole="Admin" />}>
           <Route path="/admin" element={<AdminLayout />}>

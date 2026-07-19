@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Lock, LogIn, User, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, User, ShieldCheck, Key, X, Send, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
@@ -20,12 +20,21 @@ const decodeToken = (token: string) => {
 
 export default function Login() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'admin' | 'student'>('student');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState({ type: '', text: '' });
+
+  const isStudent = userType === 'student';
+  const themeColor = isStudent ? 'purple' : 'blue';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +45,8 @@ export default function Login() {
       const response = await api.post('/Auth/login', { email, password }) as any;
       const token = response.token || response.data?.token;
       const refreshToken = response.refreshToken || response.data?.refreshToken;
-      if (!token) {
-        throw new Error(t('Login_Error_NoToken'));
-      }
+      if (!token) throw new Error(t('Login_Error_NoToken'));
+      
       const decoded = decodeToken(token);
       const userRole = decoded?.role || decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
       
@@ -59,30 +67,43 @@ export default function Login() {
     }
   };
 
-  const isStudent = userType === 'student';
-  const bgClass = isStudent 
-    ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" 
-    : "bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500";
-  const boxClass = isStudent 
-    ? "bg-white/95 backdrop-blur-sm shadow-2xl shadow-purple-500/20" 
-    : "bg-white/95 backdrop-blur-sm shadow-2xl shadow-blue-500/20";
-  const titleClass = isStudent 
-    ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600" 
-    : "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600";
-  const buttonClass = isStudent 
-    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-pink-500/30" 
-    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md shadow-blue-500/30";
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotMessage({ type: '', text: '' });
+
+    try {
+      const resetUrl = `${window.location.origin}/reset-password`;
+      
+      const response = await api.post('/Auth/forgot-password', { 
+        email: forgotEmail, 
+        resetUrl: resetUrl 
+      }) as any;
+
+      setForgotMessage({ type: 'success', text: response.message || response.data?.message || t('Forgot_SuccessMessage') });
+    } catch (err: any) {
+      setForgotMessage({ type: 'error', text: err.response?.data?.message || err.message || t('Forgot_ErrorMessage') });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const bgClass = isStudent ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" : "bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-500";
+  const boxClass = isStudent ? "shadow-purple-500/20" : "shadow-blue-500/20";
+  const titleClass = isStudent ? "from-purple-600 to-pink-600" : "from-blue-600 to-purple-600";
+  const buttonClass = isStudent ? "from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-pink-500/30" : "from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-blue-500/30";
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 transition-all duration-700 ease-in-out ${bgClass}`}>
-      <div className="absolute top-6 right-6 flex bg-white/20 backdrop-blur-md rounded-lg p-1 border border-black/30">
+    <div className={`min-h-screen relative flex items-center justify-center p-4 transition-all duration-700 ease-in-out ${bgClass}`}>
+      
+      <div className="absolute top-6 right-6 flex bg-white/20 backdrop-blur-md rounded-lg p-1 border border-black/30 z-10">
         <button onClick={() => i18n.changeLanguage('tr')} className={`px-3 py-1 rounded text-sm font-bold ${i18n.language === 'tr' ? 'bg-white text-gray-800 shadow' : 'text-white'}`}>TR</button>
         <button onClick={() => i18n.changeLanguage('en')} className={`px-3 py-1 rounded text-sm font-bold ${i18n.language === 'en' ? 'bg-white text-gray-800 shadow' : 'text-white'}`}>EN</button>
       </div>
 
-      <div className={`max-w-md w-full rounded-2xl p-8 space-y-6 transition-all duration-500 ${boxClass}`}>
+      <div className={`max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl p-8 space-y-6 shadow-2xl transition-all duration-500 ${boxClass}`}>
         <div className="text-center space-y-2">
-          <h1 className={`text-3xl font-bold transition-colors duration-500 ${titleClass}`}>UniVibe</h1>
+          <h1 className={`text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r transition-colors duration-500 ${titleClass}`}>UniVibe</h1>
           <p className="text-gray-500">{t('Login_SelectType')}</p>
         </div>
 
@@ -102,23 +123,99 @@ export default function Login() {
             <label className="text-sm font-medium text-gray-700">{t('Login_Email')}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Mail className="h-5 w-5 text-gray-400" /></div>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all ${isStudent ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-blue-500 focus:border-blue-500'}`} placeholder="ornek@univibe.com" required />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all focus:ring-${themeColor}-500 focus:border-${themeColor}-500`} placeholder="ornek@univibe.com" required />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">{t('Login_Password')}</label>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-gray-700">{t('Login_Password')}</label>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setForgotEmail(email); 
+                  setForgotMessage({ type: '', text: '' });
+                  setIsForgotOpen(true);
+                }} 
+                className={`text-xs font-semibold hover:underline transition-colors text-${themeColor}-600 hover:text-${themeColor}-800`}
+              >
+                {t('Login_ForgotPassword')}
+              </button>
+            </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Lock className="h-5 w-5 text-gray-400" /></div>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all ${isStudent ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-blue-500 focus:border-blue-500'}`} placeholder="••••••••" required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all focus:ring-${themeColor}-500 focus:border-${themeColor}-500`} placeholder="••••••••" required />
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading} className={`w-full text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-70 ${buttonClass}`}>
+          <button type="submit" disabled={isLoading} className={`w-full bg-gradient-to-r text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-md disabled:opacity-70 ${buttonClass}`}>
             {isLoading ? t('Login_Loading') : <><LogIn className="w-5 h-5" /> {t('Login_Button')}</>}
           </button>
         </form>
       </div>
+
+      {isForgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="absolute top-4 right-4">
+              <button onClick={() => setIsForgotOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-center space-y-3 mb-6 mt-2">
+              <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center bg-gradient-to-r ${titleClass}`}>
+                <Key className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">{t('Forgot_Title')}</h3>
+              <p className="text-sm text-gray-500 px-2">{t('Forgot_Description')}</p>
+            </div>
+
+            {forgotMessage.text && (
+              <div className={`p-3 rounded-lg text-sm mb-4 flex items-start gap-2 ${forgotMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                {forgotMessage.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <X className="w-5 h-5 shrink-0" />}
+                <p>{forgotMessage.text}</p>
+              </div>
+            )}
+
+            {forgotMessage.type !== 'success' && (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input 
+                    type="email" 
+                    value={forgotEmail} 
+                    onChange={(e) => setForgotEmail(e.target.value)} 
+                    className={`w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-all focus:ring-${themeColor}-500 focus:border-${themeColor}-500`} 
+                    placeholder="ornek@univibe.com" 
+                    required 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={forgotLoading} 
+                  className={`w-full bg-gradient-to-r text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-md disabled:opacity-70 ${buttonClass}`}
+                >
+                  {forgotLoading ? t('Forgot_Sending') : <><Send className="w-4 h-4" /> {t('Forgot_SendButton')}</>}
+                </button>
+              </form>
+            )}
+
+            {forgotMessage.type === 'success' && (
+               <button 
+                onClick={() => setIsForgotOpen(false)}
+                className={`w-full mt-2 bg-gray-100 text-gray-700 font-medium py-2.5 rounded-lg hover:bg-gray-200 transition-colors`}
+              >
+                {t('Forgot_CloseButton')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-	<!--     Microsoft ResX Schema 
+  <!-- 
+    Microsoft ResX Schema 
     
     Version 2.0
     
@@ -58,234 +59,245 @@
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
-	<xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-		<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-		<xsd:element name="root" msdata:IsDataSet="true">
-			<xsd:complexType>
-				<xsd:choice maxOccurs="unbounded">
-					<xsd:element name="metadata">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" />
-							</xsd:sequence>
-							<xsd:attribute name="name" use="required" type="xsd:string" />
-							<xsd:attribute name="type" type="xsd:string" />
-							<xsd:attribute name="mimetype" type="xsd:string" />
-							<xsd:attribute ref="xml:space" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="assembly">
-						<xsd:complexType>
-							<xsd:attribute name="alias" type="xsd:string" />
-							<xsd:attribute name="name" type="xsd:string" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="data">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-								<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-							</xsd:sequence>
-							<xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-							<xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-							<xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-							<xsd:attribute ref="xml:space" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="resheader">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-							</xsd:sequence>
-							<xsd:attribute name="name" type="xsd:string" use="required" />
-						</xsd:complexType>
-					</xsd:element>
-				</xsd:choice>
-			</xsd:complexType>
-		</xsd:element>
-	</xsd:schema>
-	<resheader name="resmimetype">
-		<value>text/microsoft-resx</value>
-	</resheader>
-	<resheader name="version">
-		<value>2.0</value>
-	</resheader>
-	<resheader name="reader">
-		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-	<resheader name="writer">
-		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-
-	<!-- EVENT MESSAGES -->
-	<data name="Event_HasActiveEvent" xml:space="preserve">
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Event_HasActiveEvent" xml:space="preserve">
     <value>Aktif bir etkinliğin varken yeni bir tane oluşturamazsın.</value>
   </data>
-	<data name="Event_CategoryNotFound" xml:space="preserve">
+  <data name="Event_CategoryNotFound" xml:space="preserve">
     <value>Seçilen kategori bulunamadı!</value>
   </data>
-	<data name="Event_NotFound" xml:space="preserve">
+  <data name="Event_NotFound" xml:space="preserve">
     <value>Etkinlik bulunamadı.</value>
   </data>
-	<data name="Event_UnauthorizedDelete" xml:space="preserve">
+  <data name="Event_UnauthorizedDelete" xml:space="preserve">
     <value>Bu etkinliği silmeye yetkiniz yok.</value>
   </data>
-	<data name="Event_CannotCancelPast" xml:space="preserve">
+  <data name="Event_CannotCancelPast" xml:space="preserve">
     <value>Başlamış veya geçmiş bir etkinlik iptal edilemez.</value>
   </data>
-	<data name="Event_CannotCancelClose" xml:space="preserve">
+  <data name="Event_CannotCancelClose" xml:space="preserve">
     <value>Etkinliğe 4 saatten az bir süre kaldığı için iptal işlemi yapılamaz.</value>
   </data>
-	<data name="Event_UnauthorizedView" xml:space="preserve">
+  <data name="Event_UnauthorizedView" xml:space="preserve">
     <value>Bu etkinlik henüz onaylanmamış veya görüntüleme yetkiniz yok.</value>
   </data>
-
-	<!-- USER MESSAGES -->
-	<data name="User_NotFound" xml:space="preserve">
+  <data name="User_NotFound" xml:space="preserve">
     <value>Kullanıcı bulunamadı.</value>
   </data>
-	<data name="User_UsernameTaken" xml:space="preserve">
+  <data name="User_UsernameTaken" xml:space="preserve">
     <value>Bu kullanıcı adı zaten kullanılıyor, lütfen başka bir tane belirleyin.</value>
   </data>
-	<data name="User_UsernameWaitTime" xml:space="preserve">
+  <data name="User_UsernameWaitTime" xml:space="preserve">
     <value>Kullanıcı adınızı değiştirmek için {0} gün daha beklemelisiniz.</value>
   </data>
-
-	<!-- AUTH MESSAGES -->
-	<data name="Auth_InvalidCredentials" xml:space="preserve">
+  <data name="Auth_InvalidCredentials" xml:space="preserve">
     <value>E-posta veya şifre hatalı.</value>
   </data>
-	<data name="Auth_DeletedTooLong" xml:space="preserve">
+  <data name="Auth_DeletedTooLong" xml:space="preserve">
     <value>Hesabınızı silmenizin üzerinden 15 günden fazla zaman geçmiş. Lütfen yeni bir hesap açın.</value>
   </data>
-	<data name="Auth_Suspended" xml:space="preserve">
+  <data name="Auth_Suspended" xml:space="preserve">
     <value>Hesabınız topluluk kurallarına uymadığınız için sistem yöneticileri tarafından askıya alınmıştır. İtiraz için lütfen destek ile iletişime geçin.</value>
   </data>
-	<data name="Auth_EduMailRequired" xml:space="preserve">
+  <data name="Auth_EduMailRequired" xml:space="preserve">
     <value>Sisteme sadece '.edu.tr' uzantılı üniversite e-posta adresinizle kayıt olabilirsiniz.</value>
   </data>
-	<data name="Auth_EmailAlreadyActive" xml:space="preserve">
+  <data name="Auth_EmailAlreadyActive" xml:space="preserve">
     <value>Bu e-posta adresi ile zaten kayıtlı aktif bir kullanıcı bulunuyor.</value>
   </data>
-	<data name="Auth_InDeletionProcess" xml:space="preserve">
+  <data name="Auth_InDeletionProcess" xml:space="preserve">
     <value>Bu e-posta ile silinme sürecinde olan bir hesap var. Hesabınızı 'Giriş Yap' ekranından kurtarabilir veya tamamen silinmesi için {0} gün bekleyebilirsiniz.</value>
   </data>
-	<data name="Auth_EmailSendFailed" xml:space="preserve">
+  <data name="Auth_EmailSendFailed" xml:space="preserve">
     <value>Mail gönderilemedi, lütfen bilgileri kontrol et. Hata: {0}</value>
   </data>
-	<data name="Auth_InvalidToken" xml:space="preserve">
+  <data name="Auth_InvalidToken" xml:space="preserve">
     <value>Geçersiz veya süresi dolmuş işlem.</value>
   </data>
-	<data name="Auth_UniversityNotFound" xml:space="preserve">
+  <data name="Auth_UniversityNotFound" xml:space="preserve">
     <value>Sistemimizde '{0}' uzantısına tanımlı bir üniversite bulunmamaktadır.</value>
   </data>
-	<data name="Auth_UsernameTaken" xml:space="preserve">
+  <data name="Auth_UsernameTaken" xml:space="preserve">
     <value>Bu kullanıcı adı zaten alınmış. Lütfen başka bir tane deneyin.</value>
   </data>
-	<data name="Auth_DepartmentNotFound" xml:space="preserve">
+  <data name="Auth_DepartmentNotFound" xml:space="preserve">
     <value>Seçilen bölüm sistemde bulunamadı.</value>
   </data>
-	<data name="Auth_FacultyMismatch" xml:space="preserve">
+  <data name="Auth_FacultyMismatch" xml:space="preserve">
     <value>Seçtiğiniz bölüm, e-posta adresinizin bağlı olduğu üniversiteye ait değil! Lütfen kendi üniversitenizin bölümlerinden birini seçin.</value>
   </data>
-	<data name="Auth_StudentGradeReq" xml:space="preserve">
+  <data name="Auth_StudentGradeReq" xml:space="preserve">
     <value>Öğrenciler için sınıf (Grade) bilgisi zorunludur.</value>
   </data>
-	<data name="Auth_TeacherTitleReq" xml:space="preserve">
+  <data name="Auth_TeacherTitleReq" xml:space="preserve">
     <value>Akademisyenler için ünvan (Title) bilgisi zorunludur.</value>
   </data>
-	<data name="Auth_SessionExpired" xml:space="preserve">
+  <data name="Auth_SessionExpired" xml:space="preserve">
     <value>Oturum süreniz dolmuş. Lütfen tekrar giriş yapınız.</value>
   </data>
-
-	<!-- VALIDATION MESSAGES -->
-	<data name="Val_Required" xml:space="preserve">
+  <data name="Val_Required" xml:space="preserve">
     <value>{PropertyName} alanı zorunludur.</value>
   </data>
-	<data name="Val_MinLength" xml:space="preserve">
+  <data name="Val_MinLength" xml:space="preserve">
     <value>{PropertyName} en az {MinLength} karakter olmalıdır.</value>
   </data>
-	<data name="Val_MaxLength" xml:space="preserve">
+  <data name="Val_MaxLength" xml:space="preserve">
     <value>{PropertyName} en fazla {MaxLength} karakter olmalıdır.</value>
   </data>
-	<data name="Val_InvalidPhone" xml:space="preserve">
+  <data name="Val_InvalidPhone" xml:space="preserve">
     <value>Telefon numarası 5 ile başlamalı ve 10 haneli olmalıdır.</value>
   </data>
-	<data name="Val_MissingToken" xml:space="preserve">
+  <data name="Val_MissingToken" xml:space="preserve">
     <value>Token bilgisi eksik.</value>
   </data>
-	<data name="Val_PassMinLength" xml:space="preserve">
+  <data name="Val_PassMinLength" xml:space="preserve">
     <value>Şifre en az 8 karakter olmalıdır.</value>
   </data>
-	<data name="Val_PassUppercase" xml:space="preserve">
+  <data name="Val_PassUppercase" xml:space="preserve">
     <value>Şifre en az bir büyük harf içermelidir.</value>
   </data>
-	<data name="Val_PassDigit" xml:space="preserve">
+  <data name="Val_PassDigit" xml:space="preserve">
     <value>Şifre en az bir rakam içermelidir.</value>
   </data>
-	<data name="Val_SelectDepartment" xml:space="preserve">
+  <data name="Val_SelectDepartment" xml:space="preserve">
     <value>Lütfen bir bölüm seçiniz.</value>
   </data>
-	<data name="Val_InvalidGrade" xml:space="preserve">
+  <data name="Val_InvalidGrade" xml:space="preserve">
     <value>Lütfen geçerli bir sınıf seviyesi seçiniz.</value>
   </data>
-	<data name="Val_InvalidUsername" xml:space="preserve">
+  <data name="Val_InvalidUsername" xml:space="preserve">
     <value>Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.</value>
   </data>
-	<data name="Val_EventDatePast" xml:space="preserve">
+  <data name="Val_EventDatePast" xml:space="preserve">
     <value>Etkinlik tarihi geçmiş bir tarih olamaz.</value>
   </data>
-	<data name="Val_PageNumMin" xml:space="preserve">
+  <data name="Val_PageNumMin" xml:space="preserve">
     <value>Sayfa numarası en az 1 olmalı.</value>
   </data>
-	<data name="Val_PageSizeRange" xml:space="preserve">
+  <data name="Val_PageSizeRange" xml:space="preserve">
     <value>Sayfa boyutu {From} ile {To} arasında olmalı.</value>
   </data>
-
-	<!-- RESPONSE MESSAGES -->
-	<data name="Res_User_AccountFrozen" xml:space="preserve">
+  <data name="Res_User_AccountFrozen" xml:space="preserve">
     <value>Hesabınız başarıyla donduruldu. 15 gün içinde giriş yaparak geri kurtarabilirsiniz.</value>
   </data>
-	<data name="Res_User_ProfileUpdated" xml:space="preserve">
+  <data name="Res_User_ProfileUpdated" xml:space="preserve">
     <value>Profil bilgileri başarıyla güncellendi!</value>
   </data>
-	<data name="Res_User_Suspended" xml:space="preserve">
+  <data name="Res_User_Suspended" xml:space="preserve">
     <value>Kullanıcı başarıyla askıya alındı.</value>
   </data>
-	<data name="Res_User_Activated" xml:space="preserve">
+  <data name="Res_User_Activated" xml:space="preserve">
     <value>Kullanıcının hesabı tekrar aktif edildi.</value>
   </data>
-	<data name="Res_User_Deleted" xml:space="preserve">
+  <data name="Res_User_Deleted" xml:space="preserve">
     <value>Kullanıcı sistemden kalıcı olarak silindi.</value>
   </data>
-	<data name="Res_User_NotFound" xml:space="preserve">
+  <data name="Res_User_NotFound" xml:space="preserve">
     <value>Kullanıcı bulunamadı.</value>
   </data>
-	<data name="Res_User_RoleChanged" xml:space="preserve">
+  <data name="Res_User_RoleChanged" xml:space="preserve">
     <value>Kullanıcının rolü başarıyla değiştirildi.</value>
   </data>
-	<data name="Res_Event_Approved" xml:space="preserve">
+  <data name="Res_Event_Approved" xml:space="preserve">
     <value>Etkinlik başarıyla onaylandı ve yayına alındı!</value>
   </data>
-	<data name="Res_Event_Rejected" xml:space="preserve">
+  <data name="Res_Event_Rejected" xml:space="preserve">
     <value>Etkinlik başarıyla reddedildi!</value>
   </data>
-	<data name="Res_Event_NotFound" xml:space="preserve">
+  <data name="Res_Event_NotFound" xml:space="preserve">
     <value>İlgili etkinlik bulunamadı.</value>
   </data>
-	<data name="Res_Event_Created" xml:space="preserve">
+  <data name="Res_Event_Created" xml:space="preserve">
     <value>Etkinlik başarıyla oluşturuldu.</value>
   </data>
-	<data name="Res_Event_Deleted" xml:space="preserve">
+  <data name="Res_Event_Deleted" xml:space="preserve">
     <value>Etkinlik başarıyla silindi.</value>
   </data>
-	<data name="Res_Auth_LinkSent" xml:space="preserve">
+  <data name="Res_Auth_LinkSent" xml:space="preserve">
     <value>Kayıt doğrulama linki mail adresine gönderildi.</value>
   </data>
-	<data name="Res_Auth_TokenInvalid" xml:space="preserve">
+  <data name="Res_Auth_TokenInvalid" xml:space="preserve">
     <value>Token geçersiz veya süresi dolmuş.</value>
   </data>
-	<data name="Res_Auth_TokenVerified" xml:space="preserve">
+  <data name="Res_Auth_TokenVerified" xml:space="preserve">
     <value>Token doğrulandı.</value>
+  </data>
+  <data name="Auth_InvalidOrExpiredToken" xml:space="preserve">
+    <value>Geçersiz veya süresi dolmuş bir şifre sıfırlama bağlantısı kullandınız.</value>
+  </data>
+  <data name="Res_Auth_ResetLinkSent" xml:space="preserve">
+    <value>Eğer sistemimizde böyle bir e-posta adresi kayıtlıysa, şifre sıfırlama bağlantısı gönderilmiştir</value>
+  </data>
+  <data name="Res_Auth_PasswordResetSuccessful" xml:space="preserve">
+    <value>Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.</value>
+  </data>
+  <data name="Auth_ResetEmailSubject" xml:space="preserve">
+    <value>UniVibe Şifre Sıfırlama</value>
+  </data>
+  <data name="Auth_RegisterEmailSubject" xml:space="preserve">
+    <value>UniVibe Kayıt Onayı</value>
+  </data>
+  <data name="Auth_RegisterEmailBody" xml:space="preserve">
+    <value>&lt;h3&gt;UniVibe'a Hoş Geldin!&lt;/h3&gt;&lt;p&gt;Kampüsün nabzını tutmaya çok az kaldı. Kaydını tamamlamak için lütfen aşağıdaki bağlantıya tıkla:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;'&gt;Hesabımı Doğrula&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;Eğer buton çalışmazsa bu linki tarayıcına yapıştırabilirsin: {0}&lt;/small&gt;</value>
+  </data>
+  <data name="Auth_ResetEmailBody" xml:space="preserve">
+    <value>&lt;div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'&gt;&lt;h2 style='color: #4F46E5;'&gt;UniVibe Şifre Sıfırlama&lt;/h2&gt;&lt;p&gt;Hesabının şifresini yenilemek için talepte bulundun. Şifreni sıfırlamak üzere aşağıdaki bağlantıya tıklayabilirsin:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; margin: 10px 0;'&gt;Şifremi Sıfırla&lt;/a&gt;&lt;p style='color: #666; font-size: 14px;'&gt;Bu bağlantı güvenlik nedeniyle &lt;strong&gt;15 dakika&lt;/strong&gt; geçerlidir.&lt;/p&gt;&lt;br&gt;&lt;small style='color: #999;'&gt;Eğer bu talebi senmadıysan, bu e-postayı dikkate almayabilirsin.&lt;/small&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;Buton çalışmıyorsa bu bağlantıyı tarayıcına yapıştırabilirsin: &lt;br&gt;{0}&lt;/small&gt;&lt;/div&gt;</value>
   </data>
 </root>

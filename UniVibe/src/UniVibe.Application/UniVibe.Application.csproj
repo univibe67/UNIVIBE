@@ -16,8 +16,4 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.1" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\" />
-	</ItemGroup>
 </Project>

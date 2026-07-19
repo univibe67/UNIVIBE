@@ -121,5 +121,32 @@ namespace UniVibe.API.Controllers
 
             return Content(htmlContent, "text/html", System.Text.Encoding.UTF8);
         }
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                await _authService.ForgotPasswordAsync(request);
+                return Ok(ApiResponse<string>.Success(_sharedResources["Auth_ResetLinkSent"].Value));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<string>.Fail(ex.Message));
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                await _authService.ResetPasswordAsync(request);
+                return Ok(ApiResponse<string>.Success(_sharedResources["Auth_PasswordResetSuccessful"].Value));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<string>.Fail(ex.Message));
+            }
+        }
     }
 }

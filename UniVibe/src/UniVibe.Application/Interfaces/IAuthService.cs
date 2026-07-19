@@ -10,5 +10,7 @@ namespace UniVibe.Application.Interfaces
         Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request);
         Task<LoginResponse> LoginAsync(LoginRequest request);
         Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request);
+        Task ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task ResetPasswordAsync(ResetPasswordRequest request);
     }
 }
