@@ -100,6 +100,13 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(string email, string targetUrl)
         {
+            // CANLIYA CIKARKEN ACILACAK: Sadece .edu.tr uzantılı mailleri kabul etme kurali
+            /*
+            if (!email.EndsWith(".edu.tr"))
+            {
+                throw new Exception(_localizer["Auth_EduMailRequired"].Value);
+            }
+            */
             var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
 
             if (existingUser != null)
@@ -146,7 +153,7 @@ namespace UniVibe.Application.Services
             {
                 Email = email,
                 Token = token,
-                ExpiryDate = DateTime.UtcNow.AddMinutes(30),
+                ExpiryDate = DateTime.UtcNow.AddMinutes(15), // 15 dakika yapıldı
                 IsUsed = false
             };
 
@@ -158,6 +165,7 @@ namespace UniVibe.Application.Services
                 var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
                 string linkForEmail;
 
+                // Webden mi Mobilden mi geldiğini anlayan akıllı yönlendirme (Web Bridge)
                 if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     linkForEmail = $"{targetUrl}?token={token}";
@@ -195,16 +203,22 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
+            // React Native boş gönderirse patlamaması için koruma
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new Exception(_localizer["Auth_InvalidToken"].Value);
 
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && !u.IsUsed);
-
             if (pendingUser == null)
                 throw new Exception(_localizer["Auth_InvalidToken"].Value);
-
             if (pendingUser.ExpiryDate < DateTime.UtcNow)
                 throw new Exception(_localizer["Auth_TokenExpired"].Value);
+
+            /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
+            var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
+            var university = await _universityRepository.FirstOrDefaultAsync(u => u.EmailDomain.ToLower() == emailDomain!.ToLower());
+            if (university == null)
+                 throw new Exception(_localizer["Auth_UniversityNotFound", emailDomain].Value);
+            */
 
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
@@ -214,12 +228,32 @@ namespace UniVibe.Application.Services
             if (department == null)
                 throw new Exception(_localizer["Auth_DepartmentNotFound"].Value);
 
+            // TEST İÇİN KAPATILDI
+            /*
+            var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.Id == department.FacultyId);
+            if (faculty == null || faculty.UniversityId != university.Id)
+                throw new Exception(_localizer["Auth_FacultyMismatch"].Value);
+            */
+
             var assignedRole = UserRole.Student;
+            if (pendingUser.Email.Contains("@beun.edu.tr"))
+            {
+                assignedRole = UserRole.Teacher;
+            }
+            if (assignedRole == UserRole.Student)
+            {
+                if (!request.Grade.HasValue)
+                    throw new Exception(_localizer["Auth_StudentGradeReq"].Value);
 
-            if (!request.Grade.HasValue)
-                throw new Exception(_localizer["Auth_StudentGradeReq"].Value);
+                request.Title = null;
+            }
+            if (assignedRole == UserRole.Teacher)
+            {
+                if (string.IsNullOrWhiteSpace(request.Title))
+                    throw new Exception(_localizer["Auth_TeacherTitleReq"].Value);
 
-            request.Title = null;
+                request.Grade = null;
+            }
 
             var newUser = new User
             {
@@ -256,6 +290,7 @@ namespace UniVibe.Application.Services
                 throw new Exception(_localizer["Auth_SessionExpired"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
+
             var newRefreshToken = _tokenService.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
@@ -281,6 +316,7 @@ namespace UniVibe.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : "http://localhost:3000/reset-password";
+
             var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
 
             string subject = _localizer["Auth_ResetEmailSubject"].Value;
@@ -310,6 +346,7 @@ namespace UniVibe.Application.Services
             }
 
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
 
