@@ -309,4 +309,7 @@
   <data name="Auth_RedirectButton" xml:space="preserve">
     <value>UniVibe Uygulamasını Aç</value>
   </data>
+  <data name="Res_Event_ReasonRequired" xml:space="preserve">
+    <value>Red sebebi zorunludur.</value>
+  </data>
 </root>

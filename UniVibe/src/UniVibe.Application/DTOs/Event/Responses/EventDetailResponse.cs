@@ -12,5 +12,7 @@
         public string CategoryName { get; set; } = string.Empty;
         public string CreatorName { get; set; } = string.Empty;
         public bool IsCreator { get; set; }
+        public string? RejectionReason { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

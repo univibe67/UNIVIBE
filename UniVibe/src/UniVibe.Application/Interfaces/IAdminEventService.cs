@@ -8,7 +8,8 @@ namespace UniVibe.Application.Interfaces
         Task<List<EventListResponse>> GetPendingEventsAsync();
         Task<List<EventListResponse>> GetAllEventsAsync();
         Task<bool> ApproveEventAsync(Guid eventId);
-        Task<bool> RejectEventAsync(Guid eventId);
+        Task<bool> RejectEventAsync(Guid eventId, string reason);
+        Task<EventDetailResponse> GetEventDetailsByIdAsync(Guid eventId);
 
     }
 }

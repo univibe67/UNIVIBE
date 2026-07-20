@@ -37,7 +37,7 @@ const getAdminIdFromToken = () => {
         .atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(""),
+        .join("")
     );
 
     const decoded = JSON.parse(jsonPayload);
@@ -45,7 +45,6 @@ const getAdminIdFromToken = () => {
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
     ];
   } catch (error) {
-    console.error("Token çözülemedi", error);
     return null;
   }
 };
@@ -86,24 +85,20 @@ export default function AdminDashboard() {
     try {
       const data = (await api.get("/AdminEvent/all")) as any;
       setEvents(data);
-    } catch (error) {
-      console.error("Etkinlikler çekilirken hata:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchUsers = async () => {
     try {
       const data = (await api.get("/AdminUser/all")) as any;
       setUsers(data);
-    } catch (error) {
-      console.error("Kullanıcılar çekilirken hata:", error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
     setIsLoading(true);
     Promise.all([fetchEvents(), fetchUsers()]).finally(() =>
-      setIsLoading(false),
+      setIsLoading(false)
     );
   }, []);
 
@@ -135,7 +130,7 @@ export default function AdminDashboard() {
   const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
   const currentEventsOnPage = processedEvents.slice(
     indexOfFirstEvent,
-    indexOfLastEvent,
+    indexOfLastEvent
   );
 
   useEffect(() => {
@@ -149,24 +144,6 @@ export default function AdminDashboard() {
     } catch (error: any) {
       alert(error || t("Admin_Error_Approve"));
     }
-  };
-
-  const handleRejectEvent = async (id: string) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: t("Admin_Reject") + "?",
-      message: t("Admin_Confirm_RejectEvent"),
-      type: "warning",
-      onConfirm: async () => {
-        try {
-          await api.put(`/AdminEvent/reject/${id}`);
-          fetchEvents();
-          setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
-        } catch (error: any) {
-          alert(error || t("Admin_Error_Reject"));
-        }
-      },
-    });
   };
 
   const handleSuspendUser = async (id: string) => {
@@ -204,10 +181,10 @@ export default function AdminDashboard() {
 
   const totalUsers = users.length;
   const pendingEventsCount = events.filter(
-    (e) => e.status === 1 || String(e.status).toLowerCase() === "pending",
+    (e) => e.status === 1 || String(e.status).toLowerCase() === "pending"
   ).length;
   const activeEventsCount = events.filter(
-    (e) => e.status === 2 || String(e.status).toLowerCase() === "approved",
+    (e) => e.status === 2 || String(e.status).toLowerCase() === "approved"
   ).length;
 
   const localeStr = i18n.language === "en" ? "en-US" : "tr-TR";
@@ -304,7 +281,6 @@ export default function AdminDashboard() {
               indexOfLastEvent={indexOfLastEvent}
               localeStr={localeStr}
               handleApproveEvent={handleApproveEvent}
-              handleRejectEvent={handleRejectEvent}
             />
           )}
 

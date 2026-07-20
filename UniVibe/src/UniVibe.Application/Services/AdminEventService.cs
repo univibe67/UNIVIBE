@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -11,12 +13,14 @@ namespace UniVibe.Application.Services
         private readonly IEventRepository _eventRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public AdminEventService(IEventRepository eventRepository, IUnitOfWork unitOfWork, IMapper mapper)
+        public AdminEventService(IEventRepository eventRepository, IUnitOfWork unitOfWork, IMapper mapper, IStringLocalizer<SharedResources> localizer)
         {
             _eventRepository = eventRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _localizer = localizer;
         }
 
         public async Task<List<EventListResponse>> GetPendingEventsAsync()
@@ -48,7 +52,7 @@ namespace UniVibe.Application.Services
             return true;
         }
 
-        public async Task<bool> RejectEventAsync(Guid eventId)
+        public async Task<bool> RejectEventAsync(Guid eventId, string reason)
         {
             var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
@@ -56,11 +60,33 @@ namespace UniVibe.Application.Services
                 return false;
 
             evnt.Status = EventStatus.Rejected;
+            evnt.RejectionReason = reason;
 
             _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
             return true;
+        }
+        public async Task<EventDetailResponse> GetEventDetailsByIdAsync(Guid eventId)
+        {
+            var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+
+            if (eventEntity == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
+
+            if (eventEntity.User != null)
+                eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+
+            if (eventEntity.Category != null)
+                eventDetailResponse.CategoryName = eventEntity.Category.Name;
+
+            eventDetailResponse.RejectionReason = eventEntity.RejectionReason;
+            eventDetailResponse.IsDeleted = eventEntity.IsDeleted;
+            eventDetailResponse.IsCreator = false;
+
+            return eventDetailResponse;
         }
     }
 }

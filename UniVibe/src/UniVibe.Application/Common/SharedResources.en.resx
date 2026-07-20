@@ -309,4 +309,7 @@
   <data name="Auth_RedirectButton" xml:space="preserve">
     <value>Open UniVibe App</value>
   </data>
+  <data name="Res_Event_ReasonRequired" xml:space="preserve">
+    <value>A reason for rejection is mandatory.</value>
+  </data>
 </root>

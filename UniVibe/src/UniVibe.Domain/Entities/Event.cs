@@ -15,6 +15,7 @@ namespace UniVibe.Domain.Entities
         public int? MaxGrade { get; set; }
         public string? ImageUrl { get; set; }
         public string? ImagePublicId { get; set; }
+        public string? RejectionReason { get; set; }
         public EventStatus Status { get; set; } = EventStatus.Pending;
 
         public Guid UserId { get; set; }

@@ -37,7 +37,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await _context.Events
                 .Include(e => e.User)
                 .Include(e => e.Category)
-                .FirstOrDefaultAsync(e => e.Id == eventId && e.IsDeleted == false);
+                .FirstOrDefaultAsync(e => e.Id == eventId);
         }
         public async Task<Event?> GetActiveEventByUserIdAsync(Guid userId)
         {

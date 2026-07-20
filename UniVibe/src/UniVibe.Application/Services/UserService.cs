@@ -117,6 +117,7 @@ namespace UniVibe.Application.Services
                 throw new Exception(_localizer["User_NotFound"].Value);
 
             user.IsActive = false;
+            user.IsDeleted = true;
 
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;

@@ -1,4 +1,4 @@
-import { CheckCircle, Ban } from "lucide-react";
+import { CheckCircle, Ban, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface UserItem {
@@ -8,6 +8,7 @@ interface UserItem {
   email: string;
   role: string | number;
   isActive: boolean;
+  isDeleted?: boolean;
 }
 
 interface AdminUserSectionProps {
@@ -38,6 +39,7 @@ export default function AdminUserSection({
       <div className="md:hidden space-y-4">
         {users.map((user) => {
           const isActive = user.isActive;
+          const isDeleted = user.isDeleted === true || (user as any).IsDeleted === true;
           const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
 
           const roleStr = String(user.role).toLowerCase();
@@ -77,7 +79,11 @@ export default function AdminUserSection({
               </div>
               <div className="flex justify-between items-center mt-2 pt-3 border-t border-gray-50">
                 <div>
-                  {isActive ? (
+                  {isDeleted ? (
+                    <span className="text-gray-500 flex items-center gap-1.5 text-xs font-medium">
+                      <AlertCircle size={14} /> {t("Admin_User_AccountDeleted")}
+                    </span>
+                  ) : isActive ? (
                     <span className="text-green-600 flex items-center gap-1.5 text-xs font-medium">
                       <CheckCircle size={14} /> {t("Admin_User_Active")}
                     </span>
@@ -96,7 +102,7 @@ export default function AdminUserSection({
                     <span className="text-gray-400 text-[10px] sm:text-xs py-1.5 px-2 font-medium">
                       {t("Admin_CannotBanAdmin")}
                     </span>
-                  ) : isActive ? (
+                  ) : isActive || isDeleted ? (
                     <button
                       onClick={() => handleSuspendUser(user.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
@@ -132,6 +138,7 @@ export default function AdminUserSection({
           <tbody>
             {users.map((user) => {
               const isActive = user.isActive;
+              const isDeleted = user.isDeleted === true || (user as any).IsDeleted === true;
               const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
 
               const roleStr = String(user.role).toLowerCase();
@@ -161,7 +168,11 @@ export default function AdminUserSection({
                     </span>
                   </td>
                   <td className="py-4">
-                    {isActive ? (
+                    {isDeleted ? (
+                      <span className="text-gray-500 flex items-center gap-1 text-sm">
+                        <AlertCircle size={16} /> {t("Admin_User_AccountDeleted")}
+                      </span>
+                    ) : isActive ? (
                       <span className="text-green-600 flex items-center gap-1 text-sm">
                         <CheckCircle size={16} /> {t("Admin_User_Active")}
                       </span>
@@ -180,7 +191,7 @@ export default function AdminUserSection({
                       <span className="text-gray-400 text-sm py-1.5 px-3 ml-auto flex items-center font-medium">
                         {t("Admin_CannotBanAdmin")}
                       </span>
-                    ) : isActive ? (
+                    ) : isActive || isDeleted ? (
                       <button
                         onClick={() => handleSuspendUser(user.id)}
                         className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors ml-auto"

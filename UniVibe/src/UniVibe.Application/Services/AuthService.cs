@@ -73,6 +73,7 @@ namespace UniVibe.Application.Services
                     if (gecenSure < 15)
                     {
                         user.IsActive = true;
+                        user.IsDeleted = false;
                         user.DeletedAt = null;
                     }
                     else

@@ -22,7 +22,7 @@ namespace UniVibe.Application.Services
 
         public async Task<List<UserListResponse>> GetAllUsersAsync()
         {
-            var users = await _userRepository.GetAllAsync();
+            var users = await _userRepository.GetAllIncludingDeletedAsync();
             var orderedUsers = users.OrderByDescending(u => u.CreatedAt).ToList();
 
             return _mapper.Map<List<UserListResponse>>(orderedUsers);

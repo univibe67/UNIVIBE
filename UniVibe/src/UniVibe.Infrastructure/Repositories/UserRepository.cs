@@ -25,6 +25,12 @@ namespace UniVibe.Infrastructure.Repositories
                 .ThenInclude(f => f.University)
                 .FirstOrDefaultAsync(u => u.Id == userId);
         }
+        public async Task<List<User>> GetAllIncludingDeletedAsync()
+        {
+            return await _context.Set<User>()
+                .IgnoreQueryFilters()
+                .ToListAsync();
+        }
 
     }
 }
