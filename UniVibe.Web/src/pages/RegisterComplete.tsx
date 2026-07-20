@@ -63,8 +63,9 @@ export default function RegisterComplete() {
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !selectedDep || !phoneNumber || grade === null) {
-      setErrorMessage(t('RegComplete_ErrorValidation'));
+    
+    if (!firstName || !lastName || !username || !password || !phoneNumber || !selectedDep || grade === null) {
+      setErrorMessage(t('RegComplete_ErrorValidation') || "Lütfen tüm zorunlu alanları doldurun.");
       return;
     }
 
@@ -161,32 +162,32 @@ export default function RegisterComplete() {
           </div>
         )}
 
-        <form onSubmit={handleComplete} className="space-y-4">
+        <form onSubmit={handleComplete} className="space-y-4" noValidate>
           
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-700">{t('RegComplete_FirstName')}</label>
-              <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_FirstNamePlaceholder')} required />
+              <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_FirstNamePlaceholder')} />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-700">{t('RegComplete_LastName')}</label>
-              <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_LastNamePlaceholder')} required />
+              <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_LastNamePlaceholder')} />
             </div>
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-700">{t('RegComplete_Username')}</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="kullaniciadi" required />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="kullaniciadi" />
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-700">{t('RegComplete_Password')}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="••••••••" required />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="••••••••" />
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-700">{t('RegComplete_Phone')}</label>
-            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="555..." required />
+            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="555..." />
           </div>
 
           <div className="space-y-2 pt-2 border-t border-gray-100">
