@@ -50,6 +50,10 @@ i18n
           Admin_PendingEvents: "Onay Bekleyen Etkinlik",
           Admin_ActiveEvents: "Aktif Etkinlikler",
           Admin_Tab_Events: "Etkinlik Yönetimi",
+          Login_Error_FieldsRequired:
+            "Lütfen e-posta ve şifre alanlarını doldurun.",
+          Forgot_EmailRequired: "Lütfen e-posta adresinizi girin.",
+          Register_EmailRequired: "Lütfen e-posta adresinizi girin.",
           Admin_Tab_Users: "Kullanıcı Yönetimi",
           Admin_NoEvents: "Kayıtlı etkinlik bulunamadı.",
           Admin_NoUsers: "Kayıtlı kullanıcı bulunamadı.",
@@ -105,6 +109,7 @@ i18n
           RegComplete_LastNamePlaceholder: "Soyadın",
           RegComplete_Username: "Kullanıcı Adı",
           RegComplete_Password: "Şifre",
+          RegComplete_ErrorValidation: "Lütfen tüm zorunlu alanları eksiksiz doldurun.",
           RegComplete_Phone: "Telefon Numarası",
           RegComplete_EduInfo: "Eğitim Bilgileri",
           RegComplete_SelectUni: "Üniversite Seç",
@@ -113,8 +118,6 @@ i18n
           RegComplete_SelectGrade: "Sınıf Seç",
           RegComplete_SubmitBtn: "Kaydı Tamamla ve Giriş Yap",
           RegComplete_Loading: "Kaydediliyor...",
-          RegComplete_ErrorValidation:
-            "Lütfen tüm zorunlu alanları ve eğitim bilgilerini doldurun.",
           RegComplete_DefaultError: "Kayıt tamamlama başarısız.",
           Val_PasswordMinLength: "Şifre en az 6 karakter olmalıdır",
           Val_PasswordReqUppercase: "Şifre en az bir büyük harf içermelidir",
@@ -164,7 +167,6 @@ i18n
           Grade_Graduated: "Graduated",
           Forgot_Description:
             "Enter your registered email address and we'll send you a link to reset your password.",
-          Forgot_Sending: "Sending...",
           Forgot_SuccessMessage:
             "A password reset link has been sent to your email address.",
           Forgot_ErrorMessage: "An error occurred, please try again.",
@@ -174,6 +176,10 @@ i18n
           Login_Error_Unauthorized_Start: "Unauthorized login! This is not a ",
           Login_Error_Unauthorized_End: " account.",
           Login_NoAccount: "Don't have an account?",
+          Login_Error_FieldsRequired:
+            "Please fill in both email and password fields.",
+          Forgot_EmailRequired: "Please enter your email address.",
+          Register_EmailRequired: "Please enter your email address.",
           Login_RegisterLink: "Sign up",
           Register_ModalTitle: "Join UniVibe",
           Register_ModalDesc:
@@ -259,7 +265,7 @@ i18n
           RegComplete_SubmitBtn: "Complete Registration & Login",
           RegComplete_Loading: "Saving...",
           RegComplete_ErrorValidation:
-            "Please fill in all required fields and education info.",
+            "Please fill in all required fields.",
           RegComplete_DefaultError: "Registration completion failed.",
           Val_PasswordMinLength: "Password must be at least 6 characters",
           Val_PasswordReqUppercase:
