@@ -29,6 +29,7 @@ namespace UniVibe.Infrastructure.Repositories
         {
             return await _context.Set<User>()
                 .IgnoreQueryFilters()
+                .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
 
