@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { ProfileInfoCard } from "../../components/ProfileInfoCard";
 import { api } from "../../services/api";
 import { tokenService } from "../../services/tokenService";
 
@@ -33,7 +34,7 @@ export default function ProfileScreen() {
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/Users/profile");
+      const response: any = await api.get("/Users/profile");
 
       let data = response.data ? response.data : response;
       if (data.data) {
@@ -64,7 +65,7 @@ export default function ProfileScreen() {
 
   const pickAndUploadImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
       } as any);
 
       try {
-        const response = await api.post(
+        const response: any = await api.post(
           "/Users/upload-profile-picture",
           formData,
           {
@@ -242,36 +243,30 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Akademik Bilgiler</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Üniversite</Text>
-            <Text style={styles.infoValue}>{profile?.universityName}</Text>
-            <View style={styles.divider} />
-            <Text style={styles.infoLabel}>Fakülte</Text>
-            <Text style={styles.infoValue}>{profile?.facultyName}</Text>
-            <View style={styles.divider} />
-            <Text style={styles.infoLabel}>Bölüm</Text>
-            <Text style={styles.infoValue}>{profile?.departmentName}</Text>
-          </View>
+          <ProfileInfoCard
+            title="Akademik Bilgiler"
+            items={[
+              { label: "Üniversite", value: profile?.universityName || "-" },
+              { label: "Fakülte", value: profile?.facultyName || "-" },
+              { label: "Bölüm", value: profile?.departmentName || "-" },
+            ]}
+          />
 
-          <Text style={styles.sectionTitle}>Hakkımda & İletişim</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>E-posta</Text>
-            <Text style={styles.infoValue}>{profile?.email}</Text>
-            <View style={styles.divider} />
-            <Text style={styles.infoLabel}>Biyografi</Text>
-            <Text style={styles.infoValue}>
-              {profile?.bio || "Henüz bir biyografi eklenmemiş."}
-            </Text>
-            <View style={styles.divider} />
-            <Text style={styles.infoLabel}>Sosyal Medya</Text>
-            <Text style={styles.infoValue}>
-              {profile?.socialMediaLink || "Bağlantı eklenmemiş."}
-            </Text>
-            <View style={styles.divider} />
-            <Text style={styles.infoLabel}>Telefon No</Text>
-            <Text style={styles.infoValue}>{profile?.phoneNumber}</Text>
-          </View>
+          <ProfileInfoCard
+            title="Hakkımda & İletişim"
+            items={[
+              { label: "E-posta", value: profile?.email || "-" },
+              {
+                label: "Biyografi",
+                value: profile?.bio || "Henüz bir biyografi eklenmemiş.",
+              },
+              {
+                label: "Sosyal Medya",
+                value: profile?.socialMediaLink || "Bağlantı eklenmemiş.",
+              },
+              { label: "Telefon No", value: profile?.phoneNumber || "-" },
+            ]}
+          />
         </View>
 
         <View style={styles.btnContainer}>
@@ -421,33 +416,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginBottom: 4,
   },
-  userSubText: { fontSize: 13, color: "#9CA3AF" },
   infoSection: { padding: 16 },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#6B7280",
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginLeft: 4,
-    marginTop: 10,
-  },
-  infoCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  infoLabel: { fontSize: 12, color: "#9CA3AF", marginBottom: 2 },
-  infoValue: {
-    fontSize: 15,
-    color: "#1F2937",
-    fontWeight: "500",
-    marginBottom: 10,
-  },
-  divider: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 4 },
   btnContainer: { paddingHorizontal: 16, marginBottom: 30 },
   menuItem: {
     flexDirection: "row",
@@ -505,11 +474,6 @@ const styles = StyleSheet.create({
     color: "#1F2937",
   },
   textArea: { height: 80, textAlignVertical: "top" },
-  disabledInput: {
-    backgroundColor: "#F3F4F6",
-    color: "#9CA3AF",
-    borderColor: "#E5E7EB",
-  },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",

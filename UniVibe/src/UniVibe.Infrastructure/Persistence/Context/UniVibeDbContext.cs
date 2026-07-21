@@ -16,6 +16,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<Faculty> Faculties { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<University> Universities { get; set; }
+        public DbSet<EventAttendee> EventAttendees { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -90,6 +91,21 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 entity.Property(e => e.Title).HasMaxLength(100).IsRequired();
                 entity.Property(e => e.Description).HasMaxLength(2000);
                 entity.Property(e => e.Location).HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<EventAttendee>(entity =>
+            {
+                entity.HasKey(ea => ea.Id);
+
+                entity.HasOne(ea => ea.Event)
+                      .WithMany(e => e.Attendees)
+                      .HasForeignKey(ea => ea.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ea => ea.User)
+                      .WithMany()
+                      .HasForeignKey(ea => ea.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

@@ -55,6 +55,19 @@ namespace UniVibe.Infrastructure.Repositories
                 .OrderByDescending(e => e.CreatedAt)
                 .ToListAsync();
         }
+        public async Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId)
+        {
+            return await _context.EventAttendees
+                .Where(ea => ea.UserId == userId && !ea.IsDeleted)
+                .Include(ea => ea.Event)
+                    .ThenInclude(e => e.Category)
+                .Include(ea => ea.Event)
+                    .ThenInclude(e => e.User)
+                .Select(ea => ea.Event)
+                .Where(e => !e.IsDeleted && e.IsActive)
+                .OrderByDescending(e => e.EventDate)
+                .ToListAsync();
+        }
 
     }
 }

@@ -1,9 +1,5 @@
-import { View, ActivityIndicator } from 'react-native';
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
-      <ActivityIndicator size="large" color="#10B981" />
-    </View>
-  );
+  return <Redirect href="/(tabs)" />;
 }

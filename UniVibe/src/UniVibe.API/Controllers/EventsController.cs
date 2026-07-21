@@ -43,15 +43,6 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetEventById(Guid id)
-        {
-            var currentUserId = User.GetUserId();
-            var eventData = await _eventService.GetEventByIdAsync(id, currentUserId);
-
-            return Ok(ApiResponse<object>.Success(eventData));
-        }
-
         [HttpGet("my-active-event")]
         public async Task<IActionResult> GetMyActiveEvent()
         {
@@ -59,6 +50,24 @@ namespace UniVibe.API.Controllers
             var myEvent = await _eventService.GetMyActiveEventAsync(userId);
 
             return Ok(ApiResponse<object>.Success(myEvent));
+        }
+
+        [HttpGet("my-joined-events")]
+        public async Task<IActionResult> GetMyJoinedEvents()
+        {
+            var userId = User.GetUserId();
+            var joinedEvents = await _eventService.GetMyJoinedEventsAsync(userId);
+
+            return Ok(ApiResponse<object>.Success(joinedEvents));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetEventById(Guid id)
+        {
+            var currentUserId = User.GetUserId();
+            var eventData = await _eventService.GetEventByIdAsync(id, currentUserId);
+
+            return Ok(ApiResponse<object>.Success(eventData));
         }
     }
 }

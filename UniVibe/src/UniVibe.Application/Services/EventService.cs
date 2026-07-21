@@ -180,5 +180,30 @@ namespace UniVibe.Application.Services
 
             return EventDetailResponse;
         }
+        public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
+        {
+            var events = await _eventRepository.GetJoinedEventsByUserIdAsync(userId);
+
+            if (events == null || !events.Any())
+                return new List<EventDetailResponse>();
+
+            var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(events);
+
+            for (int i = 0; i < events.Count; i++)
+            {
+                var eventEntity = events[i];
+                var response = eventDetailResponses[i];
+
+                if (eventEntity.User != null)
+                    response.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+
+                if (eventEntity.Category != null)
+                    response.CategoryName = eventEntity.Category.Name;
+
+                response.IsCreator = (eventEntity.UserId == userId);
+            }
+
+            return eventDetailResponses;
+        }
     }
 }
