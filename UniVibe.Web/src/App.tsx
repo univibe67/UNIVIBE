@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route,  } from 'react-router-dom';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import AdminLayout from './layouts/AdminLayout';
@@ -6,6 +6,8 @@ import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import RegisterComplete from './pages/RegisterComplete';
+import StudentEventFeed from './pages/student/StudentEventFeed';
+import StudentProfile from './pages/student/StudentProfile';
 
 function App() {
   return (
@@ -24,7 +26,10 @@ function App() {
 
         <Route element={<ProtectedRoute allowedRole="Student" />}>
           <Route path="/student" element={<StudentLayout />}>
-            <Route path="dashboard" element={<div className="text-2xl font-bold">Öğrenci Ana Sayfa</div>} />
+            <Route index element={<StudentProfile />} />
+            <Route path="dashboard" element={<StudentEventFeed />} />
+            <Route path="events" element={<StudentEventFeed />} />
+            <Route path="profile" element={<StudentProfile />} />
           </Route>
         </Route>
       </Routes>

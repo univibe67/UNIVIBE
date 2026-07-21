@@ -130,6 +130,7 @@ namespace UniVibe.Application.Services
                 EventDetailResponse.CategoryName = eventEntity.Category.Name;
 
             EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
+            EventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
 
             return EventDetailResponse;
         }

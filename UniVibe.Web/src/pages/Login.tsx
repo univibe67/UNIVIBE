@@ -120,7 +120,7 @@ export default function Login() {
       }
       tokenService.saveTokens(token, refreshToken);
       navigate(
-        userType === "admin" ? "/admin/dashboard" : "/student/dashboard"
+        userType === "admin" ? "/admin/dashboard" : "/student"
       );
     } catch (err: any) {
       const errorMessage =
