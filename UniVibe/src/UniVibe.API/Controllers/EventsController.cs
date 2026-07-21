@@ -1,7 +1,5 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.Interfaces;
@@ -14,73 +12,43 @@ namespace UniVibe.API.Controllers
     public sealed class EventsController : ControllerBase
     {
         private readonly IEventService _eventService;
-        private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
-        private readonly IValidator<CreateEventRequest> _createEventValidator;
-        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public EventsController(
-            IEventService eventService,
-            IValidator<CreateEventRequest> createEventValidator,
-            IValidator<GetAllEventsRequest> getAllEventsValidator,
-            IStringLocalizer<SharedResources> localizer)
+        public EventsController(IEventService eventService)
         {
             _eventService = eventService;
-            _createEventValidator = createEventValidator;
-            _getAllEventsValidator = getAllEventsValidator;
-            _localizer = localizer;
         }
 
         [HttpGet("all-events")]
         public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
-            var validationResult = await _getAllEventsValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(errors));
-            }
-
-            var pagedEvents = await _eventService.GetAllEventsAsync(
-                request.PageNumber,
-                request.PageSize,
-                request.OnlyActive
-            );
-
+            var pagedEvents = await _eventService.GetAllEventsAsync(request);
             return Ok(ApiResponse<object>.Success(pagedEvents));
         }
 
         [HttpPost("create-event")]
-        public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest createEventDetailResponse)
+        public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest request)
         {
-            var validationResult = await _createEventValidator.ValidateAsync(createEventDetailResponse);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(errors));
-            }
-
             var userId = User.GetUserId();
-            await _eventService.CreateEventAsync(createEventDetailResponse, userId);
+            var message = await _eventService.CreateEventAsync(request, userId);
 
-            return Ok(ApiResponse<string>.Success(_localizer["Res_Event_Created"].Value));
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpDelete("delete-event/{id}")]
         public async Task<IActionResult> DeleteEvent(Guid id)
         {
             var userId = User.GetUserId();
+            var message = await _eventService.DeleteEventAsync(id, userId);
 
-            await _eventService.DeleteEventAsync(id, userId);
-
-            return Ok(ApiResponse<string>.Success(_localizer["Res_Event_Deleted"].Value));
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetEventById(Guid id)
         {
             var currentUserId = User.GetUserId();
-
             var eventData = await _eventService.GetEventByIdAsync(id, currentUserId);
+
             return Ok(ApiResponse<object>.Success(eventData));
         }
 
