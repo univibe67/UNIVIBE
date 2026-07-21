@@ -37,27 +37,30 @@ namespace UniVibe.Application.Services
             return _mapper.Map<List<EventListResponse>>(allEvents.OrderByDescending(e => e.CreatedAt)).ToList();
         }
 
-        public async Task<bool> ApproveEventAsync(Guid eventId)
+        public async Task<string> ApproveEventAsync(Guid eventId)
         {
             var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
             if (evnt == null)
-                return false;
+                throw new Exception(_localizer["Res_Event_NotFound"].Value);
 
             evnt.Status = EventStatus.Approved;
 
             _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
-            return true;
+            return _localizer["Res_Event_Approved"].Value;
         }
 
-        public async Task<bool> RejectEventAsync(Guid eventId, string reason)
+        public async Task<string> RejectEventAsync(Guid eventId, string reason)
         {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new Exception(_localizer["Res_Event_ReasonRequired"].Value);
+
             var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
             if (evnt == null)
-                return false;
+                throw new Exception(_localizer["Res_Event_NotFound"].Value);
 
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
@@ -65,8 +68,9 @@ namespace UniVibe.Application.Services
             _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
-            return true;
+            return _localizer["Res_Event_Rejected"].Value;
         }
+
         public async Task<EventDetailResponse> GetEventDetailsByIdAsync(Guid eventId)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
