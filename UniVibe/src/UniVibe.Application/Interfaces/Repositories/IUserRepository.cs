@@ -7,5 +7,6 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<User?> GetUserWithDetailsByUsernameAsync(string username);
         Task<User?> GetUserWithDetailsByIdAsync(Guid userId);
         Task<List<User>> GetAllIncludingDeletedAsync();
+        Task<User?> GetByIdIncludingDeletedAsync(Guid id);
     }
 }

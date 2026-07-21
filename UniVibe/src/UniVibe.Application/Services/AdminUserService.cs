@@ -44,7 +44,7 @@ namespace UniVibe.Application.Services
 
         public async Task<bool> SuspendUserAsync(Guid userId)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
             if (user == null)
                 return false;
