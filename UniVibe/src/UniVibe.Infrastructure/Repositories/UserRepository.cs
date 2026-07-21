@@ -32,6 +32,12 @@ namespace UniVibe.Infrastructure.Repositories
                 .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
+        public async Task<User?> GetByIdIncludingDeletedAsync(Guid id)
+        {
+            return await _context.Set<User>()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
 
     }
 }
