@@ -2,9 +2,9 @@
 {
     public class ForgotPasswordRequest
     {
-        public string Email { get; set; }
+        public required string Email { get; set; }
 
-        public string ResetUrl { get; set; }
+        public string? ResetUrl { get; set; }
     }
 
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -22,7 +23,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
             var pagedEvents = await _eventService.GetAllEventsAsync(request);
-            return Ok(ApiResponse<object>.Success(pagedEvents));
+            return Ok(ApiResponse<PaginatedResult<EventDetailResponse>>.Success(pagedEvents));
         }
 
         [HttpPost("create-event")]
@@ -48,7 +49,7 @@ namespace UniVibe.API.Controllers
             var userId = User.GetUserId();
             var myEvent = await _eventService.GetMyActiveEventAsync(userId);
 
-            return Ok(ApiResponse<object>.Success(myEvent));
+            return Ok(ApiResponse<EventDetailResponse?>.Success(myEvent));
         }
 
         [HttpGet("my-joined-events")]
@@ -57,7 +58,7 @@ namespace UniVibe.API.Controllers
             var userId = User.GetUserId();
             var joinedEvents = await _eventService.GetMyJoinedEventsAsync(userId);
 
-            return Ok(ApiResponse<object>.Success(joinedEvents));
+            return Ok(ApiResponse<List<EventDetailResponse>>.Success(joinedEvents));
         }
 
         [HttpPost("join/{id}")]
@@ -75,7 +76,7 @@ namespace UniVibe.API.Controllers
             var currentUserId = User.GetUserId();
             var eventData = await _eventService.GetEventByIdAsync(id, currentUserId);
 
-            return Ok(ApiResponse<object>.Success(eventData));
+            return Ok(ApiResponse<EventDetailResponse>.Success(eventData));
         }
     }
 }
