@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -19,7 +20,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var categories = await _eventService.GetCategoriesAsync();
-            return Ok(ApiResponse<object>.Success(categories));
+            return Ok(ApiResponse<List<EventCategoryResponse>>.Success(categories));
         }
     }
 }

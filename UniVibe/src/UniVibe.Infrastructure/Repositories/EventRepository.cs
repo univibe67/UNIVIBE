@@ -70,8 +70,11 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(e => e.Category)
                 .FirstOrDefaultAsync(e =>
                     e.UserId == userId &&
-                    e.EventDate > DateTime.UtcNow &&
-                    e.IsDeleted == false);
+                    e.IsDeleted == false &&
+                        (
+                            e.Status == EventStatus.Pending ||
+                            (e.Status == EventStatus.Approved && e.EventDate > DateTime.UtcNow)
+                        ));
         }
         public async Task<List<Event>> GetAllWithUsersAsync()
         {
