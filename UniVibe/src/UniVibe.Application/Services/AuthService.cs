@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
@@ -7,9 +9,6 @@ using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace UniVibe.Application.Services
 {
@@ -26,6 +25,9 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IConfiguration _configuration;
+        private readonly IValidator<RegisterInitRequest> _registerInitValidator;
+        private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthService(
             IPendingUserRepository pendingUserRepository,
@@ -38,7 +40,10 @@ namespace UniVibe.Application.Services
             IFacultyRepository facultyRepository,
             IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IValidator<RegisterInitRequest> registerInitValidator,
+            IValidator<RegisterCompleteRequest> registerCompleteValidator,
+            IHttpContextAccessor httpContextAccessor)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -51,6 +56,9 @@ namespace UniVibe.Application.Services
             _unitOfWork = unitOfWork;
             _localizer = localizer;
             _configuration = configuration;
+            _registerInitValidator = registerInitValidator;
+            _registerCompleteValidator = registerCompleteValidator;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -99,16 +107,16 @@ namespace UniVibe.Application.Services
             return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
         }
 
-        public async Task<string> InitiateRegistrationAsync(string email, string targetUrl)
+        public async Task<string> InitiateRegistrationAsync(RegisterInitRequest request)
         {
-            // CANLIYA CIKARKEN ACILACAK: Sadece .edu.tr uzantılı mailleri kabul etme kurali
-            /*
-            if (!email.EndsWith(".edu.tr"))
+            var validationResult = await _registerInitValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
             {
-                throw new Exception(_localizer["Auth_EduMailRequired"].Value);
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
             }
-            */
-            var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == email);
+
+            var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (existingUser != null)
             {
@@ -143,7 +151,7 @@ namespace UniVibe.Application.Services
                 }
             }
 
-            var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == email);
+            var existingPending = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (existingPending != null)
             {
                 _pendingUserRepository.Delete(existingPending);
@@ -152,21 +160,38 @@ namespace UniVibe.Application.Services
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
-                Email = email,
+                Email = request.Email,
                 Token = token,
-                ExpiryDate = DateTime.UtcNow.AddMinutes(15), // 15 dakika yapıldı
+                ExpiryDate = DateTime.UtcNow.AddMinutes(15),
                 IsUsed = false
             };
 
             await _pendingUserRepository.AddAsync(pendingUser);
             await _unitOfWork.SaveChangesAsync();
 
+            var httpContext = _httpContextAccessor.HttpContext;
+            var userAgent = httpContext?.Request.Headers["User-Agent"].ToString().ToLower() ?? "";
+            var clientPlatform = httpContext?.Request.Headers["X-Client-Platform"].ToString().ToLower() ?? "";
+
+            bool isMobile = clientPlatform == "mobile" || userAgent.Contains("dart") || userAgent.Contains("react-native") || (!userAgent.Contains("mozilla") && !userAgent.Contains("chrome"));
+            string targetUrl;
+
+            if (isMobile)
+            {
+                string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
+                targetUrl = $"{expoBaseUrl}/--/register-complete";
+            }
+            else
+            {
+                string webBaseUrl = _configuration["WebBaseUrl"] ?? "http://localhost:3000";
+                targetUrl = $"{webBaseUrl}/register-complete";
+            }
+
             try
             {
                 var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
                 string linkForEmail;
 
-                // Webden mi Mobilden mi geldiğini anlayan akıllı yönlendirme (Web Bridge)
                 if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     linkForEmail = $"{targetUrl}?token={token}";
@@ -180,7 +205,7 @@ namespace UniVibe.Application.Services
                 string template = _localizer["Auth_RegisterEmailBody"].Value;
                 string mailBody = string.Format(template, linkForEmail);
 
-                await _emailService.SendEmailAsync(email, subject, mailBody);
+                await _emailService.SendEmailAsync(request.Email, subject, mailBody);
             }
             catch (Exception ex)
             {
@@ -189,7 +214,7 @@ namespace UniVibe.Application.Services
                 throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
             }
 
-            return token;
+            return _localizer["Res_Auth_LinkSent"].Value;
         }
 
         public async Task<bool> VerifyTokenAsync(string token)
@@ -204,7 +229,13 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
-            // React Native boş gönderirse patlamaması için koruma
+            var validationResult = await _registerCompleteValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
+
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new Exception(_localizer["Auth_InvalidToken"].Value);
 
@@ -214,13 +245,6 @@ namespace UniVibe.Application.Services
             if (pendingUser.ExpiryDate < DateTime.UtcNow)
                 throw new Exception(_localizer["Auth_TokenExpired"].Value);
 
-            /* ŞİMDİLİK TEST İÇİN DEVRE DIŞI BIRAKTIK (Canlıya çıkarken açacağız veya güncelleyeceğiz)
-            var emailDomain = pendingUser.Email.Split('@').LastOrDefault();
-            var university = await _universityRepository.FirstOrDefaultAsync(u => u.EmailDomain.ToLower() == emailDomain!.ToLower());
-            if (university == null)
-                 throw new Exception(_localizer["Auth_UniversityNotFound", emailDomain].Value);
-            */
-
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
                 throw new Exception(_localizer["Auth_UsernameTaken"].Value);
@@ -228,13 +252,6 @@ namespace UniVibe.Application.Services
             var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
             if (department == null)
                 throw new Exception(_localizer["Auth_DepartmentNotFound"].Value);
-
-            // TEST İÇİN KAPATILDI
-            /*
-            var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.Id == department.FacultyId);
-            if (faculty == null || faculty.UniversityId != university.Id)
-                throw new Exception(_localizer["Auth_FacultyMismatch"].Value);
-            */
 
             var assignedRole = UserRole.Student;
             if (pendingUser.Email.Contains("@beun.edu.tr"))
@@ -291,7 +308,6 @@ namespace UniVibe.Application.Services
                 throw new Exception(_localizer["Auth_SessionExpired"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
-
             var newRefreshToken = _tokenService.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
@@ -303,38 +319,40 @@ namespace UniVibe.Application.Services
             return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
         }
 
-        public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+        public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (user == null) return;
-
-            var resetToken = Guid.NewGuid().ToString();
-            user.PasswordResetToken = resetToken;
-            user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
-
-            _userRepository.Update(user);
-            await _unitOfWork.SaveChangesAsync();
-
-            var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : "http://localhost:3000/reset-password";
-
-            var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
-
-            string subject = _localizer["Auth_ResetEmailSubject"].Value;
-            string template = _localizer["Auth_ResetEmailBody"].Value;
-            string mailBody = string.Format(template, resetLink);
-
-            try
+            if (user != null)
             {
-                await _emailService.SendEmailAsync(user.Email, subject, mailBody);
+                var resetToken = Guid.NewGuid().ToString();
+                user.PasswordResetToken = resetToken;
+                user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
+
+                _userRepository.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : "http://localhost:3000/reset-password";
+                var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
+
+                string subject = _localizer["Auth_ResetEmailSubject"].Value;
+                string template = _localizer["Auth_ResetEmailBody"].Value;
+                string mailBody = string.Format(template, resetLink);
+
+                try
+                {
+                    await _emailService.SendEmailAsync(user.Email, subject, mailBody);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                }
             }
-            catch (Exception ex)
-            {
-                throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
-            }
+
+            return _localizer["Auth_ResetLinkSent"].Value;
         }
 
-        public async Task ResetPasswordAsync(ResetPasswordRequest request)
+        public async Task<string> ResetPasswordAsync(ResetPasswordRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new Exception(_localizer["Auth_InvalidOrExpiredToken"].Value);
@@ -347,12 +365,13 @@ namespace UniVibe.Application.Services
             }
 
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Auth_PasswordResetSuccessful"].Value;
         }
     }
 }

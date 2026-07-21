@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
@@ -17,6 +18,8 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IValidator<CreateEventRequest> _createEventValidator;
+        private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
 
         public EventService(
             IEventRepository eventRepository,
@@ -24,7 +27,9 @@ namespace UniVibe.Application.Services
             IImageService imageService,
             IMapper mapper,
             IUnitOfWork unitOfWork,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<CreateEventRequest> createEventValidator,
+            IValidator<GetAllEventsRequest> getAllEventsValidator)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -32,10 +37,19 @@ namespace UniVibe.Application.Services
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _localizer = localizer;
+            _createEventValidator = createEventValidator;
+            _getAllEventsValidator = getAllEventsValidator;
         }
 
-        public async Task CreateEventAsync(CreateEventRequest request, Guid userId)
+        public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
         {
+            var validationResult = await _createEventValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
+
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
                 e.EventDate > DateTime.UtcNow &&
@@ -64,11 +78,20 @@ namespace UniVibe.Application.Services
 
             await _eventRepository.AddAsync(newEvent);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Created"].Value;
         }
 
-        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
+        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request)
         {
-            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(pageNumber, pageSize, onlyActive);
+            var validationResult = await _getAllEventsValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
+
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
 
             var EventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
@@ -76,8 +99,8 @@ namespace UniVibe.Application.Services
             {
                 Items = EventDetailResponses,
                 TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
             };
         }
 
@@ -88,7 +111,7 @@ namespace UniVibe.Application.Services
             return _mapper.Map<List<EventCategoryResponse>>(categories);
         }
 
-        public async Task DeleteEventAsync(Guid eventId, Guid userId)
+        public async Task<string> DeleteEventAsync(Guid eventId, Guid userId)
         {
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
@@ -119,6 +142,8 @@ namespace UniVibe.Application.Services
 
             _eventRepository.Update(existingEvent);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Deleted"].Value;
         }
 
         public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)

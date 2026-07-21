@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
@@ -16,19 +17,22 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
 
         public UserService(
             IUserRepository userRepository,
             IImageService imageService,
             IMapper mapper,
             IUnitOfWork unitOfWork,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<UpdateUserProfileRequest> updateProfileValidator)
         {
             _userRepository = userRepository;
             _imageService = imageService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _localizer = localizer;
+            _updateProfileValidator = updateProfileValidator;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
@@ -54,8 +58,15 @@ namespace UniVibe.Application.Services
             return user.ProfilePictureUrl;
         }
 
-        public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
+        public async Task<string> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
         {
+            var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
+
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -87,6 +98,8 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_User_ProfileUpdated"].Value;
         }
 
         public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
@@ -109,7 +122,7 @@ namespace UniVibe.Application.Services
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
 
-        public async Task DeleteAccountAsync(Guid userId)
+        public async Task<string> DeleteAccountAsync(Guid userId)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -127,6 +140,8 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_User_AccountFrozen"].Value;
         }
     }
 }

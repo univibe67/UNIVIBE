@@ -1,7 +1,5 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
@@ -15,17 +13,10 @@ namespace UniVibe.API.Controllers
     public sealed class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
-        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public UsersController(
-            IUserService userService,
-            IValidator<UpdateUserProfileRequest> updateProfileValidator,
-            IStringLocalizer<SharedResources> localizer)
+        public UsersController(IUserService userService)
         {
             _userService = userService;
-            _updateProfileValidator = updateProfileValidator;
-            _localizer = localizer;
         }
 
         [HttpPost("upload-profile-picture")]
@@ -40,24 +31,16 @@ namespace UniVibe.API.Controllers
         [HttpPut("update-profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest updateDto)
         {
-            var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(errors));
-            }
-
             var userId = User.GetUserId();
-            await _userService.UpdateProfileAsync(userId, updateDto);
-            return Ok(ApiResponse<string>.Success(_localizer["Res_User_ProfileUpdated"].Value));
+            var message = await _userService.UpdateProfileAsync(userId, updateDto);
+
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = User.GetUserId();
-
             var profileData = await _userService.GetUserProfileAsync(userId);
 
             return Ok(ApiResponse<UserProfileResponse>.Success(profileData));
@@ -74,10 +57,9 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> DeleteAccount()
         {
             var userId = User.GetUserId();
+            var message = await _userService.DeleteAccountAsync(userId);
 
-            await _userService.DeleteAccountAsync(userId);
-
-            return Ok(ApiResponse<string>.Success(_localizer["Res_User_AccountFrozen"].Value));
+            return Ok(ApiResponse<string>.Success(message));
         }
     }
 }

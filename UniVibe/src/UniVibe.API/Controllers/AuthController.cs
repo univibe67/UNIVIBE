@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
@@ -14,21 +13,15 @@ namespace UniVibe.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
-        private readonly IValidator<RegisterInitRequest> _registerInitValidator;
-        private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
         private readonly IStringLocalizer<SharedResources> _localization;
 
         public AuthController(
             IAuthService authService,
             IConfiguration configuration,
-            IValidator<RegisterInitRequest> registerInitValidator,
-            IValidator<RegisterCompleteRequest> registerCompleteValidator,
             IStringLocalizer<SharedResources> sharedResources)
         {
             _authService = authService;
             _configuration = configuration;
-            _registerInitValidator = registerInitValidator;
-            _registerCompleteValidator = registerCompleteValidator;
             _localization = sharedResources;
         }
 
@@ -42,33 +35,8 @@ namespace UniVibe.API.Controllers
         [HttpPost("register-init")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
-            var validationResult = await _registerInitValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(errors));
-            }
-
-            var userAgent = Request.Headers["User-Agent"].ToString().ToLower();
-            var clientPlatform = Request.Headers["X-Client-Platform"].ToString().ToLower();
-
-            bool isMobile = clientPlatform == "mobile" || userAgent.Contains("dart") || userAgent.Contains("react-native") || (!userAgent.Contains("mozilla") && !userAgent.Contains("chrome"));
-            string targetUrl;
-
-            if (isMobile)
-            {
-                string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
-                targetUrl = $"{expoBaseUrl}/--/register-complete";
-            }
-            else
-            {
-                string webBaseUrl = _configuration["WebBaseUrl"] ?? "http://localhost:3000";
-                targetUrl = $"{webBaseUrl}/register-complete";
-            }
-
-            await _authService.InitiateRegistrationAsync(request.Email, targetUrl);
-
-            return Ok(ApiResponse<string>.Success(_localization["Res_Auth_LinkSent"].Value));
+            var message = await _authService.InitiateRegistrationAsync(request);
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet("verify-token")]
@@ -85,14 +53,6 @@ namespace UniVibe.API.Controllers
         [HttpPost("complete-registration")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
-            var validationResult = await _registerCompleteValidator.ValidateAsync(request);
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.Fail(string.Join(" • ", errors)));
-            }
-
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
         }
@@ -152,29 +112,15 @@ namespace UniVibe.API.Controllers
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            try
-            {
-                await _authService.ForgotPasswordAsync(request);
-                return Ok(ApiResponse<string>.Success(_localization["Auth_ResetLinkSent"].Value));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<string>.Fail(ex.Message));
-            }
+            var message = await _authService.ForgotPasswordAsync(request);
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            try
-            {
-                await _authService.ResetPasswordAsync(request);
-                return Ok(ApiResponse<string>.Success(_localization["Auth_PasswordResetSuccessful"].Value));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponse<string>.Fail(ex.Message));
-            }
+            var message = await _authService.ResetPasswordAsync(request);
+            return Ok(ApiResponse<string>.Success(message));
         }
     }
 }
