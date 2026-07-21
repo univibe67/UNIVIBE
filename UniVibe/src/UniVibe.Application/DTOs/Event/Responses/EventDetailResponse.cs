@@ -14,5 +14,7 @@
         public bool IsCreator { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsDeleted { get; set; }
+        public string? CancellationReason { get; set; }
+
     }
 }

@@ -54,7 +54,9 @@ namespace UniVibe.Application.Services
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
                 e.EventDate > DateTime.UtcNow &&
-                e.IsDeleted == false);
+                e.IsDeleted == false &&
+                e.Status != EventStatus.Cancelled &&
+                e.Status != EventStatus.Rejected);
 
             if (hasActiveEvent)
                 throw new Exception(_localizer["Event_HasActiveEvent"].Value);
@@ -112,41 +114,6 @@ namespace UniVibe.Application.Services
             return _mapper.Map<List<EventCategoryResponse>>(categories);
         }
 
-        public async Task<string> DeleteEventAsync(Guid eventId, Guid userId)
-        {
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
-
-            if (existingEvent == null)
-                throw new Exception(_localizer["Event_NotFound"].Value);
-
-            if (existingEvent.UserId != userId)
-                throw new Exception(_localizer["Event_UnauthorizedDelete"].Value);
-
-            var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
-
-            if (timeDifference.TotalHours < 0)
-                throw new Exception(_localizer["Event_CannotCancelPast"].Value);
-
-            if (timeDifference.TotalHours < 4)
-                throw new Exception(_localizer["Event_CannotCancelClose"].Value);
-
-            if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
-            {
-                await _imageService.DeleteImageAsync(existingEvent.ImagePublicId);
-
-                existingEvent.ImageUrl = null;
-                existingEvent.ImagePublicId = null;
-            }
-
-            existingEvent.IsDeleted = true;
-            existingEvent.UpdatedAt = DateTime.UtcNow;
-
-            _eventRepository.Update(existingEvent);
-            await _unitOfWork.SaveChangesAsync();
-
-            return _localizer["Res_Event_Deleted"].Value;
-        }
-
         public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
@@ -181,6 +148,7 @@ namespace UniVibe.Application.Services
 
             return EventDetailResponse;
         }
+
         public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
         {
             var events = await _eventRepository.GetJoinedEventsByUserIdAsync(userId);
@@ -206,6 +174,7 @@ namespace UniVibe.Application.Services
 
             return eventDetailResponses;
         }
+
         public async Task<string> JoinEventAsync(Guid eventId, Guid userId)
         {
             var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
@@ -230,8 +199,12 @@ namespace UniVibe.Application.Services
 
             return _localizer["Res_Event_Joined"].Value;
         }
+
         public async Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason)
         {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new Exception(_localizer["Res_Event_ReasonRequired"].Value);
+
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (existingEvent == null)

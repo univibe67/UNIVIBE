@@ -87,6 +87,7 @@ namespace UniVibe.Application.Services
                 eventDetailResponse.CategoryName = eventEntity.Category.Name;
 
             eventDetailResponse.RejectionReason = eventEntity.RejectionReason;
+            eventDetailResponse.CancellationReason = eventEntity.CancellationReason;
             eventDetailResponse.IsDeleted = eventEntity.IsDeleted;
             eventDetailResponse.IsCreator = false;
 
