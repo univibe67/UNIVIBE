@@ -175,6 +175,8 @@ i18n
           Admin_User_PendingDeletion: "Silinme Sürecinde",
           Admin_Rejecting: "Reddediliyor...",
           Admin_Reason_Required: "Lütfen bir ret sebebi girin.",
+          Admin_SearchPlaceholder: "Etkinlik veya organizatör ara...",
+          Admin_Cancellation_Reason: "İptal Nedeni",
         },
       },
       en: {
@@ -270,6 +272,7 @@ i18n
             "Are you sure you want to reject this event?",
           Admin_Error_Approve: "Approval failed.",
           Admin_Error_Reject: "Rejection failed.",
+          Admin_Cancellation_Reason: "Cancellation Reason",
           Admin_Confirm_SuspendUser:
             "Are you sure you want to ban/suspend this user?",
           Admin_Error_Suspend: "Failed to ban user.",
@@ -344,6 +347,7 @@ i18n
           Admin_Reject_Confirm: "Confirm Rejection",
           Admin_Rejecting: "Rejecting...",
           Admin_Reason_Required: "Please enter a rejection reason.",
+          Admin_SearchPlaceholder: "Search event or organizer...",
         },
       },
     },

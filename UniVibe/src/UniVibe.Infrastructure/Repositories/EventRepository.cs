@@ -10,9 +10,19 @@ namespace UniVibe.Infrastructure.Repositories
     {
         public EventRepository(UniVibeDbContext context) : base(context) { }
 
-        public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
+        public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(
+            int pageNumber,
+            int pageSize,
+            bool onlyActive = true,
+            string? searchTerm = null,
+            Guid? categoryId = null,
+            EventStatus? status = null)
         {
-            var query = _context.Events.Where(e => !e.IsDeleted).AsQueryable();
+            var query = _context.Events
+                .Include(e => e.Category)
+                .Include(e => e.User)
+                .Where(e => !e.IsDeleted)
+                .AsQueryable();
 
             if (onlyActive)
             {
@@ -20,7 +30,22 @@ namespace UniVibe.Infrastructure.Repositories
                                          e.EventDate >= DateTime.UtcNow &&
                                          e.Status == EventStatus.Approved);
             }
+            else if (status.HasValue)
+            {
+                query = query.Where(e => e.Status == status.Value);
+            }
 
+            if (categoryId.HasValue && categoryId != Guid.Empty)
+            {
+                query = query.Where(e => e.CategoryId == categoryId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var lowerTerm = searchTerm.ToLower();
+                query = query.Where(e => e.Title.ToLower().Contains(lowerTerm) ||
+                                         (e.Description != null && e.Description.ToLower().Contains(lowerTerm)));
+            }
 
             var totalCount = await query.CountAsync();
 

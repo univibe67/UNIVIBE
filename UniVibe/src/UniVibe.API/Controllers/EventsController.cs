@@ -33,15 +33,6 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<string>.Success(message));
         }
-
-        [HttpDelete("delete-event/{id}")]
-        public async Task<IActionResult> DeleteEvent(Guid id)
-        {
-            var userId = User.GetUserId();
-            var message = await _eventService.DeleteEventAsync(id, userId);
-
-            return Ok(ApiResponse<string>.Success(message));
-        }
         [HttpPost("cancel-event/{id}")]
         public async Task<IActionResult> CancelEvent(Guid id, [FromBody] string reason)
         {

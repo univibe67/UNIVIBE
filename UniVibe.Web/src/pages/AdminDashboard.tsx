@@ -14,6 +14,7 @@ interface EventItem {
   organizerName?: string;
   eventDate: string;
   status: string | number;
+  isDeleted?: boolean;
 }
 
 interface UserItem {
@@ -61,6 +62,9 @@ export default function AdminDashboard() {
   const [eventFilter, setEventFilter] = useState<
     "all" | "pending" | "approved" | "rejected" | "cancelled"
   >("all");
+  
+  const [eventSearchTerm, setEventSearchTerm] = useState("");
+
   const [currentEventPage, setCurrentEventPage] = useState(1);
   const eventsPerPage = 5;
 
@@ -84,15 +88,19 @@ export default function AdminDashboard() {
   const fetchEvents = async () => {
     try {
       const data = (await api.get("/AdminEvent/all")) as any;
-      setEvents(data);
-    } catch (error) {}
+      setEvents(data || []);
+    } catch (error) {
+      setEvents([]);
+    }
   };
 
   const fetchUsers = async () => {
     try {
       const data = (await api.get("/AdminUser/all")) as any;
-      setUsers(data);
-    } catch (error) {}
+      setUsers(data || []);
+    } catch (error) {
+      setUsers([]);
+    }
   };
 
   useEffect(() => {
@@ -102,18 +110,36 @@ export default function AdminDashboard() {
     );
   }, []);
 
-  const processedEvents = events
+  const processedEvents = (events || [])
     .filter((event) => {
-      if (eventFilter === "all") return true;
-      const statusStr = String(event.status).toLowerCase();
-      if (eventFilter === "pending")
-        return event.status === 1 || statusStr === "pending";
-      if (eventFilter === "approved")
-        return event.status === 2 || statusStr === "approved";
-      if (eventFilter === "rejected")
-        return event.status === 3 || statusStr === "rejected";
-      if (eventFilter === "cancelled")
-        return event.status === 4 || statusStr === "cancelled";
+      const isCancelled = event.isDeleted || event.status === 4 || String(event.status).toLowerCase() === "cancelled";
+      
+      if (isCancelled && eventFilter !== "all" && eventFilter !== "cancelled") {
+        return false;
+      }
+
+      if (eventFilter !== "all") {
+        const statusStr = String(event.status).toLowerCase();
+        let matchesStatus = false;
+        if (eventFilter === "pending")
+          matchesStatus = event.status === 1 || statusStr === "pending";
+        else if (eventFilter === "approved")
+          matchesStatus = event.status === 2 || statusStr === "approved";
+        else if (eventFilter === "rejected")
+          matchesStatus = event.status === 3 || statusStr === "rejected";
+        else if (eventFilter === "cancelled")
+          matchesStatus = isCancelled;
+
+        if (!matchesStatus) return false;
+      }
+
+      if (eventSearchTerm.trim() !== "") {
+        const term = eventSearchTerm.toLowerCase();
+        const titleMatch = event.title?.toLowerCase().includes(term);
+        const organizerMatch = event.organizerName?.toLowerCase().includes(term);
+        if (!titleMatch && !organizerMatch) return false;
+      }
+
       return true;
     })
     .sort((a, b) => {
@@ -127,7 +153,7 @@ export default function AdminDashboard() {
       return dateA - dateB;
     });
 
-  const totalEventPages = Math.ceil(processedEvents.length / eventsPerPage);
+  const totalEventPages = Math.ceil(processedEvents.length / eventsPerPage) || 1;
   const indexOfLastEvent = currentEventPage * eventsPerPage;
   const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
   const currentEventsOnPage = processedEvents.slice(
@@ -135,9 +161,10 @@ export default function AdminDashboard() {
     indexOfLastEvent
   );
 
+  // DİKKAT: Burada patlamaya sebep olan silinmiş 'selectedCategoryFilter' kaldırıldı!
   useEffect(() => {
     setCurrentEventPage(1);
-  }, [eventFilter, activeTab]);
+  }, [eventFilter, eventSearchTerm, activeTab]);
 
   const handleApproveEvent = async (id: string) => {
     try {
@@ -270,12 +297,14 @@ export default function AdminDashboard() {
         <div className="p-4 md:p-6">
           {activeTab === "events" && (
             <AdminEventSection
-              events={events}
+              events={events || []}
               isLoading={isLoading}
               eventFilter={eventFilter}
               setEventFilter={setEventFilter}
-              processedEvents={processedEvents}
-              currentEventsOnPage={currentEventsOnPage}
+              eventSearchTerm={eventSearchTerm}
+              setEventSearchTerm={setEventSearchTerm}
+              processedEvents={processedEvents || []}
+              currentEventsOnPage={currentEventsOnPage || []}
               currentEventPage={currentEventPage}
               totalEventPages={totalEventPages}
               setCurrentEventPage={setCurrentEventPage}
@@ -288,7 +317,7 @@ export default function AdminDashboard() {
 
           {activeTab === "users" && (
             <AdminUserSection
-              users={users}
+              users={users || []}
               isLoading={isLoading}
               safeAdminId={safeAdminId}
               handleSuspendUser={handleSuspendUser}
