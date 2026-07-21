@@ -205,5 +205,29 @@ namespace UniVibe.Application.Services
 
             return eventDetailResponses;
         }
+        public async Task<string> JoinEventAsync(Guid eventId, Guid userId)
+        {
+            var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            if (eventEntity == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.UserId == userId)
+                throw new Exception(_localizer["Event_CannotJoinOwnEvent"].Value);
+
+            var alreadyJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, userId);
+            if (alreadyJoined)
+                throw new Exception(_localizer["Event_AlreadyJoined"].Value);
+
+            var attendee = new EventAttendee
+            {
+                EventId = eventId,
+                UserId = userId
+            };
+
+            await _eventRepository.AddAttendeeAsync(attendee);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Joined"].Value;
+        }
     }
 }

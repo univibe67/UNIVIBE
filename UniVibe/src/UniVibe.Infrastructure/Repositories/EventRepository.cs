@@ -68,6 +68,16 @@ namespace UniVibe.Infrastructure.Repositories
                 .OrderByDescending(e => e.EventDate)
                 .ToListAsync();
         }
+        public async Task<bool> IsUserJoinedEventAsync(Guid eventId, Guid userId)
+        {
+            return await _context.EventAttendees
+                .AnyAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
+        }
+
+        public async Task AddAttendeeAsync(EventAttendee attendee)
+        {
+            await _context.EventAttendees.AddAsync(attendee);
+        }
 
     }
 }

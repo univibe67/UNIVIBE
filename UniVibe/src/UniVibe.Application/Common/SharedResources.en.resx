@@ -312,4 +312,13 @@
   <data name="Res_Event_ReasonRequired" xml:space="preserve">
     <value>A reason for rejection is mandatory.</value>
   </data>
+  <data name="Event_CannotJoinOwnEvent" xml:space="preserve">
+    <value>You cannot participate in an event you created yourself.</value>
+  </data>
+  <data name="Event_AlreadyJoined" xml:space="preserve">
+    <value>You have already participated in this event.</value>
+  </data>
+  <data name="Res_Event_Joined" xml:space="preserve">
+    <value>You have successfully participated in the event!</value>
+  </data>
 </root>

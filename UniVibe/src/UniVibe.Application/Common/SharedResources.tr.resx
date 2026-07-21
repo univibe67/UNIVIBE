@@ -312,4 +312,13 @@
   <data name="Res_Event_ReasonRequired" xml:space="preserve">
     <value>Red sebebi zorunludur.</value>
   </data>
+  <data name="Event_CannotJoinOwnEvent" xml:space="preserve">
+    <value>Kendi oluşturduğunuz etkinliğe katılamazsınız.</value>
+  </data>
+  <data name="Event_AlreadyJoined" xml:space="preserve">
+    <value>Bu etkinliğe zaten katıldınız.</value>
+  </data>
+  <data name="Res_Event_Joined" xml:space="preserve">
+    <value>Etkinliğe başarıyla katıldınız!</value>
+  </data>
 </root>
