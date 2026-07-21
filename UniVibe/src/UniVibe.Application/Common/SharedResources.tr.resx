@@ -321,4 +321,13 @@
   <data name="Res_Event_Joined" xml:space="preserve">
     <value>Etkinliğe başarıyla katıldınız!</value>
   </data>
+  <data name="Event_AlreadyCancelled" xml:space="preserve">
+    <value>Bu etkinlik zaten iptal edilmiş.</value>
+  </data>
+  <data name="Res_Event_Cancelled" xml:space="preserve">
+    <value>Etkinlik başarıyla iptal edildi.</value>
+  </data>
+  <data name="Event_UnauthorizedCancel" xml:space="preserve">
+    <value>Bu etkinliği iptal etmeye yetkiniz yok.</value>
+  </data>
 </root>

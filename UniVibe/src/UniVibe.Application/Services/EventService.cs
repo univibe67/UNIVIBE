@@ -7,6 +7,7 @@ using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
 {
@@ -228,6 +229,36 @@ namespace UniVibe.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Joined"].Value;
+        }
+        public async Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason)
+        {
+            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+
+            if (existingEvent == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            if (existingEvent.UserId != userId)
+                throw new Exception(_localizer["Event_UnauthorizedCancel"].Value);
+
+            var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
+
+            if (timeDifference.TotalHours < 0)
+                throw new Exception(_localizer["Event_CannotCancelPast"].Value);
+
+            if (timeDifference.TotalHours < 4)
+                throw new Exception(_localizer["Event_CannotCancelClose"].Value);
+
+            if (existingEvent.Status == EventStatus.Cancelled)
+                throw new Exception(_localizer["Event_AlreadyCancelled"].Value);
+
+            existingEvent.Status = EventStatus.Cancelled;
+            existingEvent.CancellationReason = reason;
+            existingEvent.UpdatedAt = DateTime.UtcNow;
+
+            _eventRepository.Update(existingEvent);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Cancelled"].Value;
         }
     }
 }

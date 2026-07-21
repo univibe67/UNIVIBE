@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Clock, CheckCircle, XCircle, Eye, X, Calendar, User, Tag, AlertTriangle } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle, XCircle, Eye, X, Calendar, User, Tag, AlertTriangle, Ban, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../services/api";
 
@@ -16,8 +16,8 @@ interface EventItem {
 interface AdminEventSectionProps {
   events: EventItem[];
   isLoading: boolean;
-  eventFilter: "all" | "pending" | "approved" | "rejected";
-  setEventFilter: (filter: "all" | "pending" | "approved" | "rejected") => void;
+  eventFilter: "all" | "pending" | "approved" | "rejected" | "cancelled";
+  setEventFilter: (filter: "all" | "pending" | "approved" | "rejected" | "cancelled") => void;
   processedEvents: EventItem[];
   currentEventsOnPage: EventItem[];
   currentEventPage: number;
@@ -54,6 +54,7 @@ export default function AdminEventSection({
   const [eventToRejectId, setEventToRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectError, setRejectError] = useState("");
 
   const handleOpenDetail = async (eventItem: EventItem) => {
     setDetailLoading(true);
@@ -79,22 +80,24 @@ export default function AdminEventSection({
   const handleOpenRejectModal = (id: string) => {
     setEventToRejectId(id);
     setRejectReason("");
+    setRejectError("");
     setRejectModalOpen(true);
   };
 
   const handleConfirmReject = async () => {
-    if (!rejectReason.trim()) {
-      alert(t("Admin_Reason_Required"));
+    if (!rejectReason || !rejectReason.trim()) {
+      setRejectError(t("Admin_Reason_Required") || "Lütfen bir red nedeni giriniz.");
       return;
     }
 
+    setRejectError("");
     setIsRejecting(true);
     try {
       await api.put(`/AdminEvent/reject/${eventToRejectId}`, { reason: rejectReason });
       setRejectModalOpen(false);
       window.location.reload();
     } catch (error: any) {
-      alert(error?.response?.data?.message || t("Admin_Error_Reject"));
+      setRejectError(error?.response?.data?.message || t("Admin_Error_Reject") || "İşlem sırasında bir hata oluştu.");
     } finally {
       setIsRejecting(false);
     }
@@ -105,28 +108,39 @@ export default function AdminEventSection({
       <div className="flex overflow-x-auto sm:flex-wrap gap-2 pb-2 sm:pb-0 mb-4 sm:mb-6 custom-scrollbar w-full">
         <div className="flex gap-2 bg-white p-1.5 sm:p-2 rounded-lg border border-gray-100 shadow-sm min-w-max">
           <button
+            type="button"
             onClick={() => setEventFilter("all")}
             className={`whitespace-nowrap flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${eventFilter === "all" ? "bg-gray-800 text-white shadow" : "text-gray-500 hover:bg-gray-50"}`}
           >
             {t("Admin_All")}
           </button>
           <button
+            type="button"
             onClick={() => setEventFilter("pending")}
             className={`whitespace-nowrap flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 ${eventFilter === "pending" ? "bg-orange-100 text-orange-700 shadow" : "text-gray-500 hover:bg-gray-50"}`}
           >
             <Clock size={14} className="sm:w-4 sm:h-4" /> {t("Admin_Status_Pending")}
           </button>
           <button
+            type="button"
             onClick={() => setEventFilter("approved")}
             className={`whitespace-nowrap flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 ${eventFilter === "approved" ? "bg-green-100 text-green-700 shadow" : "text-gray-500 hover:bg-gray-50"}`}
           >
             <CheckCircle size={14} className="sm:w-4 sm:h-4" /> {t("Admin_Status_Approved")}
           </button>
           <button
+            type="button"
             onClick={() => setEventFilter("rejected")}
             className={`whitespace-nowrap flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 ${eventFilter === "rejected" ? "bg-red-100 text-red-700 shadow" : "text-gray-500 hover:bg-gray-50"}`}
           >
             <XCircle size={14} className="sm:w-4 sm:h-4" /> {t("Admin_Status_Rejected")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEventFilter("cancelled")}
+            className={`whitespace-nowrap flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 ${eventFilter === "cancelled" ? "bg-gray-200 text-gray-800 shadow" : "text-gray-500 hover:bg-gray-50"}`}
+          >
+            <Ban size={14} className="sm:w-4 sm:h-4" /> {t("Admin_Status_Cancelled") || "İptal Edildi"}
           </button>
         </div>
       </div>
@@ -145,6 +159,7 @@ export default function AdminEventSection({
               const statusStr = String(event.status).toLowerCase();
               const isPending = event.status === 1 || statusStr === "pending";
               const isApproved = event.status === 2 || statusStr === "approved";
+              const isCancelled = event.isDeleted || event.status === 4 || statusStr === "cancelled";
               const isPast = new Date(event.eventDate).getTime() < new Date().getTime();
 
               return (
@@ -159,7 +174,7 @@ export default function AdminEventSection({
                           {event.title}
                         </h3>
                         <div>
-                          {event.isDeleted ? (
+                          {isCancelled ? (
                             <span className="bg-gray-100 text-gray-600 py-1 px-2.5 rounded-md text-[10px] sm:text-xs font-medium whitespace-nowrap">
                               {t("Admin_Status_Cancelled")}
                             </span>
@@ -201,6 +216,7 @@ export default function AdminEventSection({
                     </span>
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => handleOpenDetail(event)}
                         className="p-1.5 sm:p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
                         title={t("Admin_ViewDetails")}
@@ -208,9 +224,10 @@ export default function AdminEventSection({
                         <Eye size={18} />
                       </button>
 
-                      {isPending && !isPast && !event.isDeleted && (
+                      {isPending && !isPast && !isCancelled && (
                         <>
                           <button
+                            type="button"
                             onClick={() => handleApproveEvent(event.id)}
                             className="p-1.5 sm:p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                             title={t("Admin_Approve")}
@@ -218,6 +235,7 @@ export default function AdminEventSection({
                             <CheckCircle size={18} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleOpenRejectModal(event.id)}
                             className="p-1.5 sm:p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                             title={t("Admin_Reject")}
@@ -249,6 +267,7 @@ export default function AdminEventSection({
                   const statusStr = String(event.status).toLowerCase();
                   const isPending = event.status === 1 || statusStr === "pending";
                   const isApproved = event.status === 2 || statusStr === "approved";
+                  const isCancelled = event.isDeleted || event.status === 4 || statusStr === "cancelled";
                   const isPast = new Date(event.eventDate).getTime() < new Date().getTime();
 
                   return (
@@ -277,7 +296,7 @@ export default function AdminEventSection({
                           : t("Admin_NoDate")}
                       </td>
                       <td className="py-4">
-                        {event.isDeleted ? (
+                        {isCancelled ? (
                           <span className="bg-gray-100 text-gray-600 py-1 px-3 rounded-full text-xs font-medium">
                             {t("Admin_Status_Cancelled")}
                           </span>
@@ -297,6 +316,7 @@ export default function AdminEventSection({
                       </td>
                       <td className="py-4 text-right flex justify-end gap-2 items-center">
                         <button
+                          type="button"
                           onClick={() => handleOpenDetail(event)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                           title={t("Admin_ViewDetails")}
@@ -304,9 +324,10 @@ export default function AdminEventSection({
                           <Eye size={20} />
                         </button>
 
-                        {isPending && !isPast && !event.isDeleted && (
+                        {isPending && !isPast && !isCancelled && (
                           <>
                             <button
+                              type="button"
                               onClick={() => handleApproveEvent(event.id)}
                               className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                               title={t("Admin_Approve")}
@@ -314,6 +335,7 @@ export default function AdminEventSection({
                               <CheckCircle size={20} />
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleOpenRejectModal(event.id)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title={t("Admin_Reject")}
@@ -342,6 +364,7 @@ export default function AdminEventSection({
 
               <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-2">
                 <button
+                  type="button"
                   onClick={() => setCurrentEventPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentEventPage === 1}
                   className="flex-1 sm:flex-none px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
@@ -352,6 +375,7 @@ export default function AdminEventSection({
                   {currentEventPage} / {totalEventPages}
                 </div>
                 <button
+                  type="button"
                   onClick={() => setCurrentEventPage((prev) => Math.min(prev + 1, totalEventPages))}
                   disabled={currentEventPage === totalEventPages}
                   className="flex-1 sm:flex-none px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
@@ -368,6 +392,7 @@ export default function AdminEventSection({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
+              type="button"
               onClick={() => setIsDetailModalOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
             >
@@ -380,14 +405,14 @@ export default function AdminEventSection({
               <div className="py-12 text-center text-gray-500 font-medium">{t("Admin_LoadingDetails")}</div>
             ) : selectedEventDetail ? (
               <div className="space-y-4">
-                {selectedEventDetail.isDeleted ? (
+                {selectedEventDetail.isDeleted || String(selectedEventDetail.status) === "4" || String(selectedEventDetail.status).toLowerCase() === "cancelled" ? (
                   <div className="bg-gray-100 border border-gray-300 text-gray-700 p-3.5 rounded-xl space-y-1">
                     <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-gray-600">
                       <AlertTriangle size={16} />
                       <span>{t("Admin_Cancellation_Status")}</span>
                     </div>
                     <p className="text-sm font-medium">
-                      {t("Admin_Event_Cancelled_Notice")}
+                      {t("Admin_Event_Cancelled_Notice") || "Bu etkinlik iptal edilmiştir."}
                     </p>
                   </div>
                 ) : String(selectedEventDetail.status) === "3" || 
@@ -469,6 +494,7 @@ export default function AdminEventSection({
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => setIsDetailModalOpen(false)}
                   className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl transition-colors"
                 >
@@ -483,36 +509,72 @@ export default function AdminEventSection({
       )}
 
       {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-gray-800">{t("Admin_Reject_Modal_Title")}</h3>
-            <p className="text-sm text-gray-500">
-              {t("Admin_Reject_Modal_Desc")}
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-gray-100 relative">
+            
+            <div className="flex items-center gap-3.5 border-b border-gray-100 pb-4">
+              <div className="p-2.5 bg-red-50 text-red-600 rounded-xl shrink-0 border border-red-100">
+                <XCircle size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {t("Admin_Reject_Modal_Title") || "Etkinliği Reddet"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {t("Admin_Reject_Modal_Desc") || "Lütfen bu etkinliğin neden reddedildiğini açıklayın."}
+                </p>
+              </div>
+            </div>
 
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder={t("Admin_Reject_Placeholder")}
-              className="w-full p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500 text-sm h-32 resize-none"
-            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                {t("Admin_Rejection_Reason") || "Red Nedeni"}
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  if (rejectError) setRejectError("");
+                }}
+                placeholder={t("Admin_Reject_Placeholder") || "Örn: Etkinlik kurallara uygun değil..."}
+                className={`w-full p-3.5 border rounded-xl outline-none text-sm h-36 resize-none transition-all placeholder:text-gray-400 bg-gray-50/50 ${
+                  rejectError ? "border-red-500 focus:ring-2 focus:ring-red-500/20" : "border-gray-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                }`}
+              />
+              {rejectError && (
+                <p className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1.5 animate-shake">
+                  <AlertTriangle size={14} className="shrink-0" /> 
+                  <span>{rejectError}</span>
+                </p>
+              )}
+            </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex items-center gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setRejectModalOpen(false)}
                 disabled={isRejecting}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors text-sm border border-gray-200/60"
               >
-                {t("Admin_Cancel")}
+                {t("Admin_Cancel") || "Vazgeç"}
               </button>
               <button
+                type="button"
                 onClick={handleConfirmReject}
                 disabled={isRejecting}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm shadow-md shadow-red-500/20 disabled:opacity-50"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-all text-sm shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isRejecting ? t("Admin_Rejecting") : t("Admin_Reject_Confirm")}
+                {isRejecting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>{t("Admin_Rejecting") || "Reddediliyor..."}</span>
+                  </>
+                ) : (
+                  <span>{t("Admin_Reject_Confirm") || "Reddet ve Gönder"}</span>
+                )}
               </button>
             </div>
+
           </div>
         </div>
       )}

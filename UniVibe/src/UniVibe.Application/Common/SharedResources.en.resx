@@ -321,4 +321,13 @@
   <data name="Res_Event_Joined" xml:space="preserve">
     <value>You have successfully participated in the event!</value>
   </data>
+  <data name="Event_AlreadyCancelled" xml:space="preserve">
+    <value>This event has already been cancelled.</value>
+  </data>
+  <data name="Res_Event_Cancelled" xml:space="preserve">
+    <value>The event has been successfully cancelled.</value>
+  </data>
+  <data name="Event_UnauthorizedCancel" xml:space="preserve">
+    <value>You do not have the authority to cancel this event.</value>
+  </data>
 </root>

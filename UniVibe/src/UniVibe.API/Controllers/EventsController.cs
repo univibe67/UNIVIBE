@@ -42,6 +42,14 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<string>.Success(message));
         }
+        [HttpPost("cancel-event/{id}")]
+        public async Task<IActionResult> CancelEvent(Guid id, [FromBody] string reason)
+        {
+            var userId = User.GetUserId();
+            var message = await _eventService.CancelEventAsync(id, userId, reason);
+
+            return Ok(ApiResponse<string>.Success(message));
+        }
 
         [HttpGet("my-active-event")]
         public async Task<IActionResult> GetMyActiveEvent()

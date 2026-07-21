@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [eventFilter, setEventFilter] = useState<
-    "all" | "pending" | "approved" | "rejected"
+    "all" | "pending" | "approved" | "rejected" | "cancelled"
   >("all");
   const [currentEventPage, setCurrentEventPage] = useState(1);
   const eventsPerPage = 5;
@@ -112,6 +112,8 @@ export default function AdminDashboard() {
         return event.status === 2 || statusStr === "approved";
       if (eventFilter === "rejected")
         return event.status === 3 || statusStr === "rejected";
+      if (eventFilter === "cancelled")
+        return event.status === 4 || statusStr === "cancelled";
       return true;
     })
     .sort((a, b) => {
