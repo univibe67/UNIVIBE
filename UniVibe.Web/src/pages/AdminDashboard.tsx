@@ -142,7 +142,7 @@ export default function AdminDashboard() {
       await api.put(`/AdminEvent/approve/${id}`);
       fetchEvents();
     } catch (error: any) {
-      alert(error || t("Admin_Error_Approve"));
+      alert(error?.response?.data?.message || error || t("Admin_Error_Approve"));
     }
   };
 
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
           fetchUsers();
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
         } catch (error: any) {
-          alert(error || t("Admin_Error_Suspend"));
+          alert(error?.response?.data?.message || error || t("Admin_Error_Suspend"));
         }
       },
     });
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
       await api.put(`/AdminUser/activate/${id}`);
       fetchUsers();
     } catch (error: any) {
-      alert(error || t("Admin_Error_Activate"));
+      alert(error?.response?.data?.message || error || t("Admin_Error_Activate"));
     }
   };
 

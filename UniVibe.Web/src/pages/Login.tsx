@@ -81,7 +81,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!email || !password) {
       setError(t("Login_Error_FieldsRequired") || "Lütfen e-posta ve şifre alanlarını doldurun.");
       return;
@@ -126,7 +126,7 @@ export default function Login() {
       const errorMessage =
         typeof err === "string"
           ? err
-          : err?.message || t("Login_Error_Default");
+          : err?.response?.data?.message || err?.message || t("Login_Error_Default");
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -136,11 +136,6 @@ export default function Login() {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotMessage({ type: "", text: "" });
-
-    if (!forgotEmail) {
-      setForgotMessage({ type: "error", text: "Lütfen e-posta adresinizi girin." });
-      return;
-    }
 
     setForgotLoading(true);
 
@@ -173,11 +168,6 @@ export default function Login() {
   const handleRegisterInitiate = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterMessage({ type: "", text: "" });
-
-    if (!registerEmail) {
-      setRegisterMessage({ type: "error", text: "Lütfen e-posta adresinizi girin." });
-      return;
-    }
 
     setRegisterLoading(true);
 
