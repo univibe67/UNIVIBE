@@ -61,6 +61,15 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<object>.Success(joinedEvents));
         }
 
+        [HttpPost("join/{id}")]
+        public async Task<IActionResult> JoinEvent(Guid id)
+        {
+            var userId = User.GetUserId();
+            var message = await _eventService.JoinEventAsync(id, userId);
+
+            return Ok(ApiResponse<string>.Success(message));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetEventById(Guid id)
         {
