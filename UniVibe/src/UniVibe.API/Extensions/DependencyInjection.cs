@@ -12,6 +12,7 @@ namespace UniVibe.API.Extensions
         public static IServiceCollection AddWebAPIServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddControllers();
+            services.AddHttpContextAccessor();
 
             services.AddCors(options =>
             {
