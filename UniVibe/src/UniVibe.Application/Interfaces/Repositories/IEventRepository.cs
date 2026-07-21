@@ -8,5 +8,6 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId);
         Task<Event?> GetActiveEventByUserIdAsync(Guid userId);
         Task<List<Event>> GetAllWithUsersAsync();
+        Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId);
     }
 }

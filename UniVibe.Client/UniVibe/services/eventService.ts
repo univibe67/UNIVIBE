@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from "./api";
 
 export interface EventDto {
   id: string;
@@ -27,7 +27,10 @@ export interface PaginatedResult<T> {
   hasNextPage: boolean;
 }
 
-const emptyResult = <T,>(pageNumber: number, pageSize: number): PaginatedResult<T> => ({
+const emptyResult = <T>(
+  pageNumber: number,
+  pageSize: number,
+): PaginatedResult<T> => ({
   items: [],
   totalCount: 0,
   pageNumber,
@@ -38,12 +41,20 @@ const emptyResult = <T,>(pageNumber: number, pageSize: number): PaginatedResult<
 });
 
 export const eventService = {
-  async getEvents(pageNumber = 1, pageSize = 10): Promise<PaginatedResult<EventDto>> {
-    const data = await api.get('/Events/all-events', {
-      params: { pageNumber, pageSize },
+  async getEvents(
+    pageNumber = 1,
+    pageSize = 10,
+    onlyActive = true,
+  ): Promise<PaginatedResult<EventDto>> {
+    const data = await api.get("/Events/all-events", {
+      params: { pageNumber, pageSize, onlyActive },
     });
 
-    if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
+    if (
+      !data ||
+      typeof data !== "object" ||
+      !Array.isArray((data as any).items)
+    ) {
       return emptyResult<EventDto>(pageNumber, pageSize);
     }
 
@@ -51,7 +62,7 @@ export const eventService = {
   },
 
   async getCategories(): Promise<EventCategoryDto[]> {
-    const data = await api.get('/EventCategories/event-categories');
+    const data = await api.get("/EventCategories/event-categories");
     return Array.isArray(data) ? data : [];
   },
 };

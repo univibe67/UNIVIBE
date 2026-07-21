@@ -1,17 +1,17 @@
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ImageBackground,
-  Alert
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -66,7 +66,6 @@ export default function LoginScreen() {
       style={styles.background}
       resizeMode="cover"
     >
-      {/* 🚨 Siyah Tül Katmanı (Overlay): styles.overlay ile tüm ekranı kaplayıp arkadaki resmi hafif karartıyoruz */}
       <View style={styles.overlay}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -134,21 +133,20 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // %50 saydam siyah katman. Fotoğrafı yumuşatır, formun öne çıkmasını sağlar.
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  container: { 
-    flex: 1, 
-    // 🚨 BURADAKİ GRİ ARKA PLAN RENGİNİ SİLDİK, ARTIK FOTOĞRAF GÖRÜNECEK!
+  container: {
+    flex: 1,
   },
-  formContainer: { 
-    flex: 1, 
-    justifyContent: "center", 
-    paddingHorizontal: 24 
+  formContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
   title: {
     fontSize: 44,
     fontWeight: "bold",
-    color: "#FFFFFF", // 🚨 Yazıyı beyaz yaptık
+    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 8,
     textShadowColor: "rgba(0, 0, 0, 0.3)",
@@ -157,20 +155,20 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#E5E7EB", // 🚨 Yazıyı açık gri/beyaz yaptık
+    color: "#E5E7EB",
     textAlign: "center",
     marginBottom: 40,
   },
   inputContainer: { marginBottom: 20 },
-  label: { 
-    fontSize: 14, 
-    fontWeight: "600", 
-    color: "#F3F4F6", // 🚨 Label rengini beyaz/açık gri yaptık
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#F3F4F6",
     marginBottom: 8,
-    marginLeft: 4
+    marginLeft: 4,
   },
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // Çok hafif saydam cam efekti verdik
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -195,6 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 24,
   },
-  registerText: { color: "#000000", fontSize: 14 }, // 🚨 Beyaza yaklaştırdık
-  registerLink: { color: "#60A5FA", fontSize: 14, fontWeight: "bold" }, // Arka plan koyu olduğu için link rengini biraz daha açık mavi yaptık
+  registerText: { color: "#E5E7EB", fontSize: 14 },
+  registerLink: { color: "#60A5FA", fontSize: 14, fontWeight: "bold" },
 });

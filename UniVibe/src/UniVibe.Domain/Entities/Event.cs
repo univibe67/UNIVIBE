@@ -25,6 +25,8 @@ namespace UniVibe.Domain.Entities
         public Guid CategoryId { get; set; }
         [ForeignKey(nameof(CategoryId))]
         public EventCategory Category { get; set; } = default!;
+
+        public ICollection<EventAttendee> Attendees { get; set; } = new List<EventAttendee>();
     }
 
 }
