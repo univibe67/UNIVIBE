@@ -142,12 +142,12 @@ namespace UniVibe.Application.Services
             if (activeEvent == null)
                 return null;
 
-            var EventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
+            var eventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
 
             if (activeEvent.Category != null)
-                EventDetailResponse.CategoryName = activeEvent.Category.Name;
+                eventDetailResponse.CategoryName = activeEvent.Category.Name;
 
-            return EventDetailResponse;
+            return eventDetailResponse;
         }
 
         public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
