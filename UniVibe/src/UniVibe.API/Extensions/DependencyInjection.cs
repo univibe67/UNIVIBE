@@ -63,8 +63,8 @@ namespace UniVibe.API.Extensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration["UniVibe"],
-                    ValidAudience = configuration["UniVibe"],
+                    ValidIssuer = configuration["Jwt:Issuer"] ?? "UniVibe",
+                    ValidAudience = configuration["Jwt:Audience"] ?? "UniVibeUsers",
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!)),
                     ClockSkew = TimeSpan.Zero
                 };
