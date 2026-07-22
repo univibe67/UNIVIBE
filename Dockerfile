@@ -1,16 +1,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Dockerfile ana dizinde olduğu için projeleri UniVibe klasörünün içinden alıyoruz
-COPY ["UniVibe/UniVibe.API/UniVibe.API.csproj", "UniVibe.API/"]
-COPY ["UniVibe/UniVibe.Application/UniVibe.Application.csproj", "UniVibe.Application/"]
-COPY ["UniVibe/UniVibe.Infrastructure/UniVibe.Infrastructure.csproj", "UniVibe.Infrastructure/"]
-COPY ["UniVibe/UniVibe.Domain/UniVibe.Domain.csproj", "UniVibe.Domain/"]
+# Projeleri UniVibe/src/ altındaki klasörlerden kopyalıyoruz
+COPY ["UniVibe/src/UniVibe.API/UniVibe.API.csproj", "UniVibe.API/"]
+COPY ["UniVibe/src/UniVibe.Application/UniVibe.Application.csproj", "UniVibe.Application/"]
+COPY ["UniVibe/src/UniVibe.Infrastructure/UniVibe.Infrastructure.csproj", "UniVibe.Infrastructure/"]
+COPY ["UniVibe/src/UniVibe.Domain/UniVibe.Domain.csproj", "UniVibe.Domain/"]
 
 RUN dotnet restore "UniVibe.API/UniVibe.API.csproj"
 
+# Tüm kodları kopyalayıp publish aşamasına geçiyoruz
 COPY . .
-WORKDIR "/src/UniVibe/UniVibe.API"
+WORKDIR "/src/UniVibe/src/UniVibe.API"
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
