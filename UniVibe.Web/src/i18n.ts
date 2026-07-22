@@ -266,6 +266,7 @@ i18n
             "Sistemden çıkış yapmak istediğinize emin misiniz?",
           Auth_Yes: "Evet, Çıkış Yap",
           Auth_Cancel: "İptal",
+          AAuth_Cancel: "İptal",
           Auth_LogoutSuccess:
             "Başarıyla çıkış yapıldı, yönlendiriliyorsunuz...",
           Auth_DeleteAccountConfirm:

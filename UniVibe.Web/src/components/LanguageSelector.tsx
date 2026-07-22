@@ -12,6 +12,7 @@ export default function LanguageSelector() {
         }`}
       >
         TR
+        
       </button>
       <button
         onClick={() => i18n.changeLanguage('en')}
