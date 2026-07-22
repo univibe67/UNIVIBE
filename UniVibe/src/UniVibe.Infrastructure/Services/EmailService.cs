@@ -1,32 +1,39 @@
-﻿using Microsoft.Extensions.Configuration;
-using Resend;
+﻿using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.Extensions.Configuration;
+using MimeKit;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.Infrastructure.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly IResend _resend;
         private readonly IConfiguration _configuration;
 
-        public EmailService(IResend resend, IConfiguration configuration)
+        public EmailService(IConfiguration configuration)
         {
-            _resend = resend;
             _configuration = configuration;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var senderEmail = _configuration["Resend:SenderEmail"] ?? "onboarding@resend.dev";
-            var senderName = _configuration["Resend:SenderName"] ?? "UniVibe Destek";
+            var emailSettings = _configuration.GetSection("BrevoSettings");
 
-            var message = new EmailMessage();
-            message.From = $"{senderName} <{senderEmail}>";
-            message.To.Add(toEmail);
-            message.Subject = subject;
-            message.HtmlBody = body;
+            var email = new MimeMessage();
+            email.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]));
+            email.To.Add(MailboxAddress.Parse(toEmail));
+            email.Subject = subject;
 
-            await _resend.EmailSendAsync(message);
+            var builder = new BodyBuilder { HtmlBody = body };
+            email.Body = builder.ToMessageBody();
+
+            using var smtp = new SmtpClient();
+            smtp.Timeout = 10000; // 10 saniye zaman aşımı koruması
+
+            await smtp.ConnectAsync(emailSettings["Host"], int.Parse(emailSettings["Port"]!), SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(emailSettings["UserName"], emailSettings["Password"]);
+            await smtp.SendAsync(email);
+            await smtp.DisconnectAsync(true);
         }
     }
 }
