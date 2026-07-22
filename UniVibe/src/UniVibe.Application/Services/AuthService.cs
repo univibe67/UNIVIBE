@@ -183,13 +183,13 @@ namespace UniVibe.Application.Services
             }
             else
             {
-                string webBaseUrl = _configuration["WebBaseUrl"] ?? "http://localhost:3000";
+                string webBaseUrl = _configuration["WebBaseUrl"] ?? "https://univibe-three.vercel.app";
                 targetUrl = $"{webBaseUrl}/register-complete";
             }
 
             try
             {
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
+                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://uni-vibe-backend-orijinal-url.onrender.com";
                 string linkForEmail;
 
                 if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -332,7 +332,8 @@ namespace UniVibe.Application.Services
                 _userRepository.Update(user);
                 await _unitOfWork.SaveChangesAsync();
 
-                var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : "http://localhost:3000/reset-password";
+                var defaultWebUrl = _configuration["WebBaseUrl"] ?? "https://univibe-three.vercel.app";
+                var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : $"{defaultWebUrl}/reset-password";
                 var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
 
                 string subject = _localizer["Auth_ResetEmailSubject"].Value;
