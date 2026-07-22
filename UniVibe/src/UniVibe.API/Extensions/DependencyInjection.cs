@@ -18,10 +18,15 @@ namespace UniVibe.API.Extensions
             {
                 options.AddPolicy("WebFrontendPolicy", policy =>
                 {
-                    policy.SetIsOriginAllowed(origin => true) 
+                    policy.WithOrigins(
+                              "https://univibe-three.vercel.app",
+                              "http://localhost:5173",
+                              "http://localhost:3000"
+                          )
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowCredentials()
+                          .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
                 });
             });
 
