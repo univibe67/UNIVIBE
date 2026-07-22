@@ -17,7 +17,7 @@ namespace UniVibe.Infrastructure.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var emailSettings = _configuration.GetSection("BrevoSettings");
+            var emailSettings = _configuration.GetSection("EmailSettings");
 
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]));
@@ -28,10 +28,10 @@ namespace UniVibe.Infrastructure.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            smtp.Timeout = 10000; // 10 saniye zaman aşımı koruması
+            smtp.Timeout = 10000;
 
             await smtp.ConnectAsync(emailSettings["Host"], int.Parse(emailSettings["Port"]!), SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(emailSettings["UserName"], emailSettings["Password"]);
+            await smtp.AuthenticateAsync(emailSettings["SenderEmail"], emailSettings["Password"]);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }
