@@ -1,4 +1,3 @@
-// Linux / Render inotify (dosya izleme) limit aşımı hatasını önleyen kritik satır:
 using Serilog;
 using UniVibe.API.Extensions;
 using UniVibe.Application;
@@ -8,6 +7,7 @@ using UniVibe.Infrastructure;
 using UniVibe.Infrastructure.Extensions;
 
 Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddUniVibeSerilog(builder.Configuration);
