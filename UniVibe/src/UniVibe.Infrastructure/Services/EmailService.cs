@@ -29,19 +29,35 @@ namespace UniVibe.Infrastructure.Services
 
             using var smtp = new SmtpClient();
 
-            await smtp.ConnectAsync(
-                emailSettings["Host"],
-                int.Parse(emailSettings["Port"]),
-                MailKit.Security.SecureSocketOptions.StartTls
-            );
+            smtp.Timeout = 10000;
 
-            await smtp.AuthenticateAsync(
-                emailSettings["SenderEmail"],
-                emailSettings["Password"]
-            );
+            try
+            {
+                await smtp.ConnectAsync(
+                    emailSettings["Host"],
+                    int.Parse(emailSettings["Port"]),
+                    MailKit.Security.SecureSocketOptions.StartTls
+                );
 
-            await smtp.SendAsync(email);
-            await smtp.DisconnectAsync(true);
+                await smtp.AuthenticateAsync(
+                    emailSettings["SenderEmail"],
+                    emailSettings["Password"]
+                );
+
+                await smtp.SendAsync(email);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Mail Gönderme Hatası: {ex.Message}");
+                throw new Exception($"E-posta gönderilemedi: {ex.Message}");
+            }
+            finally
+            {
+                if (smtp.IsConnected)
+                {
+                    await smtp.DisconnectAsync(true);
+                }
+            }
         }
     }
 }

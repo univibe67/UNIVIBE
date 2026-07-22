@@ -137,6 +137,14 @@ export default function Login() {
     e.preventDefault();
     setForgotMessage({ type: "", text: "" });
 
+    if (!forgotEmail) {
+      setForgotMessage({
+        type: "error",
+        text: t("Login_Error_FieldsRequired") || "Lütfen e-posta adresinizi girin.",
+      });
+      return;
+    }
+
     setForgotLoading(true);
 
     try {
@@ -145,12 +153,14 @@ export default function Login() {
         email: forgotEmail,
         resetUrl,
       })) as any;
+      
       setForgotMessage({
         type: "success",
         text:
           response.message ||
           response.data?.message ||
-          t("Forgot_SuccessMessage"),
+          t("Forgot_SuccessMessage") ||
+          "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
       });
     } catch (err: any) {
       setForgotMessage({
@@ -158,7 +168,8 @@ export default function Login() {
         text:
           err.response?.data?.message ||
           err.message ||
-          t("Forgot_ErrorMessage"),
+          t("Forgot_ErrorMessage") ||
+          "E-posta gönderilirken bir hata oluştu.",
       });
     } finally {
       setForgotLoading(false);
