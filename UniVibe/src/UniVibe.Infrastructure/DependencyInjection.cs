@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Resend;
 using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -30,6 +31,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IDepartmentRepository, DepartmentRepository>();
             services.AddScoped<IUniversityRepository, UniversityRepository>();
             services.AddScoped<IFacultyRepository, FacultyRepository>();
+            services.AddResend(configuration["Resend:ApiKey"]);
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();
