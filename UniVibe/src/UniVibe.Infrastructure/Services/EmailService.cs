@@ -1,63 +1,32 @@
-﻿using MailKit.Net.Smtp;
-using MimeKit;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using Resend;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.Infrastructure.Services
 {
     public class EmailService : IEmailService
     {
+        private readonly IResend _resend;
         private readonly IConfiguration _configuration;
 
-        public EmailService(IConfiguration configuration)
+        public EmailService(IResend resend, IConfiguration configuration)
         {
+            _resend = resend;
             _configuration = configuration;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var emailSettings = _configuration.GetSection("EmailSettings");
+            var senderEmail = _configuration["Resend:SenderEmail"] ?? "onboarding@resend.dev";
+            var senderName = _configuration["Resend:SenderName"] ?? "UniVibe Destek";
 
-            var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(
-                emailSettings["SenderName"],
-                emailSettings["SenderEmail"]
-            ));
-            email.To.Add(MailboxAddress.Parse(toEmail));
-            email.Subject = subject;
-            email.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = body };
+            var message = new EmailMessage();
+            message.From = $"{senderName} <{senderEmail}>";
+            message.To.Add(toEmail);
+            message.Subject = subject;
+            message.HtmlBody = body;
 
-            using var smtp = new SmtpClient();
-
-            smtp.Timeout = 10000;
-
-            try
-            {
-                await smtp.ConnectAsync(
-                    emailSettings["Host"],
-                    int.Parse(emailSettings["Port"]),
-                    MailKit.Security.SecureSocketOptions.StartTls
-                );
-
-                await smtp.AuthenticateAsync(
-                    emailSettings["SenderEmail"],
-                    emailSettings["Password"]
-                );
-
-                await smtp.SendAsync(email);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Mail Gönderme Hatası: {ex.Message}");
-                throw new Exception($"E-posta gönderilemedi: {ex.Message}");
-            }
-            finally
-            {
-                if (smtp.IsConnected)
-                {
-                    await smtp.DisconnectAsync(true);
-                }
-            }
+            await _resend.EmailSendAsync(message);
         }
     }
 }
