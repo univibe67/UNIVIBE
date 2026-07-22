@@ -18,7 +18,11 @@ namespace UniVibe.API.Extensions
             {
                 options.AddPolicy("WebFrontendPolicy", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+                    policy.WithOrigins(
+                              "http://localhost:3000",
+                              "http://127.0.0.1:3000",
+                              "https://univibe-three.vercel.app/"
+                          )
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
