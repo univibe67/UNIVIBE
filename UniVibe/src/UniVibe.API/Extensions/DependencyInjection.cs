@@ -16,13 +16,18 @@ namespace UniVibe.API.Extensions
 
             services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll",
-                    builder =>
-                    {
-                        builder.AllowAnyOrigin()
-                               .AllowAnyMethod()
-                               .AllowAnyHeader();
-                    });
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder
+                        .WithOrigins(
+                            "https://univibe-three.vercel.app",
+                            "https://univibe-git-main-univibe67s-projects.vercel.app",
+                            "http://localhost:3000" 
+                        )
+                        .SetIsOriginAllowedToAllowWildcardSubdomains()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
+                });
             });
 
             services.Configure<ApiBehaviorOptions>(options =>
