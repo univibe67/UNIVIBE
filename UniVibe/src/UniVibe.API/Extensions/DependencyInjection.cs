@@ -16,18 +16,13 @@ namespace UniVibe.API.Extensions
 
             services.AddCors(options =>
             {
-                options.AddPolicy("WebFrontendPolicy", policy =>
-                {
-                    policy.WithOrigins(
-                              "https://univibe-three.vercel.app",
-                              "http://localhost:5173",
-                              "http://localhost:3000"
-                          )
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials()
-                          .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-                });
+                options.AddPolicy("AllowAll",
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin()
+                               .AllowAnyMethod()
+                               .AllowAnyHeader();
+                    });
             });
 
             services.Configure<ApiBehaviorOptions>(options =>
