@@ -189,10 +189,10 @@ namespace UniVibe.Application.Services
 
             try
             {
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://uni-vibe-backend-orijinal-url.onrender.com";
+                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
                 string linkForEmail;
 
-                if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !targetUrl.Contains("localhost"))
                 {
                     linkForEmail = $"{targetUrl}?token={token}";
                 }
