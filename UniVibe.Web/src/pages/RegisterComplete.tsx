@@ -89,7 +89,7 @@ export default function RegisterComplete() {
 
       if (accessToken) {
         tokenService.saveTokens(accessToken, refreshToken);
-        navigate('/student/dashboard');
+        navigate('/student');
       } else {
         navigate('/');
       }
