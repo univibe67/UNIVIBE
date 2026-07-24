@@ -1,0 +1,333 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Event_HasActiveEvent" xml:space="preserve">
+    <value>You cannot create a new event while having an active one.</value>
+  </data>
+  <data name="Event_CategoryNotFound" xml:space="preserve">
+    <value>The selected category was not found!</value>
+  </data>
+  <data name="Event_NotFound" xml:space="preserve">
+    <value>Event not found.</value>
+  </data>
+  <data name="Event_UnauthorizedDelete" xml:space="preserve">
+    <value>You are not authorized to delete this event.</value>
+  </data>
+  <data name="Event_CannotCancelPast" xml:space="preserve">
+    <value>A started or past event cannot be canceled.</value>
+  </data>
+  <data name="Event_CannotCancelClose" xml:space="preserve">
+    <value>Cannot cancel as the event is less than 4 hours away.</value>
+  </data>
+  <data name="Event_UnauthorizedView" xml:space="preserve">
+    <value>This event is not yet approved or you are not authorized to view it.</value>
+  </data>
+  <data name="User_NotFound" xml:space="preserve">
+    <value>User not found.</value>
+  </data>
+  <data name="User_UsernameTaken" xml:space="preserve">
+    <value>This username is already taken, please choose another one.</value>
+  </data>
+  <data name="User_UsernameWaitTime" xml:space="preserve">
+    <value>You must wait {0} more days to change your username.</value>
+  </data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve">
+    <value>Invalid email or password.</value>
+  </data>
+  <data name="Auth_DeletedTooLong" xml:space="preserve">
+    <value>More than 15 days have passed since account deletion. Please create a new account.</value>
+  </data>
+  <data name="Auth_Suspended" xml:space="preserve">
+    <value>Your account has been suspended by administrators for violating community rules. Please contact support to appeal.</value>
+  </data>
+  <data name="Auth_EduMailRequired" xml:space="preserve">
+    <value>You can only register with a '.edu.tr' university email address.</value>
+  </data>
+  <data name="Auth_EmailAlreadyActive" xml:space="preserve">
+    <value>There is already an active user registered with this email address.</value>
+  </data>
+  <data name="Auth_InDeletionProcess" xml:space="preserve">
+    <value>There is an account in the deletion process with this email. You can recover your account from the 'Login' screen or wait {0} days for complete deletion.</value>
+  </data>
+  <data name="Auth_EmailSendFailed" xml:space="preserve">
+    <value>Email could not be sent, please check the information. Error: {0}</value>
+  </data>
+  <data name="Auth_InvalidToken" xml:space="preserve">
+    <value>Invalid or expired operation.</value>
+  </data>
+  <data name="Auth_UniversityNotFound" xml:space="preserve">
+    <value>No university defined with the '{0}' extension in our system.</value>
+  </data>
+  <data name="Auth_UsernameTaken" xml:space="preserve">
+    <value>This username is already taken. Please try another one.</value>
+  </data>
+  <data name="Auth_DepartmentNotFound" xml:space="preserve">
+    <value>The selected department was not found in the system.</value>
+  </data>
+  <data name="Auth_FacultyMismatch" xml:space="preserve">
+    <value>The selected department does not belong to the university associated with your email! Please select a department from your own university.</value>
+  </data>
+  <data name="Auth_StudentGradeReq" xml:space="preserve">
+    <value>Grade information is required for students.</value>
+  </data>
+  <data name="Auth_TeacherTitleReq" xml:space="preserve">
+    <value>Title information is required for academicians.</value>
+  </data>
+  <data name="Auth_SessionExpired" xml:space="preserve">
+    <value>Your session has expired. Please log in again.</value>
+  </data>
+  <data name="Val_Required" xml:space="preserve">
+    <value>The {PropertyName} field is required.</value>
+  </data>
+  <data name="Val_MinLength" xml:space="preserve">
+    <value>{PropertyName} must be at least {MinLength} characters long.</value>
+  </data>
+  <data name="Val_MaxLength" xml:space="preserve">
+    <value>{PropertyName} must be at most {MaxLength} characters long.</value>
+  </data>
+  <data name="Val_InvalidPhone" xml:space="preserve">
+    <value>Phone number must start with 5 and be 10 digits long.</value>
+  </data>
+  <data name="Val_MissingToken" xml:space="preserve">
+    <value>Token information is missing.</value>
+  </data>
+  <data name="Val_PassMinLength" xml:space="preserve">
+    <value>Password must be at least 8 characters long.</value>
+  </data>
+  <data name="Val_PassUppercase" xml:space="preserve">
+    <value>Password must contain at least one uppercase letter.</value>
+  </data>
+  <data name="Val_PassDigit" xml:space="preserve">
+    <value>Password must contain at least one digit.</value>
+  </data>
+  <data name="Val_SelectDepartment" xml:space="preserve">
+    <value>Please select a department.</value>
+  </data>
+  <data name="Val_InvalidGrade" xml:space="preserve">
+    <value>Please select a valid grade level.</value>
+  </data>
+  <data name="Val_InvalidUsername" xml:space="preserve">
+    <value>Username can only contain English letters, numbers, and underscores (_), no spaces allowed.</value>
+  </data>
+  <data name="Val_EventDatePast" xml:space="preserve">
+    <value>Event date cannot be in the past.</value>
+  </data>
+  <data name="Val_PageNumMin" xml:space="preserve">
+    <value>Page number must be at least 1.</value>
+  </data>
+  <data name="Val_PageSizeRange" xml:space="preserve">
+    <value>Page size must be between {From} and {To}.</value>
+  </data>
+  <data name="Res_User_AccountFrozen" xml:space="preserve">
+    <value>Your account has been successfully frozen. You can recover it by logging in within 15 days.</value>
+  </data>
+  <data name="Res_User_ProfileUpdated" xml:space="preserve">
+    <value>Profile information updated successfully!</value>
+  </data>
+  <data name="Res_User_Suspended" xml:space="preserve">
+    <value>User successfully suspended.</value>
+  </data>
+  <data name="Res_User_Activated" xml:space="preserve">
+    <value>User's account has been reactivated.</value>
+  </data>
+  <data name="Res_User_Deleted" xml:space="preserve">
+    <value>User permanently deleted from the system.</value>
+  </data>
+  <data name="Res_User_NotFound" xml:space="preserve">
+    <value>User not found.</value>
+  </data>
+  <data name="Res_User_RoleChanged" xml:space="preserve">
+    <value>User's role successfully changed.</value>
+  </data>
+  <data name="Res_Event_Approved" xml:space="preserve">
+    <value>Event successfully approved and published!</value>
+  </data>
+  <data name="Res_Event_Rejected" xml:space="preserve">
+    <value>Event successfully rejected!</value>
+  </data>
+  <data name="Res_Event_NotFound" xml:space="preserve">
+    <value>The relevant event was not found.</value>
+  </data>
+  <data name="Res_Event_Created" xml:space="preserve">
+    <value>Event successfully created.</value>
+  </data>
+  <data name="Res_Event_Deleted" xml:space="preserve">
+    <value>Event successfully deleted.</value>
+  </data>
+  <data name="Res_Auth_LinkSent" xml:space="preserve">
+    <value>Registration verification link has been sent to your email address.</value>
+  </data>
+  <data name="Res_Auth_TokenInvalid" xml:space="preserve">
+    <value>Token is invalid or expired.</value>
+  </data>
+  <data name="Res_Auth_TokenVerified" xml:space="preserve">
+    <value>Token verified.</value>
+  </data>
+  <data name="Auth_InvalidOrExpiredToken" xml:space="preserve">
+    <value>You used an invalid or expired password reset link.</value>
+  </data>
+  <data name="Res_Auth_ResetLinkSent" xml:space="preserve">
+    <value>If such an e-mail address is registered in our system, a password reset link has been sent.</value>
+  </data>
+  <data name="Res_Auth_PasswordResetSuccessful" xml:space="preserve">
+    <value>Your password has been successfully updated. You can log in with your new password.</value>
+  </data>
+  <data name="Auth_ResetEmailSubject" xml:space="preserve">
+    <value>UniVibe Password Reset</value>
+  </data>
+  <data name="Auth_RegisterEmailSubject" xml:space="preserve">
+    <value>UniVibe Registration Approval</value>
+  </data>
+  <data name="Auth_RegisterEmailBody" xml:space="preserve">
+    <value>&lt;h3&gt;Welcome to UniVibe!&lt;/h3&gt;&lt;p&gt;You're just a few steps away. Please click the link below to complete your registration:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;'&gt;Verify My Account&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;If the button doesn't work, you can paste this link into your browser: {0}&lt;/small&gt;</value>
+  </data>
+  <data name="Auth_ResetEmailBody" xml:space="preserve">
+    <value>&lt;div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'&gt;&lt;h2 style='color: #4F46E5;'&gt;UniVibe Password Reset&lt;/h2&gt;&lt;p&gt;You requested to reset your password. You can click the link below to reset it:&lt;/p&gt;&lt;a href='{0}' style='background-color:#3B82F6; color:white; padding:12px 20px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; margin: 10px 0;'&gt;Reset My Password&lt;/a&gt;&lt;p style='color: #666; font-size: 14px;'&gt;This link is valid for &lt;strong&gt;15 minutes&lt;/strong&gt; for security reasons.&lt;/p&gt;&lt;br&gt;&lt;small style='color: #999;'&gt;If you didn't request this, you can safely ignore this email.&lt;/small&gt;&lt;br&gt;&lt;br&gt;&lt;small&gt;If the button doesn't work, you can paste this link into your browser: &lt;br&gt;{0}&lt;/small&gt;&lt;/div&gt;</value>
+  </data>
+  <data name="Auth_RedirectTitle" xml:space="preserve">
+    <value>Redirecting to UniVibe</value>
+  </data>
+  <data name="Auth_RedirectMessage" xml:space="preserve">
+    <value>Your email address has been successfully verified! Click the button below to complete the registration process.</value>
+  </data>
+  <data name="Auth_RedirectButton" xml:space="preserve">
+    <value>Open UniVibe App</value>
+  </data>
+  <data name="Res_Event_ReasonRequired" xml:space="preserve">
+    <value>A reason for rejection is mandatory.</value>
+  </data>
+  <data name="Event_CannotJoinOwnEvent" xml:space="preserve">
+    <value>You cannot participate in an event you created yourself.</value>
+  </data>
+  <data name="Event_AlreadyJoined" xml:space="preserve">
+    <value>You have already participated in this event.</value>
+  </data>
+  <data name="Res_Event_Joined" xml:space="preserve">
+    <value>You have successfully participated in the event!</value>
+  </data>
+  <data name="Event_AlreadyCancelled" xml:space="preserve">
+    <value>This event has already been cancelled.</value>
+  </data>
+  <data name="Res_Event_Cancelled" xml:space="preserve">
+    <value>The event has been successfully cancelled.</value>
+  </data>
+  <data name="Event_UnauthorizedCancel" xml:space="preserve">
+    <value>You do not have the authority to cancel this event.</value>
+  </data>
+</root>

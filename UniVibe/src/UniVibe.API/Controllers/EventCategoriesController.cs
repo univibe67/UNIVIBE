@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventCategoriesController : ControllerBase
+    public sealed class EventCategoriesController : ControllerBase
     {
         private readonly IEventService _eventService;
 
@@ -18,7 +20,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var categories = await _eventService.GetCategoriesAsync();
-            return Ok(categories);
+            return Ok(ApiResponse<List<EventCategoryResponse>>.Success(categories));
         }
     }
 }

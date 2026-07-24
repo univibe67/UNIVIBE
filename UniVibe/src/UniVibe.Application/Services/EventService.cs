@@ -1,122 +1,238 @@
-﻿using UniVibe.Application.Constants;
-using UniVibe.Application.DTOs.Event;
+﻿using AutoMapper;
+using FluentValidation;
+using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Event.Requests;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
 {
-    public class EventService : IEventService
+    public sealed class EventService : IEventService
     {
         private readonly IEventRepository _eventRepository;
         private readonly IEventCategoryRepository _categoryRepository;
         private readonly IImageService _imageService;
+        private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IValidator<CreateEventRequest> _createEventValidator;
+        private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
 
-        public EventService(IEventRepository eventRepository, IEventCategoryRepository categoryRepository, IImageService imageService)
+        public EventService(
+            IEventRepository eventRepository,
+            IEventCategoryRepository categoryRepository,
+            IImageService imageService,
+            IMapper mapper,
+            IUnitOfWork unitOfWork,
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<CreateEventRequest> createEventValidator,
+            IValidator<GetAllEventsRequest> getAllEventsValidator)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
             _imageService = imageService;
+            _mapper = mapper;
+            _unitOfWork = unitOfWork;
+            _localizer = localizer;
+            _createEventValidator = createEventValidator;
+            _getAllEventsValidator = getAllEventsValidator;
         }
 
-        public async Task CreateEventAsync(CreateEventDto createEventDto, Guid userId)
+        public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
         {
-
+            var validationResult = await _createEventValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
 
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
                 e.EventDate > DateTime.UtcNow &&
-                e.IsDeleted == false);
+                e.IsDeleted == false &&
+                e.Status != EventStatus.Cancelled &&
+                e.Status != EventStatus.Rejected);
 
             if (hasActiveEvent)
-                throw new Exception("Aktif bir etkinliğin varken yeni bir tane oluşturamazsın.");
+                throw new Exception(_localizer["Event_HasActiveEvent"].Value);
 
-            var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == createEventDto.CategoryId);
+            var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
-                throw new Exception("Seçilen kategori bulunamadı!");
+                throw new Exception(_localizer["Event_CategoryNotFound"].Value);
 
             string? imageUrl = null;
             string? imagePublicId = null;
-            if (createEventDto.ImageFile != null)
+            if (request.ImageFile != null)
             {
-                var uploadResult = await _imageService.UploadImageAsync(createEventDto.ImageFile, "Events");
+                var uploadResult = await _imageService.UploadImageAsync(request.ImageFile, "Events");
                 imageUrl = uploadResult.Url;
                 imagePublicId = uploadResult.PublicId;
             }
 
-            var newEvent = new Event
-            {
-                Title = createEventDto.Title,
-                Description = createEventDto.Description,
-                EventDate = createEventDto.EventDate,
-                Location = createEventDto.Location,
-                UserId = userId,
-                CategoryId = createEventDto.CategoryId,
-                ImageUrl = imageUrl,
-                ImagePublicId = imagePublicId,
-            };
+            var newEvent = _mapper.Map<Event>(request);
+            newEvent.UserId = userId;
+            newEvent.ImageUrl = imageUrl;
+            newEvent.ImagePublicId = imagePublicId;
 
             await _eventRepository.AddAsync(newEvent);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Created"].Value;
         }
 
-        public async Task<PaginatedResult<EventDto>> GetAllEventsAsync(int pageNumber, int pageSize, bool onlyActive = true)
+        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request)
         {
-            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(pageNumber, pageSize, onlyActive);
-
-            var eventDtos = items.Select(e => new EventDto
+            var validationResult = await _getAllEventsValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
             {
-                Id = e.Id,
-                Title = e.Title,
-                Description = e.Description,
-                EventDate = e.EventDate,
-                Location = e.Location,
-                CategoryId = e.CategoryId,
-                ImageUrl = e.ImageUrl
-            }).ToList();
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new Exception(string.Join(" • ", errors));
+            }
 
-            return new PaginatedResult<EventDto>
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
+
+            var EventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
+
+            return new PaginatedResult<EventDetailResponse>
             {
-                Items = eventDtos,
+                Items = EventDetailResponses,
                 TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
             };
         }
 
-        public async Task<List<EventCategoryDto>> GetCategoriesAsync()
+        public async Task<List<EventCategoryResponse>> GetCategoriesAsync()
         {
             var categories = await _categoryRepository.GetAllAsync();
 
-            return categories.Select(c => new EventCategoryDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Icon = c.Icon,
-                Color = c.Color
-            }).ToList();
+            return _mapper.Map<List<EventCategoryResponse>>(categories);
         }
-        public async Task DeleteEventAsync(Guid eventId, Guid userId)
+
+        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
         {
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e =>e.Id == eventId);
+            var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
-            if (existingEvent == null)
-                throw new Exception("Etkinlik bulunamadı.");
+            if (eventEntity == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
 
-            if (existingEvent.UserId != userId)
-                throw new Exception("Bu etkinliği silmeye yetkiniz yok.");
+            var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
-            if (!string.IsNullOrEmpty(existingEvent.ImagePublicId))
+            if (eventEntity.User != null)
+                EventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+
+            if (eventEntity.Category != null)
+                EventDetailResponse.CategoryName = eventEntity.Category.Name;
+
+            EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
+            EventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
+
+            return EventDetailResponse;
+        }
+
+        public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)
+        {
+            var activeEvent = await _eventRepository.GetActiveEventByUserIdAsync(userId);
+
+            if (activeEvent == null)
+                return null;
+
+            var eventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
+
+            if (activeEvent.Category != null)
+                eventDetailResponse.CategoryName = activeEvent.Category.Name;
+
+            return eventDetailResponse;
+        }
+
+        public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
+        {
+            var events = await _eventRepository.GetJoinedEventsByUserIdAsync(userId);
+
+            if (events == null || !events.Any())
+                return new List<EventDetailResponse>();
+
+            var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(events);
+
+            for (int i = 0; i < events.Count; i++)
             {
-                await _imageService.DeleteImageAsync(existingEvent.ImagePublicId);
+                var eventEntity = events[i];
+                var response = eventDetailResponses[i];
 
-                existingEvent.ImageUrl = null;
-                existingEvent.ImagePublicId = null;
+                if (eventEntity.User != null)
+                    response.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+
+                if (eventEntity.Category != null)
+                    response.CategoryName = eventEntity.Category.Name;
+
+                response.IsCreator = (eventEntity.UserId == userId);
             }
 
-            existingEvent.IsDeleted = true;
+            return eventDetailResponses;
+        }
+
+        public async Task<string> JoinEventAsync(Guid eventId, Guid userId)
+        {
+            var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            if (eventEntity == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.UserId == userId)
+                throw new Exception(_localizer["Event_CannotJoinOwnEvent"].Value);
+
+            var alreadyJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, userId);
+            if (alreadyJoined)
+                throw new Exception(_localizer["Event_AlreadyJoined"].Value);
+
+            var attendee = new EventAttendee
+            {
+                EventId = eventId,
+                UserId = userId
+            };
+
+            await _eventRepository.AddAttendeeAsync(attendee);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Joined"].Value;
+        }
+
+        public async Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new Exception(_localizer["Res_Event_ReasonRequired"].Value);
+
+            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+
+            if (existingEvent == null)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            if (existingEvent.UserId != userId)
+                throw new Exception(_localizer["Event_UnauthorizedCancel"].Value);
+
+            var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
+
+            if (timeDifference.TotalHours < 0)
+                throw new Exception(_localizer["Event_CannotCancelPast"].Value);
+
+            if (timeDifference.TotalHours < 4)
+                throw new Exception(_localizer["Event_CannotCancelClose"].Value);
+
+            if (existingEvent.Status == EventStatus.Cancelled)
+                throw new Exception(_localizer["Event_AlreadyCancelled"].Value);
+
+            existingEvent.Status = EventStatus.Cancelled;
+            existingEvent.CancellationReason = reason;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
-            await _eventRepository.UpdateAsync(existingEvent);
+            _eventRepository.Update(existingEvent);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_Cancelled"].Value;
         }
     }
 }

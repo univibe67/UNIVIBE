@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UniVibe.Application.Constants;
-using UniVibe.Application.DTOs.User;
+using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.User.Requests;
+using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -9,7 +10,7 @@ namespace UniVibe.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class UsersController : ControllerBase
+    public sealed class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
 
@@ -24,34 +25,41 @@ namespace UniVibe.API.Controllers
             var userId = User.GetUserId();
             var newImageUrl = await _userService.UploadProfilePictureAsync(userId, profileImage);
 
-            return Ok(new { Message = "Profil fotoğrafı güncellendi!", ImageUrl = newImageUrl });
+            return Ok(ApiResponse<string>.Success(newImageUrl));
         }
 
         [HttpPut("update-profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto updateDto)
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest updateDto)
         {
             var userId = User.GetUserId();
+            var message = await _userService.UpdateProfileAsync(userId, updateDto);
 
-            await _userService.UpdateProfileAsync(userId, updateDto);
-
-            return Ok(new { Message = "Profil bilgileri başarıyla güncellendi!" });
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = User.GetUserId();
-
             var profileData = await _userService.GetUserProfileAsync(userId);
 
-            return Ok(profileData);
+            return Ok(ApiResponse<UserProfileResponse>.Success(profileData));
         }
 
         [HttpGet("profile/{username}")]
         public async Task<IActionResult> GetProfileByUsername(string username)
         {
             var profileData = await _userService.GetProfileByUsernameAsync(username);
-            return Ok(profileData);
+            return Ok(ApiResponse<PublicUserProfileResponse>.Success(profileData));
+        }
+
+        [HttpDelete("delete-account")]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            var userId = User.GetUserId();
+            var message = await _userService.DeleteAccountAsync(userId);
+
+            return Ok(ApiResponse<string>.Success(message));
         }
     }
 }

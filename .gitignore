@@ -16,7 +16,6 @@
 
 # Mono auto generated files
 mono_crash.*
-
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -126,6 +125,7 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+.env
 
 # Chutzpah Test files
 _Chutzpah*
@@ -243,6 +243,7 @@ csx/
 # Microsoft Azure Emulator
 ecf/
 rcf/
+**/appsettings.Development.json
 
 # Windows Store app package directories and files
 AppPackages/
@@ -427,3 +428,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+.vercel
+.env*

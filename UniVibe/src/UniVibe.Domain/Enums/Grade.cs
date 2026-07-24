@@ -10,5 +10,6 @@
         BesinciSinif = 5,
         AltinciSinif = 6,
         Mezun = 7
+
     }
 }

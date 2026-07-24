@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace UniVibe.Application.Constants
+namespace UniVibe.Application.Common
 {
     public static class ClaimsPrincipalExtensions
     {

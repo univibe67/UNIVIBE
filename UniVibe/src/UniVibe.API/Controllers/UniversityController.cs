@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.University.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -7,7 +9,7 @@ namespace UniVibe.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [AllowAnonymous]
-    public class UniversityController : ControllerBase
+    public sealed class UniversityController : ControllerBase
     {
         private readonly IUniversityService _universityService;
 
@@ -16,25 +18,25 @@ namespace UniVibe.API.Controllers
             _universityService = universityService;
         }
 
-        [HttpGet("universities")]
-        public async Task<IActionResult> GetUniversities()
+        [HttpGet]
+        public async Task<IActionResult> GetAllUniversities()
         {
             var result = await _universityService.GetAllUniversitiesAsync();
-            return Ok(result);
+            return Ok(ApiResponse<List<UniversityLookupResponse>>.Success(result));
         }
 
-        [HttpGet("universities/{universityId}/faculties")]
+        [HttpGet("{universityId}/faculties")]
         public async Task<IActionResult> GetFacultiesByUniversityId(Guid universityId)
         {
             var result = await _universityService.GetFacultiesByUniversityIdAsync(universityId);
-            return Ok(result);
+            return Ok(ApiResponse<List<FacultyLookupResponse>>.Success(result));
         }
 
         [HttpGet("faculties/{facultyId}/departments")]
         public async Task<IActionResult> GetDepartments(Guid facultyId)
         {
             var result = await _universityService.GetDepartmentsByFacultyIdAsync(facultyId);
-            return Ok(result);
+            return Ok(ApiResponse<List<DepartmentLookupResponse>>.Success(result));
         }
     }
 }

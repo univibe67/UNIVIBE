@@ -2,9 +2,11 @@
 
 namespace UniVibe.Application.Interfaces.Repositories
 {
-    public interface IUserRepository : IGenericRepository<User>
+    public interface IUserRepository : IRepository<User>
     {
         Task<User?> GetUserWithDetailsByUsernameAsync(string username);
         Task<User?> GetUserWithDetailsByIdAsync(Guid userId);
+        Task<List<User>> GetAllIncludingDeletedAsync();
+        Task<User?> GetByIdIncludingDeletedAsync(Guid id);
     }
 }

@@ -1,41 +1,44 @@
 ﻿using FluentValidation;
-using UniVibe.Application.Constants;
-using UniVibe.Application.DTOs.Auth;
+using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Auth.Requests;
 
 namespace UniVibe.Application.Validators.Auth
 {
     public class RegisterCompleteValidator : AbstractValidator<RegisterCompleteRequest>
     {
-        public RegisterCompleteValidator()
+        public RegisterCompleteValidator(IStringLocalizer<SharedResources> localizer)
         {
             RuleFor(x => x.Token)
-                .NotEmpty().WithMessage("Token bilgisi eksik.");
+                .NotEmpty().WithMessage(x => localizer["Val_MissingToken"].Value);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .MinimumLength(8).WithMessage("Şifre en az 8 karakter olmalıdır.")
-                .Matches(@"[A-Z]").WithMessage("Şifre en az bir büyük harf içermelidir.")
-                .Matches(@"[0-9]").WithMessage("Şifre en az bir rakam içermelidir.");
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .MinimumLength(8).WithMessage(x => localizer["Val_PasswordMinLength"].Value)
+                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PasswordReqUppercase"].Value)
+                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PasswordReqDigit"].Value);
 
             RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
 
             RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage(ValidationMessages.Required);
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
+
             RuleFor(x => x.DepartmentId)
-                .NotEmpty().WithMessage("Lütfen bir bölüm seçiniz.");
+                .NotEmpty().WithMessage(x => localizer["Val_SelectDepartment"].Value);
 
             RuleFor(x => x.PhoneNumber)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .Matches(@"^5\d{9}$").WithMessage("Telefon 5 ile başlamalı ve 10 haneli olmalıdır.");
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .Matches(@"^5\d{9}$").WithMessage(x => localizer["Val_InvalidPhone"].Value);
 
             RuleFor(x => x.Grade)
-                .IsInEnum().WithMessage("Lütfen geçerli bir sınıf seviyesi seçiniz");
+                .IsInEnum().WithMessage(x => localizer["Val_InvalidGrade"].Value);
+
             RuleFor(x => x.Username)
-                .NotEmpty().WithMessage(ValidationMessages.Required)
-                .MinimumLength(3).WithMessage(ValidationMessages.MinLength)
-                .MaximumLength(20).WithMessage(ValidationMessages.MaxLength)
-                .Matches("^[a-zA-Z0-9_]*$").WithMessage("Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.");
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .MinimumLength(3).WithMessage(x => localizer["Val_MinLength"].Value)
+                .MaximumLength(20).WithMessage(x => localizer["Val_MaxLength"].Value)
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage(x => localizer["Val_InvalidUsernameFormat"].Value);
         }
     }
 }

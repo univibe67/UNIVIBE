@@ -2,7 +2,7 @@
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using UniVibe.Application.Constants;
+using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.Infrastructure.Services
