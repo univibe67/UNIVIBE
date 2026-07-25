@@ -83,7 +83,9 @@ namespace UniVibe.Application.Services
                         throw new Exception(_localizer["User_UsernameWaitTime", remainingDays].Value);
                     }
                 }
-                var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == updateDto.Username.ToLower());
+                var isUsernameTaken = await _userRepository.AnyAsync(u =>
+                    u.Id != userId &&
+                    u.Username.ToLower() == updateDto.Username.ToLower());
 
                 if (isUsernameTaken)
                     throw new Exception(_localizer["User_UsernameTaken"].Value);
