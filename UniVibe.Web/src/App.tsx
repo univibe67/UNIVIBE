@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route,  } from 'react-router-dom';
-import Login from './pages/Login';
-import ResetPassword from './pages/ResetPassword';
 import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminDashboard from './pages/AdminDashboard';
-import RegisterComplete from './pages/RegisterComplete';
 import StudentEventFeed from './pages/student/StudentEventFeed';
 import StudentProfile from './pages/student/StudentProfile';
+import ResetPassword from './pages/auth/ResetPassword';
+import Login from './pages/auth/Login';
+import RegisterComplete from './pages/auth/RegisterComplete';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
   return (

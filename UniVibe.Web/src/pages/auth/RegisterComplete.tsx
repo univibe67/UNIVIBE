@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api } from '../services/api';
-import { tokenService } from '../services/tokenService';
+import { api } from '../../services/api';
+import { tokenService } from '../../services/tokenService';
 import { GraduationCap, AlertCircle, ChevronDown } from 'lucide-react';
 
-import { useRegistrationData } from '../hooks/useRegistrationData';
-import { TokenCheckingView, TokenErrorView } from '../components/TokenStatusViews';
-import { SelectionModal } from '../components/SelectionModal';
+import { useRegistrationData } from '../../hooks/useRegistrationData';
+import { TokenCheckingView, TokenErrorView } from '../../components/TokenStatusViews';
+import { SelectionModal } from '../../components/SelectionModal';
 
 export default function RegisterComplete() {
   const { t } = useTranslation();
