@@ -27,7 +27,7 @@ namespace UniVibe.Application.Services
         {
             const string cacheKey = "all_universities_cache";
 
-            if (!_memoryCache.TryGetValue(cacheKey, out List<UniversityLookupResponse> cachedUniversities))
+            if (!_memoryCache.TryGetValue(cacheKey, out List<UniversityLookupResponse>? cachedUniversities))
             {
                 var universities = await _universityRepository.GetAllAsync(u => u.IsActive && !u.IsDeleted);
 
@@ -46,7 +46,7 @@ namespace UniVibe.Application.Services
         {
             string cacheKey = $"faculties_univ_{universityId}";
 
-            if (!_memoryCache.TryGetValue(cacheKey, out List<FacultyLookupResponse> cachedFaculties))
+            if (!_memoryCache.TryGetValue(cacheKey, out List<FacultyLookupResponse>? cachedFaculties))
             {
                 var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive && !f.IsDeleted);
 
@@ -65,7 +65,7 @@ namespace UniVibe.Application.Services
         {
             string cacheKey = $"depts_fac_{facultyId}";
 
-            if (!_memoryCache.TryGetValue(cacheKey, out List<DepartmentLookupResponse> cachedDepartments))
+            if (!_memoryCache.TryGetValue(cacheKey, out List<DepartmentLookupResponse>? cachedDepartments))
             {
                 var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive && !d.IsDeleted);
 
