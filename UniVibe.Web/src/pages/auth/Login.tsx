@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api } from "../services/api";
-import { tokenService } from "../services/tokenService";
-import LanguageSelector from "../components/LanguageSelector";
-import AuthModal from "../components/AuthModal";
+import { api } from "../../services/api";
+import { tokenService } from "../../services/tokenService";
+import LanguageSelector from "../../components/LanguageSelector";
+import AuthModal from "../../components/AuthModal";
 
 const decodeToken = (token: string) => {
   try {
