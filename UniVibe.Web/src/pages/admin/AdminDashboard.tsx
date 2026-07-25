@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { RefreshCw, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api } from "../services/api";
-import ConfirmModal from "../components/ConfirmModal";
-import AdminStatsGrid from "../components/AdminStatsGrid";
-import AdminEventSection from "../components/AdminEventSection";
-import AdminUserSection from "../components/AdminUserSection";
+import { api } from "../../services/api";
+import ConfirmModal from "../../components/ConfirmModal";
+import AdminStatsGrid from "../../components/AdminStatsGrid";
+import AdminEventSection from "../../components/AdminEventSection";
+import AdminUserSection from "../../components/AdminUserSection";
 
 interface EventItem {
   id: string;

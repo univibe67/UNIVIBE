@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Lock, KeyRound, AlertCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api } from '../services/api';
-import { ResetSuccessView } from '../components/ResetSuccessView';
+import { api } from '../../services/api';
+import { ResetSuccessView } from '../../components/ResetSuccessView';
 
 export default function ResetPassword() {
   const { t } = useTranslation();
