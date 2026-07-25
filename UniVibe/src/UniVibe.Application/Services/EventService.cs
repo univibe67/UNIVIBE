@@ -234,5 +234,19 @@ namespace UniVibe.Application.Services
 
             return _localizer["Res_Event_Cancelled"].Value;
         }
+        public async Task<List<ParticipantResponse>> GetEventParticipantsAsync(Guid eventId)
+        {
+            var eventExists = await _eventRepository.AnyAsync(e => e.Id == eventId && !e.IsDeleted);
+
+            if (!eventExists)
+                throw new Exception(_localizer["Event_NotFound"].Value);
+
+            var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
+
+            if (participants == null || !participants.Any())
+                return new List<ParticipantResponse>();
+
+            return _mapper.Map<List<ParticipantResponse>>(participants);
+        }
     }
 }
