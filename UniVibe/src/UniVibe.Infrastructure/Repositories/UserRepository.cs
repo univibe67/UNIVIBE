@@ -15,7 +15,7 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(u => u.Department)
                 .ThenInclude(d => d.Faculty)
                 .ThenInclude(f => f.University)
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+                .FirstOrDefaultAsync(u => EF.Functions.ILike(u.Username, username));
         }
         public async Task<User?> GetUserWithDetailsByIdAsync(Guid userId)
         {

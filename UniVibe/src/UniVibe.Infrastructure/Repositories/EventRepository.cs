@@ -76,12 +76,18 @@ namespace UniVibe.Infrastructure.Repositories
                             (e.Status == EventStatus.Approved && e.EventDate > DateTime.UtcNow)
                         ));
         }
-        public async Task<List<Event>> GetAllWithUsersAsync()
+        public async Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null)
         {
-            return await _context.Events
+            var query = _context.Events
                 .Include(e => e.User)
-                .OrderByDescending(e => e.CreatedAt)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(e => e.Status == status.Value);
+            }
+
+            return await query.OrderByDescending(e => e.CreatedAt).ToListAsync();
         }
         public async Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId)
         {
