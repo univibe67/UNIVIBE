@@ -16,6 +16,7 @@
         public string? RejectionReason { get; set; }
         public bool IsDeleted { get; set; }
         public string? CancellationReason { get; set; }
+        public int ParticipantCount { get; set; }
 
     }
 }

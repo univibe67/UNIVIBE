@@ -78,5 +78,13 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<EventDetailResponse>.Success(eventData));
         }
+
+        [HttpGet("{id}/participants")]
+        public async Task<IActionResult> GetEventParticipants(Guid id)
+        {
+            var participants = await _eventService.GetEventParticipantsAsync(id);
+
+            return Ok(ApiResponse<List<ParticipantResponse>>.Success(participants));
+        }
     }
 }

@@ -14,5 +14,6 @@ namespace UniVibe.Application.Interfaces
         Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId);
         Task<string> JoinEventAsync(Guid eventId, Guid userId);
         Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason);
+        Task<List<ParticipantResponse>> GetEventParticipantsAsync(Guid eventId);
     }
 }
