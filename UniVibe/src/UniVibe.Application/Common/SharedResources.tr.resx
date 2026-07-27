@@ -330,4 +330,10 @@
   <data name="Event_UnauthorizedCancel" xml:space="preserve">
     <value>Bu etkinliği iptal etmeye yetkiniz yok.</value>
   </data>
+  <data name="Auth_AccountDeleteEmailSubject" xml:space="preserve">
+    <value>UniVibe - Hesap Silme / Dondurma Talebi Hakkında</value>
+  </data>
+  <data name="Auth_AccountDeleteEmailBody" xml:space="preserve">
+    <value>Merhaba {0}, hesap silme (dondurma) talebin başarıyla alınmıştır. 15 gün içinde tekrar giriş yapmadığın takdirde hesabın kalıcı olarak silinecektir. Eğer bu işlemi sen yapmadıysan hemen bizimle iletişime geç.</value>
+  </data>
 </root>
