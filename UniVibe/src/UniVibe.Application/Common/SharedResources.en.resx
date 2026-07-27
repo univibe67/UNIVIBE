@@ -330,4 +330,10 @@
   <data name="Event_UnauthorizedCancel" xml:space="preserve">
     <value>You do not have the authority to cancel this event.</value>
   </data>
+  <data name="Auth_AccountDeleteEmailSubject" xml:space="preserve">
+    <value>UniVibe - Account Deletion / Deactivation Request</value>
+  </data>
+  <data name="Auth_AccountDeleteEmailBody" xml:space="preserve">
+    <value>Hello {0}, your account deletion (deactivation) request has been successfully received. If you do not log back in within 15 days, your account will be permanently deleted. If you did not request this, please contact us immediately.</value>
+  </data>
 </root>

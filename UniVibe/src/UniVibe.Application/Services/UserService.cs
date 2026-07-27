@@ -18,6 +18,7 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
+        private readonly IEmailService _emailService;
 
         public UserService(
             IUserRepository userRepository,
@@ -25,7 +26,8 @@ namespace UniVibe.Application.Services
             IMapper mapper,
             IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
-            IValidator<UpdateUserProfileRequest> updateProfileValidator)
+            IValidator<UpdateUserProfileRequest> updateProfileValidator,
+            IEmailService emailService)
         {
             _userRepository = userRepository;
             _imageService = imageService;
@@ -33,6 +35,7 @@ namespace UniVibe.Application.Services
             _unitOfWork = unitOfWork;
             _localizer = localizer;
             _updateProfileValidator = updateProfileValidator;
+            _emailService = emailService;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
@@ -142,6 +145,22 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                string subject = _localizer["Auth_AccountDeleteEmailSubject"].Value;
+                string template = _localizer["Auth_AccountDeleteEmailBody"].Value;
+                string mailBody = string.Format(template, user.FirstName);
+
+                try
+                {
+                    await _emailService.SendEmailAsync(user.Email, subject, mailBody);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                }
+            }
 
             return _localizer["Res_User_AccountFrozen"].Value;
         }
