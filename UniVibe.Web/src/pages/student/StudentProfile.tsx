@@ -10,13 +10,10 @@ import {
   GraduationCap,
   AlertTriangle,
   Loader2,
-  LayoutDashboard,
-  UserCircle,
   CheckCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
-import StudentEventFeed from "./StudentEventFeed";
 
 function LanguageSelector() {
   const { i18n } = useTranslation();
@@ -72,10 +69,7 @@ export default function StudentProfile() {
   // Çıkış yapma onay modalı için state
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "profile">(
-    "dashboard",
-  );
-
+  
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     text: string;
@@ -270,42 +264,7 @@ export default function StudentProfile() {
       )}
 
       <div className="max-w-7xl mx-auto space-y-6 pt-6 sm:pt-0">
-        {/* Üst Sekme Geçiş Butonları */}
-        <div className="flex justify-center pt-2 relative">
-          <div className="flex bg-white p-1.5 rounded-2xl border border-gray-100 shadow-xl w-full max-w-sm mx-auto">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === "dashboard"
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <LayoutDashboard size={16} />
-              <span>{t("Student_Events_Title") || "Etkinlikler"}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === "profile"
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <UserCircle size={16} />
-              <span>{t("Student_Profile") || "Profilim"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Sekme İçerikleri */}
-        {activeTab === "dashboard" ? (
-          <div>
-            <StudentEventFeed />
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Profil Header */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
               <div className="relative mb-4 group">
@@ -473,7 +432,7 @@ export default function StudentProfile() {
               </button>
             </div>
           </div>
-        )}
+        
 
         {/* Çıkış Yap Onay Modalı */}
         {isLogoutModalOpen && (
