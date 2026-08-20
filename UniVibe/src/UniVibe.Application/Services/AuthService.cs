@@ -1,10 +1,11 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
@@ -66,11 +67,11 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
-                throw new Exception(_localizer["Auth_InvalidCredentials"].Value);
+                throw new UnauthorizedException(_localizer["Auth_InvalidCredentials"].Value);
 
             var isPasswordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid)
-                throw new Exception(_localizer["Auth_InvalidCredentials"].Value);
+                throw new UnauthorizedException(_localizer["Auth_InvalidCredentials"].Value);
 
             if (!user.IsActive)
             {
@@ -86,12 +87,12 @@ namespace UniVibe.Application.Services
                     }
                     else
                     {
-                        throw new Exception(_localizer["Auth_DeletedTooLong"].Value);
+                        throw new BadRequestException(_localizer["Auth_DeletedTooLong"].Value);
                     }
                 }
                 else
                 {
-                    throw new Exception(_localizer["Auth_Suspended"].Value);
+                    throw new BadRequestException(_localizer["Auth_Suspended"].Value);
                 }
             }
 
@@ -113,7 +114,7 @@ namespace UniVibe.Application.Services
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new Exception(string.Join(" • ", errors));
+                throw new BadRequestException(string.Join(" • ", errors));
             }
 
             var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -122,7 +123,7 @@ namespace UniVibe.Application.Services
             {
                 if (existingUser.IsActive)
                 {
-                    throw new Exception(_localizer["Auth_EmailAlreadyActive"].Value);
+                    throw new ConflictException(_localizer["Auth_EmailAlreadyActive"].Value);
                 }
 
                 if (!existingUser.IsActive && existingUser.DeletedAt.HasValue)
@@ -132,7 +133,7 @@ namespace UniVibe.Application.Services
                     if (gecenSure < 15)
                     {
                         int kalanGun = 15 - (int)gecenSure;
-                        throw new Exception(_localizer["Auth_InDeletionProcess", kalanGun].Value);
+                        throw new BadRequestException(_localizer["Auth_InDeletionProcess", kalanGun].Value);
                     }
                     else
                     {
@@ -211,7 +212,7 @@ namespace UniVibe.Application.Services
             {
                 _pendingUserRepository.Delete(pendingUser);
                 await _unitOfWork.SaveChangesAsync();
-                throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
             }
 
             return _localizer["Res_Auth_LinkSent"].Value;
@@ -233,42 +234,48 @@ namespace UniVibe.Application.Services
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new Exception(string.Join(" • ", errors));
+                throw new BadRequestException(string.Join(" • ", errors));
             }
 
             if (string.IsNullOrWhiteSpace(request.Token))
-                throw new Exception(_localizer["Auth_InvalidToken"].Value);
+                throw new BadRequestException(_localizer["Auth_InvalidToken"].Value);
 
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == request.Token && !u.IsUsed);
             if (pendingUser == null)
-                throw new Exception(_localizer["Auth_InvalidToken"].Value);
+                throw new BadRequestException(_localizer["Auth_InvalidToken"].Value);
             if (pendingUser.ExpiryDate < DateTime.UtcNow)
-                throw new Exception(_localizer["Auth_TokenExpired"].Value);
+                throw new BadRequestException(_localizer["Auth_TokenExpired"].Value);
 
             var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (isUsernameTaken)
-                throw new Exception(_localizer["Auth_UsernameTaken"].Value);
+                throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 
             var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
             if (department == null)
-                throw new Exception(_localizer["Auth_DepartmentNotFound"].Value);
+                throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
 
             var assignedRole = UserRole.Student;
-            if (pendingUser.Email.Contains("@beun.edu.tr"))
+            var emailLower = pendingUser.Email.ToLowerInvariant();
+            if (emailLower.Contains("ogr.") || emailLower.Contains("ogrenci"))
+            {
+                assignedRole = UserRole.Student;
+            }
+            else if (emailLower.EndsWith(".edu.tr") || emailLower.Contains("@beun.edu.tr"))
             {
                 assignedRole = UserRole.Teacher;
             }
+
             if (assignedRole == UserRole.Student)
             {
                 if (!request.Grade.HasValue)
-                    throw new Exception(_localizer["Auth_StudentGradeReq"].Value);
+                    throw new BadRequestException(_localizer["Auth_StudentGradeReq"].Value);
 
                 request.Title = null;
             }
             if (assignedRole == UserRole.Teacher)
             {
                 if (string.IsNullOrWhiteSpace(request.Title))
-                    throw new Exception(_localizer["Auth_TeacherTitleReq"].Value);
+                    throw new BadRequestException(_localizer["Auth_TeacherTitleReq"].Value);
 
                 request.Grade = null;
             }

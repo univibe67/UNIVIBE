@@ -2,9 +2,9 @@ using Serilog;
 using UniVibe.API.Extensions;
 using UniVibe.Application;
 using UniVibe.Application.Middlewares;
-using UniVibe.Application.Middlewares.UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
 using UniVibe.Infrastructure.Extensions;
+
 
 Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
 
