@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
@@ -35,10 +35,10 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
         [HttpPost("cancel-event/{id}")]
-        public async Task<IActionResult> CancelEvent(Guid id, [FromBody] string reason)
+        public async Task<IActionResult> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
         {
             var userId = User.GetUserId();
-            var message = await _eventService.CancelEventAsync(id, userId, reason);
+            var message = await _eventService.CancelEventAsync(id, userId, request.Reason);
 
             return Ok(ApiResponse<string>.Success(message));
         }

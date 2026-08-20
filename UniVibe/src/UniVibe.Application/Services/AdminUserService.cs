@@ -1,7 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
@@ -36,7 +37,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["Res_User_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             user.Role = newRole;
 
@@ -51,7 +52,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["Res_User_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             user.IsActive = false;
             user.RefreshToken = null;
@@ -67,7 +68,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["Res_User_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             user.IsActive = true;
             user.IsDeleted = false;
@@ -84,7 +85,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["Res_User_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
@@ -97,4 +98,4 @@ namespace UniVibe.Application.Services
             return _localizer["Res_User_Deleted"].Value;
         }
     }
-}
+}

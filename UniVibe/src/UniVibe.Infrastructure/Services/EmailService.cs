@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
@@ -35,13 +35,16 @@ namespace UniVibe.Infrastructure.Services
             };
 
             var jsonContent = JsonSerializer.Serialize(payload);
-            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            
+            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl)
+            {
+                Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+            };
 
-            _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("api-key", apiKey);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("api-key", apiKey);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.PostAsync(apiUrl, httpContent);
+            var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {

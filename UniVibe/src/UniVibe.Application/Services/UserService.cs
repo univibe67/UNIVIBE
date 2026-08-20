@@ -1,10 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 
@@ -42,7 +43,7 @@ namespace UniVibe.Application.Services
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrEmpty(user.ProfilePicturePublicId))
             {
@@ -67,13 +68,13 @@ namespace UniVibe.Application.Services
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new Exception(string.Join(" • ", errors));
+                throw new BadRequestException(string.Join(" • ", errors));
             }
 
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
             {
@@ -83,7 +84,7 @@ namespace UniVibe.Application.Services
                     if (daysSinceLastUpdate < 30)
                     {
                         var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new Exception(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
                     }
                 }
                 var isUsernameTaken = await _userRepository.AnyAsync(u =>
@@ -91,7 +92,7 @@ namespace UniVibe.Application.Services
                     u.Username.ToLower() == updateDto.Username.ToLower());
 
                 if (isUsernameTaken)
-                    throw new Exception(_localizer["User_UsernameTaken"].Value);
+                    throw new ConflictException(_localizer["User_UsernameTaken"].Value);
 
                 user.Username = updateDto.Username;
                 user.LastUsernameUpdatedAt = DateTime.UtcNow;
@@ -112,7 +113,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<UserProfileResponse>(user);
         }
@@ -122,7 +123,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
@@ -132,7 +133,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             user.IsActive = false;
             user.IsDeleted = true;
@@ -158,11 +159,11 @@ namespace UniVibe.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
                 }
             }
 
             return _localizer["Res_User_AccountFrozen"].Value;
         }
     }
-}
+}

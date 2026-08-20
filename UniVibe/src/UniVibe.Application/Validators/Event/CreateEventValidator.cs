@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
@@ -22,6 +22,9 @@ namespace UniVibe.Application.Validators.Event
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
 
             RuleFor(x => x.Description)
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
+
+            RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
         }
     }
