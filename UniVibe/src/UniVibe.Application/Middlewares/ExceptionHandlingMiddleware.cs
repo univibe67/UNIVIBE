@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
 using UniVibe.Application.Common;
+using UniVibe.Application.Exceptions;
 
 namespace UniVibe.Application.Middlewares
 {
@@ -25,7 +26,7 @@ namespace UniVibe.Application.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Sistemde yakalanmayan bir hata oluştu!");
+                _logger.LogError(ex, "Sistemde bir hata oluştu: {Message}", ex.Message);
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -34,23 +35,52 @@ namespace UniVibe.Application.Middlewares
         {
             context.Response.ContentType = "application/json";
 
-            context.Response.StatusCode = exception switch
+            int statusCode;
+            string userMessage;
+
+            switch (exception)
             {
-                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+                case NotFoundException:
+                case KeyNotFoundException:
+                    statusCode = (int)HttpStatusCode.NotFound;
+                    userMessage = exception.Message;
+                    break;
 
-                KeyNotFoundException => (int)HttpStatusCode.NotFound,
+                case UnauthorizedException:
+                case UnauthorizedAccessException:
+                    statusCode = (int)HttpStatusCode.Unauthorized;
+                    userMessage = exception.Message;
+                    break;
 
-                Exception => (int)HttpStatusCode.BadRequest,
+                case ForbiddenException:
+                    statusCode = (int)HttpStatusCode.Forbidden;
+                    userMessage = exception.Message;
+                    break;
 
-                _ => (int)HttpStatusCode.InternalServerError
-            };
+                case ConflictException:
+                    statusCode = (int)HttpStatusCode.Conflict;
+                    userMessage = exception.Message;
+                    break;
 
-            var response = ApiResponse<object>.Fail(exception.Message);
+                case BadRequestException:
+                    statusCode = (int)HttpStatusCode.BadRequest;
+                    userMessage = exception.Message;
+                    break;
+
+                default:
+                    statusCode = (int)HttpStatusCode.InternalServerError;
+                    userMessage = "Bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.";
+                    break;
+            }
+
+            context.Response.StatusCode = statusCode;
+
+            var response = ApiResponse<object>.Fail(userMessage);
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             var jsonResponse = JsonSerializer.Serialize(response, options);
 
             return context.Response.WriteAsync(jsonResponse);
         }
     }
-
 }
+

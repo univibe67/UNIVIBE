@@ -1,7 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Enums;
@@ -42,7 +43,7 @@ namespace UniVibe.Application.Services
             var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
             if (evnt == null)
-                throw new Exception(_localizer["Res_Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
 
             evnt.Status = EventStatus.Approved;
 
@@ -55,12 +56,12 @@ namespace UniVibe.Application.Services
         public async Task<string> RejectEventAsync(Guid eventId, string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                throw new Exception(_localizer["Res_Event_ReasonRequired"].Value);
+                throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
             var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
 
             if (evnt == null)
-                throw new Exception(_localizer["Res_Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
 
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
@@ -76,7 +77,7 @@ namespace UniVibe.Application.Services
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
             if (eventEntity == null)
-                throw new Exception(_localizer["Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
@@ -94,4 +95,4 @@ namespace UniVibe.Application.Services
             return eventDetailResponse;
         }
     }
-}
+}

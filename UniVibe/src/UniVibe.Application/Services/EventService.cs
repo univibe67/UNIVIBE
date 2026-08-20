@@ -1,9 +1,10 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
@@ -48,7 +49,7 @@ namespace UniVibe.Application.Services
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new Exception(string.Join(" • ", errors));
+                throw new BadRequestException(string.Join(" • ", errors));
             }
 
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
@@ -59,11 +60,11 @@ namespace UniVibe.Application.Services
                 e.Status != EventStatus.Rejected);
 
             if (hasActiveEvent)
-                throw new Exception(_localizer["Event_HasActiveEvent"].Value);
+                throw new ConflictException(_localizer["Event_HasActiveEvent"].Value);
 
             var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
-                throw new Exception(_localizer["Event_CategoryNotFound"].Value);
+                throw new NotFoundException(_localizer["Event_CategoryNotFound"].Value);
 
             string? imageUrl = null;
             string? imagePublicId = null;
@@ -91,7 +92,7 @@ namespace UniVibe.Application.Services
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new Exception(string.Join(" • ", errors));
+                throw new BadRequestException(string.Join(" • ", errors));
             }
 
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
@@ -119,7 +120,7 @@ namespace UniVibe.Application.Services
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
             if (eventEntity == null)
-                throw new Exception(_localizer["Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
@@ -180,14 +181,20 @@ namespace UniVibe.Application.Services
         {
             var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
             if (eventEntity == null)
-                throw new Exception(_localizer["Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.Status != EventStatus.Approved)
+                throw new BadRequestException("Sadece onaylanmış etkinliklere katılım sağlanabilir.");
+
+            if (eventEntity.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException("Tarihi geçmiş etkinliklere katılım sağlanamaz.");
 
             if (eventEntity.UserId == userId)
-                throw new Exception(_localizer["Event_CannotJoinOwnEvent"].Value);
+                throw new BadRequestException(_localizer["Event_CannotJoinOwnEvent"].Value);
 
             var alreadyJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, userId);
             if (alreadyJoined)
-                throw new Exception(_localizer["Event_AlreadyJoined"].Value);
+                throw new ConflictException(_localizer["Event_AlreadyJoined"].Value);
 
             var attendee = new EventAttendee
             {
@@ -204,26 +211,26 @@ namespace UniVibe.Application.Services
         public async Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                throw new Exception(_localizer["Res_Event_ReasonRequired"].Value);
+                throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (existingEvent == null)
-                throw new Exception(_localizer["Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             if (existingEvent.UserId != userId)
-                throw new Exception(_localizer["Event_UnauthorizedCancel"].Value);
+                throw new ForbiddenException(_localizer["Event_UnauthorizedCancel"].Value);
 
             var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
 
             if (timeDifference.TotalHours < 0)
-                throw new Exception(_localizer["Event_CannotCancelPast"].Value);
+                throw new BadRequestException(_localizer["Event_CannotCancelPast"].Value);
 
             if (timeDifference.TotalHours < 4)
-                throw new Exception(_localizer["Event_CannotCancelClose"].Value);
+                throw new BadRequestException(_localizer["Event_CannotCancelClose"].Value);
 
             if (existingEvent.Status == EventStatus.Cancelled)
-                throw new Exception(_localizer["Event_AlreadyCancelled"].Value);
+                throw new BadRequestException(_localizer["Event_AlreadyCancelled"].Value);
 
             existingEvent.Status = EventStatus.Cancelled;
             existingEvent.CancellationReason = reason;
@@ -234,12 +241,13 @@ namespace UniVibe.Application.Services
 
             return _localizer["Res_Event_Cancelled"].Value;
         }
+
         public async Task<List<ParticipantResponse>> GetEventParticipantsAsync(Guid eventId)
         {
             var eventExists = await _eventRepository.AnyAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (!eventExists)
-                throw new Exception(_localizer["Event_NotFound"].Value);
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
 
@@ -249,4 +257,4 @@ namespace UniVibe.Application.Services
             return _mapper.Map<List<ParticipantResponse>>(participants);
         }
     }
-}
+}

@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
 using UniVibe.Domain.Enums;
@@ -48,9 +49,9 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPut("change-role/{id}")]
-        public async Task<IActionResult> ChangeRole(Guid id, [FromBody] UserRole newRole)
+        public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest request)
         {
-            var message = await _adminUserService.ChangeUserRoleAsync(id, newRole);
+            var message = await _adminUserService.ChangeUserRoleAsync(id, request.NewRole);
             return Ok(ApiResponse<string>.Success(message));
         }
     }
