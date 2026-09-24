@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Interfaces;
 
@@ -13,42 +13,31 @@ namespace UniVibe.API.Controllers
     public sealed class AdminEventController : ControllerBase
     {
         private readonly IAdminEventService _adminEventService;
-        private readonly IStringLocalizer<SharedResources> _sharedResources;
 
-        public AdminEventController(IAdminEventService adminEventService, IStringLocalizer<SharedResources> sharedResources)
+        public AdminEventController(IAdminEventService adminEventService)
         {
             _adminEventService = adminEventService;
-            _sharedResources = sharedResources;
         }
 
         [HttpGet("pending")]
         public async Task<IActionResult> GetPendingEvents()
         {
             var events = await _adminEventService.GetPendingEventsAsync();
-
             return Ok(ApiResponse<List<EventListResponse>>.Success(events));
         }
 
         [HttpPut("approve/{id}")]
         public async Task<IActionResult> ApproveEvent(Guid id)
         {
-            var result = await _adminEventService.ApproveEventAsync(id);
-
-            if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_Event_NotFound"].Value));
-
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_Event_Approved"].Value));
+            var message = await _adminEventService.ApproveEventAsync(id);
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpPut("reject/{id}")]
-        public async Task<IActionResult> RejectEvent(Guid id)
+        public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest request)
         {
-            var result = await _adminEventService.RejectEventAsync(id);
-
-            if (!result)
-                return NotFound(ApiResponse<string>.Fail(_sharedResources["Res_Event_NotFound"].Value));
-
-            return Ok(ApiResponse<string>.Success(_sharedResources["Res_Event_Rejected"].Value));
+            var message = await _adminEventService.RejectEventAsync(id, request.Reason);
+            return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet("all")]
@@ -56,6 +45,13 @@ namespace UniVibe.API.Controllers
         {
             var events = await _adminEventService.GetAllEventsAsync();
             return Ok(ApiResponse<List<EventListResponse>>.Success(events));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetEventDetails(Guid id)
+        {
+            var eventDetails = await _adminEventService.GetEventDetailsByIdAsync(id);
+            return Ok(ApiResponse<EventDetailResponse>.Success(eventDetails));
         }
     }
 }

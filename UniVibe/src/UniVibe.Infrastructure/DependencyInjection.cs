@@ -30,6 +30,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IDepartmentRepository, DepartmentRepository>();
             services.AddScoped<IUniversityRepository, UniversityRepository>();
             services.AddScoped<IFacultyRepository, FacultyRepository>();
+            services.AddHttpClient();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();

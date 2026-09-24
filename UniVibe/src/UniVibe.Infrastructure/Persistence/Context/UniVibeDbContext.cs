@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using UniVibe.Domain.Entities;
 
 namespace UniVibe.Infrastructure.Persistence.Context
@@ -16,6 +16,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<Faculty> Faculties { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<University> Universities { get; set; }
+        public DbSet<EventAttendee> EventAttendees { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -42,6 +43,15 @@ namespace UniVibe.Infrastructure.Persistence.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Global Soft Delete Query Filters
+            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Event>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<EventAttendee>().HasQueryFilter(ea => !ea.IsDeleted);
+            modelBuilder.Entity<EventCategory>().HasQueryFilter(ec => !ec.IsDeleted);
+            modelBuilder.Entity<University>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Faculty>().HasQueryFilter(f => !f.IsDeleted);
+            modelBuilder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
 
             modelBuilder.Entity<Faculty>()
             .HasOne(f => f.University)
@@ -78,6 +88,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);
                 entity.Property(u => u.Username).HasMaxLength(20).IsRequired();
                 entity.HasIndex(u => u.Username).IsUnique();
+                entity.HasIndex(u => u.Email);
 
                 entity.HasOne(u => u.Department)
                       .WithMany(d => d.Users)
@@ -85,11 +96,36 @@ namespace UniVibe.Infrastructure.Persistence.Context
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<PendingUser>(entity =>
+            {
+                entity.HasIndex(pu => pu.Token);
+                entity.HasIndex(pu => pu.Email);
+            });
+
             modelBuilder.Entity<Event>(entity =>
             {
                 entity.Property(e => e.Title).HasMaxLength(100).IsRequired();
                 entity.Property(e => e.Description).HasMaxLength(2000);
                 entity.Property(e => e.Location).HasMaxLength(200);
+
+                entity.HasIndex(e => e.EventDate);
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.UserId);
+            });
+
+            modelBuilder.Entity<EventAttendee>(entity =>
+            {
+                entity.HasKey(ea => ea.Id);
+
+                entity.HasOne(ea => ea.Event)
+                      .WithMany(e => e.Attendees)
+                      .HasForeignKey(ea => ea.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ea => ea.User)
+                      .WithMany()
+                      .HasForeignKey(ea => ea.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

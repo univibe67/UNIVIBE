@@ -37,7 +37,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await _dbSet.SingleOrDefaultAsync(filter);
         }
 
-        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>> filter = null)
+        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
         {
             return filter == null
                 ? await _dbSet.ToListAsync()

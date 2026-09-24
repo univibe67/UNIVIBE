@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using UniVibe.Application.Common;
 
@@ -11,15 +12,21 @@ namespace UniVibe.API.Extensions
         public static IServiceCollection AddWebAPIServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddControllers();
+            services.AddHttpContextAccessor();
 
             services.AddCors(options =>
             {
-                options.AddPolicy("WebFrontendPolicy", policy =>
+                options.AddPolicy("AllowAll", builder =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    builder
+                        .WithOrigins(
+                            "https://univibe-three.vercel.app",
+                            "https://univibe-git-main-univibe67s-projects.vercel.app",
+                            "http://localhost:3000" 
+                        )
+                        .SetIsOriginAllowedToAllowWildcardSubdomains()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
                 });
             });
 
@@ -61,8 +68,8 @@ namespace UniVibe.API.Extensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
+                    ValidIssuer = configuration["Jwt:Issuer"] ?? "UniVibe",
+                    ValidAudience = configuration["Jwt:Audience"] ?? "UniVibeUsers",
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!)),
                     ClockSkew = TimeSpan.Zero
                 };
@@ -71,6 +78,32 @@ namespace UniVibe.API.Extensions
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
             {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "UniVibe API", Version = "v1" });
+
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "JWT Token'ınızı buraya yapıştırın. (Sadece token'ı yazın, başına 'Bearer ' eklemenize gerek yok!)"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
             });
 
             return services;

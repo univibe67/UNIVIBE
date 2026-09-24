@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
+using UniVibe.Application.DTOs.University.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -21,21 +22,21 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAllUniversities()
         {
             var result = await _universityService.GetAllUniversitiesAsync();
-            return Ok(ApiResponse<object>.Success(result));
+            return Ok(ApiResponse<List<UniversityLookupResponse>>.Success(result));
         }
 
         [HttpGet("{universityId}/faculties")]
         public async Task<IActionResult> GetFacultiesByUniversityId(Guid universityId)
         {
             var result = await _universityService.GetFacultiesByUniversityIdAsync(universityId);
-            return Ok(ApiResponse<object>.Success(result));
+            return Ok(ApiResponse<List<FacultyLookupResponse>>.Success(result));
         }
 
         [HttpGet("faculties/{facultyId}/departments")]
         public async Task<IActionResult> GetDepartments(Guid facultyId)
         {
             var result = await _universityService.GetDepartmentsByFacultyIdAsync(facultyId);
-            return Ok(ApiResponse<object>.Success(result));
+            return Ok(ApiResponse<List<DepartmentLookupResponse>>.Success(result));
         }
     }
 }

@@ -1,9 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 
@@ -16,26 +18,32 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
+        private readonly IEmailService _emailService;
 
         public UserService(
             IUserRepository userRepository,
             IImageService imageService,
             IMapper mapper,
             IUnitOfWork unitOfWork,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<UpdateUserProfileRequest> updateProfileValidator,
+            IEmailService emailService)
         {
             _userRepository = userRepository;
             _imageService = imageService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _localizer = localizer;
+            _updateProfileValidator = updateProfileValidator;
+            _emailService = emailService;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrEmpty(user.ProfilePicturePublicId))
             {
@@ -54,12 +62,19 @@ namespace UniVibe.Application.Services
             return user.ProfilePictureUrl;
         }
 
-        public async Task UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
+        public async Task<string> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
         {
+            var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new BadRequestException(string.Join(" • ", errors));
+            }
+
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
             {
@@ -69,13 +84,15 @@ namespace UniVibe.Application.Services
                     if (daysSinceLastUpdate < 30)
                     {
                         var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new Exception(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
                     }
                 }
-                var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == updateDto.Username.ToLower());
+                var isUsernameTaken = await _userRepository.AnyAsync(u =>
+                    u.Id != userId &&
+                    u.Username.ToLower() == updateDto.Username.ToLower());
 
                 if (isUsernameTaken)
-                    throw new Exception(_localizer["User_UsernameTaken"].Value);
+                    throw new ConflictException(_localizer["User_UsernameTaken"].Value);
 
                 user.Username = updateDto.Username;
                 user.LastUsernameUpdatedAt = DateTime.UtcNow;
@@ -87,6 +104,8 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_User_ProfileUpdated"].Value;
         }
 
         public async Task<UserProfileResponse> GetUserProfileAsync(Guid userId)
@@ -94,7 +113,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<UserProfileResponse>(user);
         }
@@ -104,19 +123,20 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.GetUserWithDetailsByUsernameAsync(username);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
 
-        public async Task DeleteAccountAsync(Guid userId)
+        public async Task<string> DeleteAccountAsync(Guid userId)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
-                throw new Exception(_localizer["User_NotFound"].Value);
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             user.IsActive = false;
+            user.IsDeleted = true;
 
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
@@ -126,6 +146,24 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                string subject = _localizer["Auth_AccountDeleteEmailSubject"].Value;
+                string template = _localizer["Auth_AccountDeleteEmailBody"].Value;
+                string mailBody = string.Format(template, user.FirstName);
+
+                try
+                {
+                    await _emailService.SendEmailAsync(user.Email, subject, mailBody);
+                }
+                catch (Exception ex)
+                {
+                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                }
+            }
+
+            return _localizer["Res_User_AccountFrozen"].Value;
         }
     }
-}
+}

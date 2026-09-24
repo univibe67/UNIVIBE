@@ -1,18 +1,18 @@
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ActivityIndicator,
-  ImageBackground,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { api } from "../../services/api";
 
 export default function RegisterInitScreen() {
@@ -179,5 +179,5 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   loginText: { color: "#E5E7EB", fontSize: 14 },
-  loginLink: { color: "#34D399", fontSize: 14, fontWeight: "bold" }, // Koyu arka planda parlasın diye bir tık daha açık yeşil yaptık
+  loginLink: { color: "#34D399", fontSize: 14, fontWeight: "bold" },
 });

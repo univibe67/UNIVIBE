@@ -12,5 +12,7 @@ namespace UniVibe.Application.DTOs.Event.Responses
         public EventStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public string OrganizerName { get; set; } = string.Empty;
+        public bool IsDeleted { get; set; }
+        public int ParticipantCount { get; set; }
     }
 }

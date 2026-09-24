@@ -16,10 +16,12 @@ namespace UniVibe.Application.Mappings
             CreateMap<Faculty, FacultyLookupResponse>();
             CreateMap<Department, DepartmentLookupResponse>();
 
-            //Event Mappings
+            // Event Mappings
             CreateMap<CreateEventRequest, Event>();
-            CreateMap<Event, EventDetailResponse>();
             CreateMap<EventCategory, EventCategoryResponse>();
+
+            CreateMap<Event, EventDetailResponse>()
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count));
 
             // User Mappings
             CreateMap<User, UserProfileResponse>()
@@ -30,10 +32,15 @@ namespace UniVibe.Application.Mappings
             CreateMap<User, PublicUserProfileResponse>()
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name))
                 .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department.Faculty.Name));
-            // Adim Mapping
+
+            CreateMap<User, ParticipantResponse>();
+
+            // Admin & List Mappings
             CreateMap<User, UserListResponse>();
+
             CreateMap<Event, EventListResponse>()
-                .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName)); ;
+                .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count));
         }
     }
 }

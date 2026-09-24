@@ -62,21 +62,32 @@ export default function RegisterCompleteScreen() {
     const init = async () => {
       try {
         await api.get(`/Auth/verify-token?token=${token}`);
-        const res = await api.get("/University");
-        setUniversities(res);
-      } catch {
-        Alert.alert("Hata", "Token geçersiz.");
+
+        const res: any = await api.get("/University");
+        setUniversities(res.data || res);
+      } catch (err: any) {
         router.replace("/(auth)/register");
       }
     };
-    init();
+    if (token) {
+      init();
+    }
   }, [token]);
 
   useEffect(() => {
     if (selectedUni) {
       api
         .get(`/University/${selectedUni.id}/faculties`)
-        .then((res: any) => setFaculties(res));
+        .then((res: any) => {
+          setFaculties(res.data || res);
+        })
+        .catch((err: any) => {
+          setFaculties([]);
+        });
+    } else {
+      setFaculties([]);
+      setSelectedFac(null);
+      setSelectedDep(null);
     }
   }, [selectedUni]);
 
@@ -84,7 +95,15 @@ export default function RegisterCompleteScreen() {
     if (selectedFac) {
       api
         .get(`/University/faculties/${selectedFac.id}/departments`)
-        .then((res: any) => setDepartments(res));
+        .then((res: any) => {
+          setDepartments(res.data || res);
+        })
+        .catch((err: any) => {
+          setDepartments([]);
+        });
+    } else {
+      setDepartments([]);
+      setSelectedDep(null);
     }
   }, [selectedFac]);
 
@@ -95,7 +114,7 @@ export default function RegisterCompleteScreen() {
     }
     setIsSubmitting(true);
     try {
-      await api.post("/Auth/complete-registration", {
+      const response: any = await api.post("/Auth/complete-registration", {
         token,
         username,
         password,
@@ -105,11 +124,27 @@ export default function RegisterCompleteScreen() {
         departmentId: selectedDep.id,
         grade: selectedGrade.id,
       });
+
+      const accessToken = response.token || response.data?.token;
+      const refreshToken = response.refreshToken || response.data?.refreshToken;
+
+      if (accessToken) {
+        loginAction(accessToken, refreshToken, firstName, lastName);
+      }
+
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Hata", "Kayıt tamamlanamadı.");
+      const errorMessage =
+        e.response?.data?.message || e.response?.data || e.message;
+      Alert.alert(
+        "Hata",
+        typeof errorMessage === "string"
+          ? errorMessage
+          : "Kayıt tamamlanamadı. Lütfen tekrar deneyin.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
