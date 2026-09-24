@@ -155,7 +155,7 @@ namespace UniVibe.Application.Services
 
             try
             {
-                string webBridgeLink = $"http://192.168.1.110:5000/api/Auth/verify-redirect?token={token}";
+                string webBridgeLink = $"http://192.168.1.132:5000/api/Auth/verify-redirect?token={token}";
 
                 string mailBody = $@"
                     <h3>UniVibe'a Hoş Geldin!</h3>
