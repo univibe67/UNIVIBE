@@ -5,7 +5,6 @@ using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
-using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services

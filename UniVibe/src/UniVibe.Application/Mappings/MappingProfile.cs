@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.DTOs.Feedback.Response;
 using UniVibe.Application.DTOs.University.Responses;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Domain.Entities;
@@ -41,6 +42,9 @@ namespace UniVibe.Application.Mappings
             CreateMap<Event, EventListResponse>()
                 .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
                 .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count));
+
+            CreateMap<Feedback, FeedbackResponseDto>()
+                .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"));
         }
     }
 }

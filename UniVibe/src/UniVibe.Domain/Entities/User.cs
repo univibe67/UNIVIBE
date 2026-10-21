@@ -27,5 +27,6 @@ namespace UniVibe.Domain.Entities
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; } = null!;
         public ICollection<Event> Events { get; set; } = new List<Event>();
+        public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     }
 }
