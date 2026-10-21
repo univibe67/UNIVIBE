@@ -128,6 +128,10 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("EventDate");
+
+                    b.HasIndex("Status");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Events");
@@ -234,6 +238,47 @@ namespace UniVibe.Infrastructure.Migrations
                     b.ToTable("Faculties");
                 });
 
+            modelBuilder.Entity("UniVibe.Domain.Entities.Feedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Feedbacks");
+                });
+
             modelBuilder.Entity("UniVibe.Domain.Entities.PendingUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -267,6 +312,10 @@ namespace UniVibe.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("Token");
 
                     b.ToTable("PendingUsers");
                 });
@@ -397,6 +446,8 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("Email");
+
                     b.HasIndex("Username")
                         .IsUnique();
 
@@ -463,6 +514,17 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Navigation("University");
                 });
 
+            modelBuilder.Entity("UniVibe.Domain.Entities.Feedback", b =>
+                {
+                    b.HasOne("UniVibe.Domain.Entities.User", "User")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("UniVibe.Domain.Entities.User", b =>
                 {
                     b.HasOne("UniVibe.Domain.Entities.Department", "Department")
@@ -502,6 +564,8 @@ namespace UniVibe.Infrastructure.Migrations
             modelBuilder.Entity("UniVibe.Domain.Entities.User", b =>
                 {
                     b.Navigation("Events");
+
+                    b.Navigation("Feedbacks");
                 });
 #pragma warning restore 612, 618
         }
