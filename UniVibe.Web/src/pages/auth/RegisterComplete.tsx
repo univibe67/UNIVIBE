@@ -52,7 +52,7 @@ export default function RegisterComplete() {
       try {
         await api.get(`/Auth/verify-token?token=${token}`);
         setIsTokenValid(true); 
-      } catch (err: any) {
+      } catch {
         setIsTokenValid(false);
         setTokenErrorMessage("Bu bağlantı geçerliliğini yitirmiştir, süresi dolmuş veya daha önce kullanılmıştır.");
       }

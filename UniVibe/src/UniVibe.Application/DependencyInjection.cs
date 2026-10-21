@@ -1,11 +1,9 @@
 ﻿using FluentValidation;
-using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Mappings;
 using UniVibe.Application.Services;
-using UniVibe.Application.Validators.Auth;
 
 namespace UniVibe.Application
 {
@@ -20,6 +18,7 @@ namespace UniVibe.Application
             services.AddScoped<IUniversityService, UniversityService>();
             services.AddScoped<IAdminEventService, AdminEventService>();
             services.AddScoped<IAdminUserService, AdminUserService>();
+            services.AddScoped<IFeedbackService, FeedbackService>();
 
             services.AddAutoMapper(cfg => { cfg.AddProfile<MappingProfile>(); });
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

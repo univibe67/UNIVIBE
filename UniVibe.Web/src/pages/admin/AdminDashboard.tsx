@@ -45,7 +45,7 @@ const getAdminIdFromToken = () => {
     return decoded[
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
     ];
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
     try {
       const data = (await api.get("/AdminEvent/all")) as any;
       setEvents(data || []);
-    } catch (error) {
+    } catch {
       setEvents([]);
     }
   };
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     try {
       const data = (await api.get("/AdminUser/all")) as any;
       setUsers(data || []);
-    } catch (error) {
+    } catch {
       setUsers([]);
     }
   };

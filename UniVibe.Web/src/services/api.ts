@@ -75,7 +75,7 @@ api.interceptors.response.use(
 
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-      } catch (refreshError: any) {
+      } catch {
         tokenService.clearTokens();
         window.location.href = "/";
         return Promise.reject(
@@ -85,7 +85,7 @@ api.interceptors.response.use(
     }
 
     if (error.response && error.response.data) {
-      let errorBody = error.response.data;
+      const errorBody = error.response.data;
       if (
         errorBody.errors &&
         typeof errorBody.errors === "object" &&

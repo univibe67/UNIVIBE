@@ -4,6 +4,7 @@ import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import StudentHome from './pages/student/StudentHome';
 import StudentEvents from './pages/student/StudentEvents';
+import StudentEventDetail from './pages/student/StudentEventDetail';
 import StudentProfile from './pages/student/StudentProfile';
 import ResetPassword from './pages/auth/ResetPassword';
 import Login from './pages/auth/Login';
@@ -30,6 +31,7 @@ function App() {
             <Route index element={<Navigate to="home" replace />} />
             <Route path="home" element={<StudentHome />} />
             <Route path="events" element={<StudentEvents />} />
+            <Route path="events/:id" element={<StudentEventDetail />} />
             <Route path="profile" element={<StudentProfile />} />
           </Route>
         </Route>

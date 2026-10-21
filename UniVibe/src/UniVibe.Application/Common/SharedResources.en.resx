@@ -336,4 +336,16 @@
   <data name="Auth_AccountDeleteEmailBody" xml:space="preserve">
     <value>Hello {0}, your account deletion (deactivation) request has been successfully received. If you do not log back in within 15 days, your account will be permanently deleted. If you did not request this, please contact us immediately.</value>
   </data>
+  <data name="Res_Feedback_DailyLimitExceeded" xml:space="preserve">
+    <value>You can create a maximum of 2 feedbacks per day.</value>
+  </data>
+  <data name="Res_Feedback_Created" xml:space="preserve">
+    <value>Your feedback has been created successfully.</value>
+  </data>
+  <data name="Res_Feedback_NotFound" xml:space="preserve">
+    <value>Feedback not found.</value>
+  </data>
+  <data name="Res_Feedback_Resolved" xml:space="preserve">
+    <value>Feedback successfully marked as resolved.</value>
+  </data>
 </root>

@@ -97,6 +97,7 @@ export default function AdminEventSection({
         status: eventItem.status ?? fetchedData.status,
       });
     } catch (error) {
+      console.error(error);
     } finally {
       setDetailLoading(false);
     }

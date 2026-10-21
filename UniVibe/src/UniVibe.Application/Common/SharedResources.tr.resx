@@ -336,4 +336,16 @@
   <data name="Auth_AccountDeleteEmailBody" xml:space="preserve">
     <value>Merhaba {0}, hesap silme (dondurma) talebin başarıyla alınmıştır. 15 gün içinde tekrar giriş yapmadığın takdirde hesabın kalıcı olarak silinecektir. Eğer bu işlemi sen yapmadıysan hemen bizimle iletişime geç.</value>
   </data>
+  <data name="Res_Feedback_DailyLimitExceeded" xml:space="preserve">
+    <value>Günlük en fazla 2 feedback (geri bildirim) oluşturabilirsiniz.</value>
+  </data>
+  <data name="Res_Feedback_Created" xml:space="preserve">
+    <value>Geri bildiriminiz başarıyla oluşturuldu.</value>
+  </data>
+  <data name="Res_Feedback_NotFound" xml:space="preserve">
+    <value>Aradığınız geri bildirim bulunamadı.</value>
+  </data>
+  <data name="Res_Feedback_Resolved" xml:space="preserve">
+    <value>Geri bildirim başarıyla çözüldü olarak işaretlendi.</value>
+  </data>
 </root>
