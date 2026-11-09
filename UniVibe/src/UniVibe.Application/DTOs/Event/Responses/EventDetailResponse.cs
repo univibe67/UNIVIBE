@@ -1,4 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.Event.Responses
+﻿using UniVibe.Domain.Enums;
+
+namespace UniVibe.Application.DTOs.Event.Responses
 {
     public class EventDetailResponse
     {
@@ -17,6 +19,8 @@
         public bool IsDeleted { get; set; }
         public string? CancellationReason { get; set; }
         public int ParticipantCount { get; set; }
+        public GradeLevel? MinGrade { get; set; }
+        public GradeLevel? MaxGrade { get; set; }
 
     }
 }

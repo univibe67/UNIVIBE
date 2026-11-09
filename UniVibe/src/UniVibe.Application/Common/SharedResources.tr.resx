@@ -348,4 +348,10 @@
   <data name="Res_Feedback_Resolved" xml:space="preserve">
     <value>Geri bildirim başarıyla çözüldü olarak işaretlendi.</value>
   </data>
+  <data name="Event_NotApproved" xml:space="preserve">
+    <value>Sadece onaylanmış etkinliklere katılım sağlanabilir.</value>
+  </data>
+  <data name="Event_PastDate" xml:space="preserve">
+    <value>Tarihi geçmiş etkinliklere katılım sağlanamaz.</value>
+  </data>
 </root>

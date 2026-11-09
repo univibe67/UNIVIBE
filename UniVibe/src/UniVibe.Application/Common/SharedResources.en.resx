@@ -348,4 +348,10 @@
   <data name="Res_Feedback_Resolved" xml:space="preserve">
     <value>Feedback successfully marked as resolved.</value>
   </data>
+  <data name="Event_NotApproved" xml:space="preserve">
+    <value>You can only join approved events.</value>
+  </data>
+  <data name="Event_PastDate" xml:space="preserve">
+    <value>You cannot join past events.</value>
+  </data>
 </root>
