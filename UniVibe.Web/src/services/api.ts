@@ -14,10 +14,11 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = tokenService.getAccessToken();
+    const isLoginRequest = config.url?.toLowerCase().includes("/auth/login");
     if (config.headers) {
       const currentLang = i18n.language === 'en' ? 'en-US' : 'tr-TR';
       config.headers['Accept-Language'] = currentLang;
-      if (token) {
+      if (token && !isLoginRequest) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -50,8 +51,9 @@ api.interceptors.response.use(
   },
   async (error: any) => {
     const originalRequest = error.config;
+    const isLoginRequest = originalRequest?.url?.toLowerCase().includes("/auth/login");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !isLoginRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const refreshToken = tokenService.getRefreshToken();
