@@ -38,19 +38,16 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CreateFeedbackAsync(Guid userId, CreateFeedbackDto dto)
         {
-            // Günlük max 2 limit kontrolü
             var todayCount = await _feedbackRepository.GetTodayFeedbackCountByUserIdAsync(userId);
             if (todayCount >= 2)
                 throw new BadRequestException(_localizer["Res_Feedback_DailyLimitExceeded"].Value);
 
             var feedback = new Feedback
             {
-                Id = Guid.NewGuid(),
                 UserId = userId,
                 Subject = dto.Subject,
                 Message = dto.Message,
-                IsResolved = false,
-                CreatedAt = DateTime.UtcNow
+                IsResolved = false
             };
 
             await _feedbackRepository.AddAsync(feedback);
