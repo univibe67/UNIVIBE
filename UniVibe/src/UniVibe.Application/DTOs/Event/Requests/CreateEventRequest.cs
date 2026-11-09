@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.DTOs.Event.Requests
 {
@@ -10,5 +11,7 @@ namespace UniVibe.Application.DTOs.Event.Requests
         public string Location { get; set; } = string.Empty;
         public Guid CategoryId { get; set; }
         public IFormFile? ImageFile { get; set; }
+        public GradeLevel? MinGrade { get; set; }
+        public GradeLevel? MaxGrade { get; set; }
     }
 }
