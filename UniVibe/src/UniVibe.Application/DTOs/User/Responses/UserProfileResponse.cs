@@ -1,4 +1,6 @@
-﻿namespace UniVibe.Application.DTOs.User.Responses 
+﻿using UniVibe.Domain.Enums;
+
+namespace UniVibe.Application.DTOs.User.Responses 
 {
     public class UserProfileResponse
     {
@@ -14,5 +16,9 @@
         public string UniversityName { get; set; } = string.Empty;
         public string FacultyName { get; set; } = string.Empty;
         public string DepartmentName { get; set; } = string.Empty;
+        public UserRole Role { get; set; }                  
+        public GradeLevel? Grade { get; set; }                      
+        public string? Title { get; set; }                  
+        public DateTime? LastUsernameUpdatedAt { get; set; }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Feedback.Request;
 using UniVibe.Application.DTOs.Feedback.Response;
@@ -20,19 +19,17 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost]
-        [Authorize] // Normal veya admin giriş yapmış kullanıcı feedback atabilir (Günde max 2)
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateFeedbackDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
-                return Unauthorized();
+            var userId = User.GetUserId();
 
             var message = await _feedbackService.CreateFeedbackAsync(userId, dto);
             return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")] // Sadece adminler tüm listeyi ve kullanıcı detaylarını görebilir
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var feedbacks = await _feedbackService.GetAllFeedbacksAsync();
@@ -40,7 +37,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPatch("{id}/resolve")]
-        [Authorize(Roles = "Admin")] // Sadece adminler çözüldü olarak işaretleyebilir
+        [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> Resolve(Guid id)
         {
             var message = await _feedbackService.ResolveFeedbackAsync(id);

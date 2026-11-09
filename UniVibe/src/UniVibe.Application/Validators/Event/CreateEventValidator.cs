@@ -16,7 +16,7 @@ namespace UniVibe.Application.Validators.Event
 
             RuleFor(x => x.EventDate)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .GreaterThan(DateTime.UtcNow).WithMessage(x => localizer["Val_EventDatePast"].Value);
+                .GreaterThan(_ =>DateTime.UtcNow).WithMessage(x => localizer["Val_EventDatePast"].Value);
 
             RuleFor(x => x.Location)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
