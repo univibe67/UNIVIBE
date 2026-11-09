@@ -98,13 +98,20 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(string.Join(" • ", errors));
             }
 
-            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
+                request.PageNumber,
+                request.PageSize,
+                request.OnlyActive,
+                request.SearchTerm,
+                request.CategoryId,
+                request.Status
+            );
 
-            var EventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
+            var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
             return new PaginatedResult<EventDetailResponse>
             {
-                Items = EventDetailResponses,
+                Items = eventDetailResponses,
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize
