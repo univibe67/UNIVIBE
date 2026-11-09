@@ -246,16 +246,16 @@ namespace UniVibe.Application.Services
             if (existingEvent.UserId != userId)
                 throw new ForbiddenException(_localizer["Event_UnauthorizedCancel"].Value);
 
+            if (existingEvent.Status == EventStatus.Cancelled)
+                throw new BadRequestException(_localizer["Event_AlreadyCancelled"].Value);
+
             var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
 
-            if (timeDifference.TotalHours < 0)
+            if (timeDifference.TotalHours <= 0)
                 throw new BadRequestException(_localizer["Event_CannotCancelPast"].Value);
 
             if (timeDifference.TotalHours < 4)
                 throw new BadRequestException(_localizer["Event_CannotCancelClose"].Value);
-
-            if (existingEvent.Status == EventStatus.Cancelled)
-                throw new BadRequestException(_localizer["Event_AlreadyCancelled"].Value);
 
             existingEvent.Status = EventStatus.Cancelled;
             existingEvent.CancellationReason = reason;

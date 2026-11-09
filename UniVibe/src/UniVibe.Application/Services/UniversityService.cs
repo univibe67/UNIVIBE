@@ -29,7 +29,7 @@ namespace UniVibe.Application.Services
 
             if (!_memoryCache.TryGetValue(cacheKey, out List<UniversityLookupResponse>? cachedUniversities))
             {
-                var universities = await _universityRepository.GetAllAsync(u => u.IsActive && !u.IsDeleted);
+                var universities = await _universityRepository.GetAllAsync(u => u.IsActive);
 
                 cachedUniversities = _mapper.Map<List<UniversityLookupResponse>>(universities.OrderBy(u => u.Name));
 
@@ -48,7 +48,7 @@ namespace UniVibe.Application.Services
 
             if (!_memoryCache.TryGetValue(cacheKey, out List<FacultyLookupResponse>? cachedFaculties))
             {
-                var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive && !f.IsDeleted);
+                var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive);
 
                 cachedFaculties = _mapper.Map<List<FacultyLookupResponse>>(faculties.OrderBy(f => f.Name));
 
@@ -67,7 +67,7 @@ namespace UniVibe.Application.Services
 
             if (!_memoryCache.TryGetValue(cacheKey, out List<DepartmentLookupResponse>? cachedDepartments))
             {
-                var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive && !d.IsDeleted);
+                var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive);
 
                 cachedDepartments = _mapper.Map<List<DepartmentLookupResponse>>(departments.OrderBy(d => d.Name));
 
