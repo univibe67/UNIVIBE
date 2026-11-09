@@ -13,5 +13,7 @@ namespace UniVibe.Application.DTOs.Event.Requests
         public IFormFile? ImageFile { get; set; }
         public GradeLevel? MinGrade { get; set; }
         public GradeLevel? MaxGrade { get; set; }
+        public string? TargetDepartment { get; set; }
+        public string? TargetFaculty { get; set; }
     }
 }
