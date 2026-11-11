@@ -105,7 +105,7 @@ namespace UniVibe.Application.Services
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
-            return new LoginResponse(token, refreshToken, user.FirstName, user.LastName);
+            return new LoginResponse(token, refreshToken, user.Id, user.Role.ToString(), user.FirstName, user.LastName, user.ProfilePictureUrl);
         }
 
         public async Task<string> InitiateRegistrationAsync(RegisterInitRequest request)
@@ -304,7 +304,7 @@ namespace UniVibe.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             var accessToken = _tokenService.GenerateToken(newUser);
-            return new LoginResponse(accessToken, newUser.RefreshToken, newUser.FirstName, newUser.LastName);
+            return new LoginResponse(accessToken, newUser.RefreshToken, newUser.Id, newUser.Role.ToString(), newUser.FirstName, newUser.LastName, newUser.ProfilePictureUrl);
         }
 
         public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
@@ -312,7 +312,7 @@ namespace UniVibe.Application.Services
             var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
-                throw new Exception(_localizer["Auth_SessionExpired"].Value);
+                throw new UnauthorizedException(_localizer["Auth_SessionExpired"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
@@ -323,7 +323,7 @@ namespace UniVibe.Application.Services
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
-            return new LoginResponse(newAccessToken, newRefreshToken, user.FirstName, user.LastName);
+            return new LoginResponse(newAccessToken, newRefreshToken, user.Id, user.Role.ToString(), user.FirstName, user.LastName, user.ProfilePictureUrl);
         }
 
         public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -363,13 +363,13 @@ namespace UniVibe.Application.Services
         public async Task<string> ResetPasswordAsync(ResetPasswordRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Token))
-                throw new Exception(_localizer["Auth_InvalidOrExpiredToken"].Value);
+                throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
 
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
             {
-                throw new Exception(_localizer["Auth_InvalidOrExpiredToken"].Value);
+                throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
             }
 
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);

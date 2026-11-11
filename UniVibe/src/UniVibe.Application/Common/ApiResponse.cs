@@ -3,17 +3,18 @@
     public class ApiResponse<T>
     {
         public T? Data { get; set; }
+        public string? Message { get; set; } 
         public List<string>? Errors { get; set; }
         public bool IsSuccessful { get; set; }
 
-        public static ApiResponse<T> Success(T data)
+        public static ApiResponse<T> Success(T data, string? message = null)
         {
-            return new ApiResponse<T> { Data = data, IsSuccessful = true };
+            return new ApiResponse<T> { Data = data, Message = message, IsSuccessful = true };
         }
 
         public static ApiResponse<T> Success(string message)
         {
-            return new ApiResponse<T> { IsSuccessful = true, Data = default };
+            return new ApiResponse<T> { IsSuccessful = true, Message = message, Data = default };
         }
 
         public static ApiResponse<T> Fail(string error)

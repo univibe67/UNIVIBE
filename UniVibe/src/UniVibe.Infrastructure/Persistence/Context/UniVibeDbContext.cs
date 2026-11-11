@@ -29,7 +29,6 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.Entity.CreatedAt = DateTime.UtcNow;
                         entry.Entity.IsActive = true;
                         break;
 

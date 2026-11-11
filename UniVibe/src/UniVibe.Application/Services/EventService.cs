@@ -15,6 +15,7 @@ namespace UniVibe.Application.Services
     public sealed class EventService : IEventService
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IEventCategoryRepository _categoryRepository;
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
@@ -31,7 +32,8 @@ namespace UniVibe.Application.Services
             IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
             IValidator<CreateEventRequest> createEventValidator,
-            IValidator<GetAllEventsRequest> getAllEventsValidator)
+            IValidator<GetAllEventsRequest> getAllEventsValidator,
+            IUserRepository userRepository)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -41,6 +43,7 @@ namespace UniVibe.Application.Services
             _localizer = localizer;
             _createEventValidator = createEventValidator;
             _getAllEventsValidator = getAllEventsValidator;
+            _userRepository = userRepository;
         }
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -95,13 +98,20 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(string.Join(" • ", errors));
             }
 
-            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
+                request.PageNumber,
+                request.PageSize,
+                request.OnlyActive,
+                request.SearchTerm,
+                request.CategoryId,
+                request.Status
+            );
 
-            var EventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
+            var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
             return new PaginatedResult<EventDetailResponse>
             {
-                Items = EventDetailResponses,
+                Items = eventDetailResponses,
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize
@@ -184,13 +194,28 @@ namespace UniVibe.Application.Services
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             if (eventEntity.Status != EventStatus.Approved)
-                throw new BadRequestException("Sadece onaylanmış etkinliklere katılım sağlanabilir.");
+                throw new BadRequestException(_localizer["Event_NotApproved"].Value); 
 
             if (eventEntity.EventDate <= DateTime.UtcNow)
-                throw new BadRequestException("Tarihi geçmiş etkinliklere katılım sağlanamaz.");
+                throw new BadRequestException(_localizer["Event_PastDate"].Value);
 
             if (eventEntity.UserId == userId)
                 throw new BadRequestException(_localizer["Event_CannotJoinOwnEvent"].Value);
+
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
+
+            if (user.Role == UserRole.Student && user.Grade.HasValue)
+            {
+                var userGradeInt = (int)user.Grade.Value;
+
+                if (eventEntity.MinGrade.HasValue && userGradeInt < eventEntity.MinGrade.Value)
+                    throw new BadRequestException(_localizer["Event_GradeTooLow"].Value);
+
+                if (eventEntity.MaxGrade.HasValue && userGradeInt > eventEntity.MaxGrade.Value)
+                    throw new BadRequestException(_localizer["Event_GradeTooHigh"].Value);
+            }
 
             var alreadyJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, userId);
             if (alreadyJoined)
@@ -221,16 +246,16 @@ namespace UniVibe.Application.Services
             if (existingEvent.UserId != userId)
                 throw new ForbiddenException(_localizer["Event_UnauthorizedCancel"].Value);
 
+            if (existingEvent.Status == EventStatus.Cancelled)
+                throw new BadRequestException(_localizer["Event_AlreadyCancelled"].Value);
+
             var timeDifference = existingEvent.EventDate - DateTime.UtcNow;
 
-            if (timeDifference.TotalHours < 0)
+            if (timeDifference.TotalHours <= 0)
                 throw new BadRequestException(_localizer["Event_CannotCancelPast"].Value);
 
             if (timeDifference.TotalHours < 4)
                 throw new BadRequestException(_localizer["Event_CannotCancelClose"].Value);
-
-            if (existingEvent.Status == EventStatus.Cancelled)
-                throw new BadRequestException(_localizer["Event_AlreadyCancelled"].Value);
 
             existingEvent.Status = EventStatus.Cancelled;
             existingEvent.CancellationReason = reason;
