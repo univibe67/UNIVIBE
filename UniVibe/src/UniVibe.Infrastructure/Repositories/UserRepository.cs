@@ -38,6 +38,12 @@ namespace UniVibe.Infrastructure.Repositories
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
+        public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
+        {
+            return await _context.Set<User>()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+        }
 
     }
 }

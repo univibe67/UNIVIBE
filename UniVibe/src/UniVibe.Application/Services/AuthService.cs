@@ -64,7 +64,7 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user == null)
                 throw new UnauthorizedException(_localizer["Auth_InvalidCredentials"].Value);
@@ -117,7 +117,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(string.Join(" • ", errors));
             }
 
-            var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var existingUser = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (existingUser != null)
             {
@@ -328,7 +328,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user != null)
             {
@@ -340,8 +340,7 @@ namespace UniVibe.Application.Services
                 await _unitOfWork.SaveChangesAsync();
 
                 var defaultWebUrl = _configuration["WebBaseUrl"] ?? "https://univibe-three.vercel.app";
-                var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : $"{defaultWebUrl}/reset-password";
-                var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
+                var resetLink = $"{defaultWebUrl}/reset-password?email={user.Email}&token={resetToken}";
 
                 string subject = _localizer["Auth_ResetEmailSubject"].Value;
                 string template = _localizer["Auth_ResetEmailBody"].Value;
