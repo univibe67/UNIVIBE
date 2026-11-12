@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentValidation;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Feedback.Request;
@@ -17,17 +18,20 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IValidator<CreateFeedbackDto> _createFeedbackValidator;
 
         public FeedbackService(
             IFeedbackRepository feedbackRepository,
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<CreateFeedbackDto> createFeedbackValidator)
         {
             _feedbackRepository = feedbackRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizer = localizer;
+            _createFeedbackValidator = createFeedbackValidator;
         }
 
         public async Task<List<FeedbackResponseDto>> GetAllFeedbacksAsync()
@@ -38,6 +42,13 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CreateFeedbackAsync(Guid userId, CreateFeedbackDto dto)
         {
+            var validationResult = await _createFeedbackValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new BadRequestException(string.Join(" • ", errors));
+            }
+
             var todayCount = await _feedbackRepository.GetTodayFeedbackCountByUserIdAsync(userId);
             if (todayCount >= 2)
                 throw new BadRequestException(_localizer["Res_Feedback_DailyLimitExceeded"].Value);
