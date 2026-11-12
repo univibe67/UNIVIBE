@@ -53,6 +53,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
             modelBuilder.Entity<University>().HasQueryFilter(u => !u.IsDeleted);
             modelBuilder.Entity<Faculty>().HasQueryFilter(f => !f.IsDeleted);
             modelBuilder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
+            modelBuilder.Entity<Feedback>().HasQueryFilter(f => !f.IsDeleted);
 
             modelBuilder.Entity<Faculty>()
             .HasOne(f => f.University)
