@@ -134,7 +134,14 @@ namespace UniVibe.Application.Services
         {
             var categories = await _categoryRepository.GetAllAsync();
 
-            return _mapper.Map<List<EventCategoryResponse>>(categories);
+            var response = categories.Select(c => new EventCategoryResponse
+            {
+                Id = c.Id,
+                Name = _localizer[c.Name].Value
+                                               
+            }).ToList();
+
+            return response;
         }
 
         public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
