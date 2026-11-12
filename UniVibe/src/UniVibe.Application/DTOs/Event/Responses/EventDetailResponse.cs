@@ -13,6 +13,8 @@ namespace UniVibe.Application.DTOs.Event.Responses
         public string? ImageUrl { get; set; }
         public string CategoryName { get; set; } = string.Empty;
         public string CreatorName { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public GradeLevel? Grade { get; set; }
         public bool IsCreator { get; set; }
         public bool IsJoined { get; set; }
         public string? RejectionReason { get; set; }

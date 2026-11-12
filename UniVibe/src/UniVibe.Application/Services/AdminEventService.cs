@@ -28,14 +28,22 @@ namespace UniVibe.Application.Services
         {
             var pendingEvents = await _eventRepository.GetEventsWithUsersByStatusAsync(EventStatus.Pending);
 
-            return _mapper.Map<List<EventListResponse>>(pendingEvents);
+            var response = _mapper.Map<List<EventListResponse>>(pendingEvents);
+
+            response.MapListWithLocalization(pendingEvents, _localizer);
+
+            return response;
         }
 
         public async Task<List<EventListResponse>> GetAllEventsAsync()
         {
             var allEvents = await _eventRepository.GetEventsWithUsersByStatusAsync();
 
-            return _mapper.Map<List<EventListResponse>>(allEvents);
+            var response = _mapper.Map<List<EventListResponse>>(allEvents);
+
+            response.MapListWithLocalization(allEvents, _localizer);
+
+            return response;
         }
 
         public async Task<string> ApproveEventAsync(Guid eventId)
@@ -92,10 +100,13 @@ namespace UniVibe.Application.Services
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
+            {
                 eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                eventDetailResponse.Department = eventEntity.User.Department?.Name;
+                eventDetailResponse.Grade = eventEntity.User.Grade;
+            }
 
-            if (eventEntity.Category != null)
-                eventDetailResponse.CategoryName = eventEntity.Category.Name;
+            eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
             eventDetailResponse.RejectionReason = eventEntity.RejectionReason;
             eventDetailResponse.CancellationReason = eventEntity.CancellationReason;
