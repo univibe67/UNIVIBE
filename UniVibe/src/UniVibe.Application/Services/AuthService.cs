@@ -364,7 +364,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
 
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
             {
@@ -374,6 +374,13 @@ namespace UniVibe.Application.Services
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
+
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.IsActive = true;
+                user.DeletedAt = null;
+            }
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();

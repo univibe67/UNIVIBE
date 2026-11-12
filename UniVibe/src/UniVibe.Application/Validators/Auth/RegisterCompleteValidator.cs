@@ -14,9 +14,9 @@ namespace UniVibe.Application.Validators.Auth
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .MinimumLength(8).WithMessage(x => localizer["Val_PasswordMinLength"].Value)
-                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PasswordReqUppercase"].Value)
-                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PasswordReqDigit"].Value);
+                .MinimumLength(8).WithMessage(x => localizer["Val_PassMinLength"].Value)
+                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PassUppercase"].Value)
+                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PassDigit"].Value);
 
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
@@ -38,7 +38,7 @@ namespace UniVibe.Application.Validators.Auth
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
                 .MinimumLength(3).WithMessage(x => localizer["Val_MinLength"].Value)
                 .MaximumLength(20).WithMessage(x => localizer["Val_MaxLength"].Value)
-                .Matches("^[a-zA-Z0-9_]*$").WithMessage(x => localizer["Val_InvalidUsernameFormat"].Value);
+                .Matches("^[a-zA-Z0-9_]*$").WithMessage(x => localizer["Val_InvalidUsername"].Value);
         }
     }
 }

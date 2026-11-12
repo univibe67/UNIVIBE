@@ -22,8 +22,9 @@ namespace UniVibe.Application.Mappings
             CreateMap<EventCategory, EventCategoryResponse>();
 
             CreateMap<Event, EventDetailResponse>()
+                .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
                 .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count));
-
             // User Mappings
             CreateMap<User, UserProfileResponse>()
                 .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name))

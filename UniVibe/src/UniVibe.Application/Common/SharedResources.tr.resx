@@ -354,4 +354,13 @@
   <data name="Event_PastDate" xml:space="preserve">
     <value>Tarihi geçmiş etkinliklere katılım sağlanamaz.</value>
   </data>
+  <data name="Val_InvalidEmail" xml:space="preserve">
+    <value>Lütfen geçerli bir e-posta adresi giriniz.</value>
+  </data>
+  <data name="Res_Event_LeftSuccessfully" xml:space="preserve">
+    <value>Etkinlik katılımınız başarıyla iptal edildi.</value>
+  </data>
+  <data name="Event_CannotLeavePast" xml:space="preserve">
+    <value>Başlamış veya tarihi geçmiş etkinliklerden ayrılamazsınız.</value>
+  </data>
 </root>

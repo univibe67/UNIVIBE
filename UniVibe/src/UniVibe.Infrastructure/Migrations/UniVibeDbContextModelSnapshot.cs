@@ -163,9 +163,10 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("EventAttendees");
                 });

@@ -72,6 +72,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await _context.Events
                 .Include(e => e.Category)
                 .Include(e => e.Attendees)
+                .Include(e => e.User)
                 .FirstOrDefaultAsync(e =>
                     e.UserId == userId &&
                     e.IsDeleted == false &&
@@ -131,6 +132,17 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task AddAttendeeAsync(EventAttendee attendee)
         {
             await _context.EventAttendees.AddAsync(attendee);
+        }
+
+        public async Task<EventAttendee?> GetAttendeeAsync(Guid eventId, Guid userId)
+        {
+            return await _context.EventAttendees
+                .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
+        }
+
+        public void RemoveAttendee(EventAttendee attendee)
+        {
+            _context.EventAttendees.Remove(attendee);
         }
     }
 }
