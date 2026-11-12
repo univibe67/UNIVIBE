@@ -10,7 +10,7 @@ namespace UniVibe.Application.Validators.Event
         public GetAllEventsRequestValidator(IStringLocalizer<SharedResources> localizer)
         {
             RuleFor(x => x.PageNumber)
-                .GreaterThanOrEqualTo(1).WithMessage(x => localizer["Val_PageNumberMin"].Value);
+                .GreaterThanOrEqualTo(1).WithMessage(x => localizer["Val_PageNumMin"].Value);
 
             RuleFor(x => x.PageSize)
                 .InclusiveBetween(1, 50).WithMessage(x => localizer["Val_PageSizeRange"].Value);

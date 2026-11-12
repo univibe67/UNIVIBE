@@ -89,7 +89,7 @@ namespace UniVibe.Application.Services
             return _localizer["Res_Event_Created"].Value;
         }
 
-        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request)
+        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId)
         {
             var validationResult = await _getAllEventsValidator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -98,16 +98,19 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(string.Join(" • ", errors));
             }
 
-            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
-                request.PageNumber,
-                request.PageSize,
-                request.OnlyActive,
-                request.SearchTerm,
-                request.CategoryId,
-                request.Status
-            );
+            var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(request.PageNumber, request.PageSize, request.OnlyActive);
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
+
+            foreach (var response in eventDetailResponses)
+            {
+                var original = items.FirstOrDefault(i => i.Id == response.Id);
+                if (original != null)
+                {
+                    response.IsCreator = (original.UserId == currentUserId);
+                    response.IsJoined = original.Attendees.Any(a => a.UserId == currentUserId && !a.IsDeleted);
+                }
+            }
 
             return new PaginatedResult<EventDetailResponse>
             {
@@ -155,8 +158,12 @@ namespace UniVibe.Application.Services
 
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
 
+            if (activeEvent.User != null)
+                eventDetailResponse.CreatorName = $"{activeEvent.User.FirstName} {activeEvent.User.LastName}";
+
             if (activeEvent.Category != null)
                 eventDetailResponse.CategoryName = activeEvent.Category.Name;
+            eventDetailResponse.IsCreator = true;
 
             return eventDetailResponse;
         }
@@ -175,13 +182,8 @@ namespace UniVibe.Application.Services
                 var eventEntity = events[i];
                 var response = eventDetailResponses[i];
 
-                if (eventEntity.User != null)
-                    response.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
-
-                if (eventEntity.Category != null)
-                    response.CategoryName = eventEntity.Category.Name;
-
                 response.IsCreator = (eventEntity.UserId == userId);
+                response.IsJoined = true;
             }
 
             return eventDetailResponses;
@@ -280,6 +282,24 @@ namespace UniVibe.Application.Services
                 return new List<ParticipantResponse>();
 
             return _mapper.Map<List<ParticipantResponse>>(participants);
+        }
+        public async Task<string> LeaveEventAsync(Guid eventId, Guid userId)
+        {
+            var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            if (eventEntity == null)
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException(_localizer["Event_CannotLeavePast"].Value);
+
+            var attendee = await _eventRepository.GetAttendeeAsync(eventId, userId);
+            if (attendee == null)
+                throw new NotFoundException(_localizer["Event_NotJoined"].Value);
+
+            _eventRepository.RemoveAttendee(attendee);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _localizer["Res_Event_LeftSuccessfully"].Value;
         }
     }
 }

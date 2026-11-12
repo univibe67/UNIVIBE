@@ -22,7 +22,8 @@ namespace UniVibe.API.Controllers
         [HttpGet("all-events")]
         public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
-            var pagedEvents = await _eventService.GetAllEventsAsync(request);
+            var currentUserId = User.GetUserId();
+            var pagedEvents = await _eventService.GetAllEventsAsync(request, currentUserId);
             return Ok(ApiResponse<PaginatedResult<EventDetailResponse>>.Success(pagedEvents));
         }
 
@@ -85,6 +86,14 @@ namespace UniVibe.API.Controllers
             var participants = await _eventService.GetEventParticipantsAsync(id);
 
             return Ok(ApiResponse<List<ParticipantResponse>>.Success(participants));
+        }
+        [HttpDelete("leave/{id}")]
+        public async Task<IActionResult> LeaveEvent(Guid id)
+        {
+            var userId = User.GetUserId();
+            var message = await _eventService.LeaveEventAsync(id, userId);
+
+            return Ok(ApiResponse<string>.Success(message));
         }
     }
 }

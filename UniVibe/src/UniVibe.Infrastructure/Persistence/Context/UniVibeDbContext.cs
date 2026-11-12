@@ -118,6 +118,8 @@ namespace UniVibe.Infrastructure.Persistence.Context
             {
                 entity.HasKey(ea => ea.Id);
 
+                entity.HasIndex(ea => new { ea.EventId, ea.UserId }).IsUnique();
+
                 entity.HasOne(ea => ea.Event)
                       .WithMany(e => e.Attendees)
                       .HasForeignKey(ea => ea.EventId)
