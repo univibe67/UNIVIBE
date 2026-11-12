@@ -91,6 +91,7 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(e => e.User)
                 .Include(e => e.Attendees)
                 .Include(e => e.Category)
+                .Where(e => !e.IsDeleted)
                 .AsQueryable();
 
             if (status.HasValue)

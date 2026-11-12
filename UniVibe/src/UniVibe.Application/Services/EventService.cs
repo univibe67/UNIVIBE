@@ -303,9 +303,7 @@ namespace UniVibe.Application.Services
 
             existingEvent.Status = EventStatus.Cancelled;
             existingEvent.CancellationReason = request.Reason;
-            existingEvent.UpdatedAt = DateTime.UtcNow;
 
-            _eventRepository.Update(existingEvent);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Cancelled"].Value;

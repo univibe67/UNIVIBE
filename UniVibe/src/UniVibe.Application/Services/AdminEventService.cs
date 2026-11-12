@@ -48,7 +48,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ApproveEventAsync(Guid eventId)
         {
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
@@ -63,9 +63,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException("Yalnızca beklemede olan etkinlikler onaylanabilir.");
 
             evnt.Status = EventStatus.Approved;
-            evnt.UpdatedAt = DateTime.UtcNow;
 
-            _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Approved"].Value;
@@ -76,7 +74,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
@@ -84,7 +82,6 @@ namespace UniVibe.Application.Services
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
 
-            _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Rejected"].Value;

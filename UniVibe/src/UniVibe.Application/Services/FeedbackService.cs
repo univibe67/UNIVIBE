@@ -75,9 +75,7 @@ namespace UniVibe.Application.Services
                 throw new NotFoundException(_localizer["Res_Feedback_NotFound"].Value);
 
             feedback.IsResolved = true;
-            feedback.UpdatedAt = DateTime.UtcNow;
 
-            _feedbackRepository.Update(feedback);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Feedback_Resolved"].Value;
