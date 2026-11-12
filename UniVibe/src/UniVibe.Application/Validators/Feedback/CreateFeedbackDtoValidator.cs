@@ -12,13 +12,11 @@ public class CreateFeedbackDtoValidator : AbstractValidator<CreateFeedbackDto>
         RuleFor(x => x.Subject)
             .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
             .MinimumLength(3).WithMessage(x => localizer["Val_MinLength"].Value)
-            .MaximumLength(100).WithMessage(x => localizer["Val_MaxLength"].Value)
-            .When(x => !string.IsNullOrWhiteSpace(x.Subject));
+            .MaximumLength(100).WithMessage(x => localizer["Val_MaxLength"].Value);
 
         RuleFor(x => x.Message)
             .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
             .MinimumLength(10).WithMessage(x => localizer["Val_MinLength"].Value)
-            .MaximumLength(1000).WithMessage(x => localizer["Val_MaxLength"].Value)
-            .When(x => !string.IsNullOrWhiteSpace(x.Message));
+            .MaximumLength(1000).WithMessage(x => localizer["Val_MaxLength"].Value);
     }
 }
