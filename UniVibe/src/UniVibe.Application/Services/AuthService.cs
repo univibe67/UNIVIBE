@@ -246,7 +246,7 @@ namespace UniVibe.Application.Services
             if (pendingUser.ExpiryDate < DateTime.UtcNow)
                 throw new BadRequestException(_localizer["Auth_TokenExpired"].Value);
 
-            var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            var isUsernameTaken = await _userRepository.IsUsernameTakenAsync(request.Username);
             if (isUsernameTaken)
                 throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 

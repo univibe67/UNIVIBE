@@ -16,7 +16,7 @@ namespace UniVibe.API.Controllers
             _eventService = eventService;
         }
 
-        [HttpGet("event-categories")]
+        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var categories = await _eventService.GetCategoriesAsync();

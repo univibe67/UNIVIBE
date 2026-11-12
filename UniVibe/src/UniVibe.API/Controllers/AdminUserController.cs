@@ -4,7 +4,6 @@ using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Interfaces;
-using UniVibe.Domain.Enums;
 
 namespace UniVibe.API.Controllers
 {
@@ -30,7 +29,8 @@ namespace UniVibe.API.Controllers
         [HttpPut("suspend/{id}")]
         public async Task<IActionResult> SuspendUser(Guid id)
         {
-            var message = await _adminUserService.SuspendUserAsync(id);
+            var currentAdminId = User.GetUserId(); 
+            var message = await _adminUserService.SuspendUserAsync(id, currentAdminId);
             return Ok(ApiResponse<string>.Success(message));
         }
 
@@ -44,14 +44,16 @@ namespace UniVibe.API.Controllers
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var message = await _adminUserService.DeleteUserAsync(id);
+            var currentAdminId = User.GetUserId(); 
+            var message = await _adminUserService.DeleteUserAsync(id, currentAdminId);
             return Ok(ApiResponse<string>.Success(message));
         }
 
         [HttpPut("change-role/{id}")]
         public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest request)
         {
-            var message = await _adminUserService.ChangeUserRoleAsync(id, request.NewRole);
+            var currentAdminId = User.GetUserId(); 
+            var message = await _adminUserService.ChangeUserRoleAsync(id, request.NewRole, currentAdminId);
             return Ok(ApiResponse<string>.Success(message));
         }
     }
