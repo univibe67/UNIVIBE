@@ -23,6 +23,7 @@ namespace UniVibe.Application.Services
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IValidator<CreateEventRequest> _createEventValidator;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
+        private readonly IValidator<CancelEventRequest> _cancelEventValidator;
 
         public EventService(
             IEventRepository eventRepository,
@@ -33,7 +34,8 @@ namespace UniVibe.Application.Services
             IStringLocalizer<SharedResources> localizer,
             IValidator<CreateEventRequest> createEventValidator,
             IValidator<GetAllEventsRequest> getAllEventsValidator,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IValidator<CancelEventRequest> cancelEventValidator)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -44,6 +46,7 @@ namespace UniVibe.Application.Services
             _createEventValidator = createEventValidator;
             _getAllEventsValidator = getAllEventsValidator;
             _userRepository = userRepository;
+            _cancelEventValidator = cancelEventValidator;
         }
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -253,10 +256,14 @@ namespace UniVibe.Application.Services
             return _localizer["Res_Event_Joined"].Value;
         }
 
-        public async Task<string> CancelEventAsync(Guid eventId, Guid userId, string reason)
+        public async Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request)
         {
-            if (string.IsNullOrWhiteSpace(reason))
-                throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
+            var validationResult = await _cancelEventValidator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                throw new BadRequestException(string.Join(" • ", errors));
+            }
 
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
@@ -278,7 +285,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(_localizer["Event_CannotCancelClose"].Value);
 
             existingEvent.Status = EventStatus.Cancelled;
-            existingEvent.CancellationReason = reason;
+            existingEvent.CancellationReason = request.Reason;
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
             _eventRepository.Update(existingEvent);
