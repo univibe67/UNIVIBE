@@ -11,5 +11,6 @@ namespace UniVibe.Application.Interfaces
         Task<UserProfileResponse> GetUserProfileAsync(Guid userId);
         Task<PublicUserProfileResponse> GetProfileByUsernameAsync(string username);
         Task<string> DeleteAccountAsync(Guid userId);
+        Task<string> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     }
 }

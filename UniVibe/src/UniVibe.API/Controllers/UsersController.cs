@@ -61,5 +61,14 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<string>.Success(message));
         }
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = User.GetUserId();
+            var message = await _userService.ChangePasswordAsync(userId, request);
+
+            return Ok(ApiResponse<string>.Success(message));
+        }
     }
 }
