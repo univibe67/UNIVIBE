@@ -102,7 +102,6 @@ namespace UniVibe.Application.Services
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse(token, refreshToken, user.Id, user.Role.ToString(), user.FirstName, user.LastName, user.ProfilePictureUrl);
@@ -146,8 +145,6 @@ namespace UniVibe.Application.Services
                         existingUser.Bio = null;
                         existingUser.SocialMediaLink = null;
                         existingUser.ProfilePictureUrl = null;
-
-                        _userRepository.Update(existingUser);
                     }
                 }
             }
@@ -254,7 +251,11 @@ namespace UniVibe.Application.Services
             if (department == null)
                 throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
 
+            // --- ŞU ANLIK ROL AYRIMINI KAPATIYORUZ, HERKES STUDENT (ÖĞRENCİ) OLUŞTURULUYOR ---
             var assignedRole = UserRole.Student;
+
+            /* 
+            // İleride burayı açmak istediğinde kullanabilmen için yorumda kalıyor kankam:
             var emailLower = pendingUser.Email.ToLowerInvariant();
             if (emailLower.Contains("ogr.") || emailLower.Contains("ogrenci"))
             {
@@ -264,7 +265,16 @@ namespace UniVibe.Application.Services
             {
                 assignedRole = UserRole.Teacher;
             }
+            */
 
+            // Öğrenci olduğu için sınıf zorunlu, unvan null yapılıyor
+            if (!request.Grade.HasValue)
+                throw new BadRequestException(_localizer["Auth_StudentGradeReq"].Value);
+
+            request.Title = null;
+
+            /* 
+            // Öğretmen/Hoca mantığı açıldığında aktif edilecek kısım:
             if (assignedRole == UserRole.Student)
             {
                 if (!request.Grade.HasValue)
@@ -279,6 +289,7 @@ namespace UniVibe.Application.Services
 
                 request.Grade = null;
             }
+            */
 
             var newUser = new User
             {
@@ -320,7 +331,6 @@ namespace UniVibe.Application.Services
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return new LoginResponse(newAccessToken, newRefreshToken, user.Id, user.Role.ToString(), user.FirstName, user.LastName, user.ProfilePictureUrl);
@@ -336,7 +346,6 @@ namespace UniVibe.Application.Services
                 user.PasswordResetToken = resetToken;
                 user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
 
-                _userRepository.Update(user);
                 await _unitOfWork.SaveChangesAsync();
 
                 var defaultWebUrl = _configuration["WebBaseUrl"] ?? "https://univibe-three.vercel.app";
@@ -382,7 +391,6 @@ namespace UniVibe.Application.Services
                 user.DeletedAt = null;
             }
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Auth_PasswordResetSuccessful"].Value;
