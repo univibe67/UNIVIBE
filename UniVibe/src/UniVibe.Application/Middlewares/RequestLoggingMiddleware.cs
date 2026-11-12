@@ -21,7 +21,6 @@ namespace UniVibe.Application.Middlewares
             var stopwatch = Stopwatch.StartNew();
 
             var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown_IP";
-            var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
             var method = context.Request.Method;
             var path = context.Request.Path;
 
@@ -34,6 +33,10 @@ namespace UniVibe.Application.Middlewares
                 stopwatch.Stop();
                 var elapsedMs = stopwatch.ElapsedMilliseconds;
                 var statusCode = context.Response.StatusCode;
+
+                var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? context.User?.FindFirst("sub")?.Value
+                             ?? "Anonymous";
 
                 if (elapsedMs > 500)
                 {
@@ -51,4 +54,3 @@ namespace UniVibe.Application.Middlewares
         }
     }
 }
-

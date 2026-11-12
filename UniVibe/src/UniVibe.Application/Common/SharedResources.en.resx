@@ -354,4 +354,13 @@
   <data name="Event_PastDate" xml:space="preserve">
     <value>You cannot join past events.</value>
   </data>
+  <data name="Val_InvalidEmail" xml:space="preserve">
+    <value>Please enter a valid email address.</value>
+  </data>
+  <data name="Res_Event_LeftSuccessfully" xml:space="preserve">
+    <value>You have successfully left the event.</value>
+  </data>
+  <data name="Event_CannotLeavePast" xml:space="preserve">
+    <value>You cannot leave events that have already started or passed.</value>
+  </data>
 </root>

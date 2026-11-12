@@ -18,9 +18,9 @@ namespace UniVibe.Application.Validators.Auth
 
             RuleFor(x => x.NewPassword)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .MinimumLength(8).WithMessage(x => localizer["Val_PasswordMinLength"].Value)
-                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PasswordReqUppercase"].Value)
-                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PasswordReqDigit"].Value);
+                .MinimumLength(8).WithMessage(x => localizer["Val_PassMinLength"].Value)
+                .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PassUppercase"].Value)
+                .Matches(@"[0-9]").WithMessage(x => localizer["Val_PassDigit"].Value);
         }
     }
 }

@@ -53,6 +53,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
             modelBuilder.Entity<University>().HasQueryFilter(u => !u.IsDeleted);
             modelBuilder.Entity<Faculty>().HasQueryFilter(f => !f.IsDeleted);
             modelBuilder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
+            modelBuilder.Entity<Feedback>().HasQueryFilter(f => !f.IsDeleted);
 
             modelBuilder.Entity<Faculty>()
             .HasOne(f => f.University)
@@ -117,6 +118,8 @@ namespace UniVibe.Infrastructure.Persistence.Context
             modelBuilder.Entity<EventAttendee>(entity =>
             {
                 entity.HasKey(ea => ea.Id);
+
+                entity.HasIndex(ea => new { ea.EventId, ea.UserId }).IsUnique();
 
                 entity.HasOne(ea => ea.Event)
                       .WithMany(e => e.Attendees)

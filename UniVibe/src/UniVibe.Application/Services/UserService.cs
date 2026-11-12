@@ -2,24 +2,29 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
 {
     public sealed class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly IImageService _imageService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
         private readonly IEmailService _emailService;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly ILogger<UserService> _logger;
 
         public UserService(
             IUserRepository userRepository,
@@ -28,7 +33,10 @@ namespace UniVibe.Application.Services
             IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
             IValidator<UpdateUserProfileRequest> updateProfileValidator,
-            IEmailService emailService)
+            IEmailService emailService,
+            IPasswordHasher passwordHasher,
+            IEventRepository eventRepository,
+            ILogger<UserService> logger)
         {
             _userRepository = userRepository;
             _imageService = imageService;
@@ -37,6 +45,9 @@ namespace UniVibe.Application.Services
             _localizer = localizer;
             _updateProfileValidator = updateProfileValidator;
             _emailService = emailService;
+            _passwordHasher = passwordHasher;
+            _eventRepository = eventRepository;
+            _logger = logger;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
@@ -128,6 +139,28 @@ namespace UniVibe.Application.Services
             return _mapper.Map<PublicUserProfileResponse>(user);
         }
 
+        public async Task<string> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new NotFoundException(_localizer["User_NotFound"].Value);
+
+            var isPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
+            if (!isPasswordValid)
+                throw new BadRequestException("Mevcut şifreniz hatalı.");
+
+            if (request.NewPassword.Length < 8)
+                throw new BadRequestException(_localizer["Val_PassMinLength"].Value);
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return "Şifreniz başarıyla değiştirildi.";
+        }
+
         public async Task<string> DeleteAccountAsync(Guid userId)
         {
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
@@ -135,12 +168,25 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
+            var userActiveEvents = await _eventRepository.GetAllAsync(e =>
+                e.UserId == userId &&
+                e.Status != EventStatus.Cancelled &&
+                e.Status != EventStatus.Rejected &&
+                !e.IsDeleted &&
+                (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
+
+            foreach (var ev in userActiveEvents)
+            {
+                ev.Status = EventStatus.Cancelled;
+                ev.CancellationReason = "Organizatör hesabı silindiği için etkinlik iptal edildi.";
+                ev.UpdatedAt = DateTime.UtcNow;
+                _eventRepository.Update(ev);
+            }
+
             user.IsActive = false;
             user.IsDeleted = true;
-
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
-
             user.DeletedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
 
@@ -159,7 +205,7 @@ namespace UniVibe.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                    _logger.LogError(ex, "Kullanıcı hesabı silindi ancak silinme bilgilendirme emaili gönderilemedi. Email: {Email}", user.Email);
                 }
             }
 

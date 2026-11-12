@@ -64,7 +64,7 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user == null)
                 throw new UnauthorizedException(_localizer["Auth_InvalidCredentials"].Value);
@@ -117,7 +117,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(string.Join(" • ", errors));
             }
 
-            var existingUser = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var existingUser = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (existingUser != null)
             {
@@ -246,7 +246,7 @@ namespace UniVibe.Application.Services
             if (pendingUser.ExpiryDate < DateTime.UtcNow)
                 throw new BadRequestException(_localizer["Auth_TokenExpired"].Value);
 
-            var isUsernameTaken = await _userRepository.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            var isUsernameTaken = await _userRepository.IsUsernameTakenAsync(request.Username);
             if (isUsernameTaken)
                 throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 
@@ -328,7 +328,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user != null)
             {
@@ -340,8 +340,7 @@ namespace UniVibe.Application.Services
                 await _unitOfWork.SaveChangesAsync();
 
                 var defaultWebUrl = _configuration["WebBaseUrl"] ?? "https://univibe-three.vercel.app";
-                var baseUrl = !string.IsNullOrEmpty(request.ResetUrl) ? request.ResetUrl : $"{defaultWebUrl}/reset-password";
-                var resetLink = $"{baseUrl}?email={user.Email}&token={resetToken}";
+                var resetLink = $"{defaultWebUrl}/reset-password?email={user.Email}&token={resetToken}";
 
                 string subject = _localizer["Auth_ResetEmailSubject"].Value;
                 string template = _localizer["Auth_ResetEmailBody"].Value;
@@ -365,7 +364,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
 
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
             if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
             {
@@ -375,6 +374,13 @@ namespace UniVibe.Application.Services
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
+
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.IsActive = true;
+                user.DeletedAt = null;
+            }
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();

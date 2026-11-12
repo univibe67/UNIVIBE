@@ -20,5 +20,7 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<List<User>> GetParticipantsByEventIdAsync(Guid eventId);
         Task<bool> IsUserJoinedEventAsync(Guid eventId, Guid userId);
         Task AddAttendeeAsync(EventAttendee attendee);
+        Task<EventAttendee?> GetAttendeeAsync(Guid eventId, Guid userId);
+        void RemoveAttendee(EventAttendee attendee);
     }
 }

@@ -3,8 +3,6 @@
     public class ForgotPasswordRequest
     {
         public required string Email { get; set; }
-
-        public string? ResetUrl { get; set; }
     }
 
 }
