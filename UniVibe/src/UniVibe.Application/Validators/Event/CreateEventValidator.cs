@@ -26,6 +26,9 @@ namespace UniVibe.Application.Validators.Event
 
             RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
+            RuleFor(x => x)
+                .Must(x => !x.MinGrade.HasValue || !x.MaxGrade.HasValue || (int)x.MinGrade.Value <= (int)x.MaxGrade.Value)
+                .WithMessage(x => localizer["Val_MinGradeGreaterThanMax"].Value);
         }
     }
 }

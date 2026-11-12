@@ -202,7 +202,7 @@ namespace UniVibe.Application.Services
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
             if (eventEntity.Status != EventStatus.Approved)
-                throw new BadRequestException(_localizer["Event_NotApproved"].Value); 
+                throw new BadRequestException(_localizer["Event_NotApproved"].Value);
 
             if (eventEntity.EventDate <= DateTime.UtcNow)
                 throw new BadRequestException(_localizer["Event_PastDate"].Value);
@@ -210,13 +210,25 @@ namespace UniVibe.Application.Services
             if (eventEntity.UserId == userId)
                 throw new BadRequestException(_localizer["Event_CannotJoinOwnEvent"].Value);
 
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
+            var userWithDept = await _userRepository.GetUserWithDetailsByIdAsync(userId);
+            if (userWithDept == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
-            if (user.Role == UserRole.Student && user.Grade.HasValue)
+            if (!string.IsNullOrWhiteSpace(eventEntity.TargetFaculty) &&
+                !string.Equals(userWithDept.Department?.Faculty?.Name, eventEntity.TargetFaculty, StringComparison.OrdinalIgnoreCase))
             {
-                var userGradeInt = (int)user.Grade.Value;
+                throw new BadRequestException(_localizer["Event_FacultyRestriction"].Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(eventEntity.TargetDepartment) &&
+                !string.Equals(userWithDept.Department?.Name, eventEntity.TargetDepartment, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BadRequestException(_localizer["Event_DepartmentRestriction"].Value);
+            }
+
+            if (userWithDept.Role == UserRole.Student && userWithDept.Grade.HasValue)
+            {
+                var userGradeInt = (int)userWithDept.Grade.Value;
 
                 if (eventEntity.MinGrade.HasValue && userGradeInt < eventEntity.MinGrade.Value)
                     throw new BadRequestException(_localizer["Event_GradeTooLow"].Value);
