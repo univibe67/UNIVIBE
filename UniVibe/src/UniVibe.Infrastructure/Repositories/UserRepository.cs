@@ -44,6 +44,12 @@ namespace UniVibe.Infrastructure.Repositories
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
         }
+        public async Task<bool> IsUsernameTakenAsync(string username)
+        {
+            return await _context.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Username.ToLower() == username.ToLower());
+        }
 
     }
 }

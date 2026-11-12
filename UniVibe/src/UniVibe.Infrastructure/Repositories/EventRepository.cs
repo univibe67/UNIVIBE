@@ -50,7 +50,7 @@ namespace UniVibe.Infrastructure.Repositories
             var totalCount = await query.CountAsync();
 
             var items = await query
-                .OrderByDescending(e => e.EventDate)
+                .OrderBy(e => e.EventDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

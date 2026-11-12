@@ -45,7 +45,17 @@ namespace UniVibe.Application.Services
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
 
+            if (evnt.Status == EventStatus.Cancelled)
+                throw new BadRequestException("İptal edilmiş bir etkinlik onaylanamaz.");
+
+            if (evnt.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException("Tarihi geçmiş bir etkinlik onaylanamaz.");
+
+            if (evnt.Status != EventStatus.Pending)
+                throw new BadRequestException("Yalnızca beklemede olan etkinlikler onaylanabilir.");
+
             evnt.Status = EventStatus.Approved;
+            evnt.UpdatedAt = DateTime.UtcNow;
 
             _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
