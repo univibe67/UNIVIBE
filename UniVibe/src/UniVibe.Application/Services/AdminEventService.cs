@@ -28,19 +28,27 @@ namespace UniVibe.Application.Services
         {
             var pendingEvents = await _eventRepository.GetEventsWithUsersByStatusAsync(EventStatus.Pending);
 
-            return _mapper.Map<List<EventListResponse>>(pendingEvents);
+            var response = _mapper.Map<List<EventListResponse>>(pendingEvents);
+
+            response.MapListWithLocalization(pendingEvents, _localizer);
+
+            return response;
         }
 
         public async Task<List<EventListResponse>> GetAllEventsAsync()
         {
             var allEvents = await _eventRepository.GetEventsWithUsersByStatusAsync();
 
-            return _mapper.Map<List<EventListResponse>>(allEvents);
+            var response = _mapper.Map<List<EventListResponse>>(allEvents);
+
+            response.MapListWithLocalization(allEvents, _localizer);
+
+            return response;
         }
 
         public async Task<string> ApproveEventAsync(Guid eventId)
         {
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
@@ -55,9 +63,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException("Yalnızca beklemede olan etkinlikler onaylanabilir.");
 
             evnt.Status = EventStatus.Approved;
-            evnt.UpdatedAt = DateTime.UtcNow;
 
-            _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Approved"].Value;
@@ -68,7 +74,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
@@ -76,7 +82,6 @@ namespace UniVibe.Application.Services
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
 
-            _eventRepository.Update(evnt);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Rejected"].Value;
@@ -92,10 +97,13 @@ namespace UniVibe.Application.Services
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
+            {
                 eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                eventDetailResponse.Department = eventEntity.User.Department?.Name;
+                eventDetailResponse.Grade = eventEntity.User.Grade;
+            }
 
-            if (eventEntity.Category != null)
-                eventDetailResponse.CategoryName = eventEntity.Category.Name;
+            eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
             eventDetailResponse.RejectionReason = eventEntity.RejectionReason;
             eventDetailResponse.CancellationReason = eventEntity.CancellationReason;

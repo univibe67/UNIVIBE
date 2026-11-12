@@ -21,6 +21,7 @@ namespace UniVibe.Infrastructure.Repositories
             var query = _context.Events
                 .Include(e => e.Category)
                 .Include(e => e.User)
+                    .ThenInclude(u => u.Department)
                 .Include(e => e.Attendees)
                 .AsQueryable();
 
@@ -62,6 +63,7 @@ namespace UniVibe.Infrastructure.Repositories
         {
             return await _context.Events
                 .Include(e => e.User)
+                    .ThenInclude(u => u.Department)
                 .Include(e => e.Category)
                 .Include(e => e.Attendees)
                 .FirstOrDefaultAsync(e => e.Id == eventId);
@@ -73,6 +75,7 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(e => e.Category)
                 .Include(e => e.Attendees)
                 .Include(e => e.User)
+                    .ThenInclude(u => u.Department)
                 .FirstOrDefaultAsync(e =>
                     e.UserId == userId &&
                     e.IsDeleted == false &&
@@ -87,6 +90,8 @@ namespace UniVibe.Infrastructure.Repositories
             var query = _context.Events
                 .Include(e => e.User)
                 .Include(e => e.Attendees)
+                .Include(e => e.Category)
+                .Where(e => !e.IsDeleted)
                 .AsQueryable();
 
             if (status.HasValue)
@@ -105,6 +110,7 @@ namespace UniVibe.Infrastructure.Repositories
                     .ThenInclude(e => e.Category)
                 .Include(ea => ea.Event)
                     .ThenInclude(e => e.User)
+                        .ThenInclude(u => u.Department)
                 .Include(ea => ea.Event)
                     .ThenInclude(e => e.Attendees)
                 .Select(ea => ea.Event)

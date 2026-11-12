@@ -45,7 +45,6 @@ namespace UniVibe.Application.Services
 
             user.Role = newRole;
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_User_RoleChanged"].Value;
@@ -58,13 +57,12 @@ namespace UniVibe.Application.Services
 
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
-            if (user == null)
+            if (user == null || user.IsDeleted)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             user.IsActive = false;
             user.RefreshToken = null;
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_User_Suspended"].Value;
@@ -81,7 +79,6 @@ namespace UniVibe.Application.Services
             user.IsDeleted = false;
             user.DeletedAt = null;
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_User_Activated"].Value;
@@ -94,15 +91,14 @@ namespace UniVibe.Application.Services
 
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
-            if (user == null)
+            if (user == null || user.IsDeleted)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
             var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected &&
-                !e.IsDeleted &&
-                (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
+                e.EventDate >= DateTime.UtcNow);
 
             foreach (var ev in userActiveEvents)
             {
@@ -113,11 +109,9 @@ namespace UniVibe.Application.Services
             }
 
             user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
             user.IsActive = false;
             user.RefreshToken = null;
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_User_Deleted"].Value;

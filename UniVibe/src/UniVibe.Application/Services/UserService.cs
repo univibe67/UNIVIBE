@@ -65,7 +65,6 @@ namespace UniVibe.Application.Services
 
             user.ProfilePictureUrl = uploadResult.Url;
             user.ProfilePicturePublicId = uploadResult.PublicId;
-            user.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
@@ -111,7 +110,6 @@ namespace UniVibe.Application.Services
 
             user.Bio = updateDto.Bio;
             user.SocialMediaLink = updateDto.SocialMediaLink;
-            user.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
@@ -153,7 +151,6 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(_localizer["Val_PassMinLength"].Value);
 
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-            user.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
@@ -175,22 +172,17 @@ namespace UniVibe.Application.Services
                 !e.IsDeleted &&
                 (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
 
-            foreach (var ev in userActiveEvents)
+            foreach (var eventt in userActiveEvents)
             {
-                ev.Status = EventStatus.Cancelled;
-                ev.CancellationReason = "Organizatör hesabı silindiği için etkinlik iptal edildi.";
-                ev.UpdatedAt = DateTime.UtcNow;
-                _eventRepository.Update(ev);
+                eventt.Status = EventStatus.Cancelled;
+                eventt.CancellationReason = "Organizatör hesabı silindiği için etkinlik iptal edildi.";
             }
 
             user.IsActive = false;
             user.IsDeleted = true;
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
-            user.DeletedAt = DateTime.UtcNow;
-            user.UpdatedAt = DateTime.UtcNow;
 
-            _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             if (!string.IsNullOrEmpty(user.Email))
@@ -212,4 +204,4 @@ namespace UniVibe.Application.Services
             return _localizer["Res_User_AccountFrozen"].Value;
         }
     }
-}
+}

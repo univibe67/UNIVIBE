@@ -121,6 +121,8 @@ namespace UniVibe.Application.Services
                 }
             }
 
+            eventDetailResponses.MapListWithLocalization(items, _localizer);
+
             return new PaginatedResult<EventDetailResponse>
             {
                 Items = eventDetailResponses,
@@ -154,10 +156,13 @@ namespace UniVibe.Application.Services
             var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
+            {
                 EventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                EventDetailResponse.Department = eventEntity.User.Department?.Name;
+                EventDetailResponse.Grade = eventEntity.User.Grade;
+            }
 
-            if (eventEntity.Category != null)
-                EventDetailResponse.CategoryName = eventEntity.Category.Name;
+            EventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
             EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
             EventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
@@ -175,10 +180,14 @@ namespace UniVibe.Application.Services
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
 
             if (activeEvent.User != null)
+            {
                 eventDetailResponse.CreatorName = $"{activeEvent.User.FirstName} {activeEvent.User.LastName}";
+                eventDetailResponse.Department = activeEvent.User.Department?.Name;
+                eventDetailResponse.Grade = activeEvent.User.Grade;
+            }
 
-            if (activeEvent.Category != null)
-                eventDetailResponse.CategoryName = activeEvent.Category.Name;
+            eventDetailResponse.MapWithLocalization(activeEvent, _localizer);
+
             eventDetailResponse.IsCreator = true;
 
             return eventDetailResponse;
@@ -202,6 +211,7 @@ namespace UniVibe.Application.Services
                 response.IsJoined = true;
             }
 
+            eventDetailResponses.MapListWithLocalization(events, _localizer);
             return eventDetailResponses;
         }
 
@@ -293,9 +303,7 @@ namespace UniVibe.Application.Services
 
             existingEvent.Status = EventStatus.Cancelled;
             existingEvent.CancellationReason = request.Reason;
-            existingEvent.UpdatedAt = DateTime.UtcNow;
 
-            _eventRepository.Update(existingEvent);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Cancelled"].Value;
