@@ -89,7 +89,7 @@ export default function StudentEvents() {
     }
 
     try {
-      const catResponse = await api.get("/EventCategories/event-categories");
+      const catResponse = await api.get("/EventCategories");
       const rawData = catResponse.data || catResponse;
       const catData = (rawData as any)?.data || (rawData as any)?.items || rawData;
       setCategories(Array.isArray(catData) ? catData : []);

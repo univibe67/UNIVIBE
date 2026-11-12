@@ -363,4 +363,22 @@
   <data name="Event_CannotLeavePast" xml:space="preserve">
     <value>You cannot leave events that have already started or passed.</value>
   </data>
+  <data name="Category_Sports" xml:space="preserve">
+    <value>Sports</value>
+  </data>
+  <data name="Category_Academic" xml:space="preserve">
+    <value>Academic</value>
+  </data>
+  <data name="Category_Culture" xml:space="preserve">
+    <value>Art &amp; Culture</value>
+  </data>
+  <data name="Category_Social" xml:space="preserve">
+    <value>Club &amp; Social</value>
+  </data>
+  <data name="Category_Tech" xml:space="preserve">
+    <value>Technology</value>
+  </data>
+  <data name="Category_Music" xml:space="preserve">
+    <value>Music &amp; Entertainment</value>
+  </data>
 </root>

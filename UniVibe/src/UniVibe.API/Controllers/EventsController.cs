@@ -39,7 +39,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
         {
             var userId = User.GetUserId();
-            var message = await _eventService.CancelEventAsync(id, userId, request.Reason);
+            var message = await _eventService.CancelEventAsync(id, userId, request);
 
             return Ok(ApiResponse<string>.Success(message));
         }
