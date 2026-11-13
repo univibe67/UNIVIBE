@@ -13,6 +13,7 @@ namespace UniVibe.Application.Interfaces.Repositories
             Guid? categoryId = null,
             EventStatus? status = null);
 
+        Task<List<Guid>> GetJoinedEventIdsByUserAsync(List<Guid> eventIds, Guid userId);
         Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId);
         Task<Event?> GetActiveEventByUserIdAsync(Guid userId);
         Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null);
