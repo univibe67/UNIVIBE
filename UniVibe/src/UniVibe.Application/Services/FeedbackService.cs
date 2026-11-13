@@ -42,12 +42,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CreateFeedbackAsync(Guid userId, CreateFeedbackDto dto)
         {
-            var validationResult = await _createFeedbackValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _createFeedbackValidator.ValidateAndThrowCustomAsync(dto);
 
             var todayCount = await _feedbackRepository.GetTodayFeedbackCountByUserIdAsync(userId);
             if (todayCount >= 2)

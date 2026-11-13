@@ -18,8 +18,6 @@ namespace UniVibe.Application.Services
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepartmentRepository _departmentRepository;
-        private readonly IUniversityRepository _universityRepository;
-        private readonly IFacultyRepository _facultyRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
@@ -37,8 +35,6 @@ namespace UniVibe.Application.Services
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
             IDepartmentRepository departmentRepository,
-            IUniversityRepository universityRepository,
-            IFacultyRepository facultyRepository,
             IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
             IConfiguration configuration,
@@ -52,8 +48,6 @@ namespace UniVibe.Application.Services
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
             _departmentRepository = departmentRepository;
-            _universityRepository = universityRepository;
-            _facultyRepository = facultyRepository;
             _unitOfWork = unitOfWork;
             _localizer = localizer;
             _configuration = configuration;
@@ -109,12 +103,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> InitiateRegistrationAsync(RegisterInitRequest request)
         {
-            var validationResult = await _registerInitValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _registerInitValidator.ValidateAndThrowCustomAsync(request);
 
             var existingUser = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
 
@@ -227,12 +216,7 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request)
         {
-            var validationResult = await _registerCompleteValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _registerCompleteValidator.ValidateAndThrowCustomAsync(request);
 
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new BadRequestException(_localizer["Auth_InvalidToken"].Value);

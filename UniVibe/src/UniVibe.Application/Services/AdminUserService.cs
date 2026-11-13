@@ -104,11 +104,10 @@ namespace UniVibe.Application.Services
             {
                 ev.Status = EventStatus.Cancelled;
                 ev.CancellationReason = "Organizatör hesabı yönetici tarafından silindiği için etkinlik iptal edildi.";
-                ev.UpdatedAt = DateTime.UtcNow;
-                _eventRepository.Update(ev);
             }
 
             user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
             user.IsActive = false;
             user.RefreshToken = null;
 
