@@ -7,8 +7,10 @@ import StudentEvents from './pages/student/StudentEvents';
 import StudentEventDetail from './pages/student/StudentEventDetail';
 import StudentProfile from './pages/student/StudentProfile';
 import ResetPassword from './pages/auth/ResetPassword';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import Login from './pages/auth/Login';
 import RegisterComplete from './pages/auth/RegisterComplete';
+import RegisterInitiate from './pages/auth/RegisterInitiate';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
@@ -18,7 +20,9 @@ function App() {
         <Route path="/" element={<Login />} />
         
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register-complete" element={<RegisterComplete />} />
+        <Route path="/register" element={<RegisterInitiate />} />
         
         <Route element={<ProtectedRoute allowedRole="Admin" />}>
           <Route path="/admin" element={<AdminLayout />}>
