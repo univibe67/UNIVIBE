@@ -7,7 +7,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/events")]
     [ApiController]
     [Authorize]
     public sealed class EventsController : ControllerBase
@@ -19,7 +19,7 @@ namespace UniVibe.API.Controllers
             _eventService = eventService;
         }
 
-        [HttpGet("all-events")]
+        [HttpGet]
         public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
             var currentUserId = User.GetUserId();
@@ -27,7 +27,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<PaginatedResult<EventDetailResponse>>.Success(pagedEvents));
         }
 
-        [HttpPost("create-event")]
+        [HttpPost]
         public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest request)
         {
             var userId = User.GetUserId();
@@ -35,7 +35,8 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<string>.Success(message));
         }
-        [HttpPatch("cancel-event/{id}")]
+
+        [HttpPatch("{id}/cancel")]
         public async Task<IActionResult> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
         {
             var userId = User.GetUserId();
@@ -44,7 +45,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("my-active-event")]
+        [HttpGet("active/me")]
         public async Task<IActionResult> GetMyActiveEvent()
         {
             var userId = User.GetUserId();
@@ -53,7 +54,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<EventDetailResponse?>.Success(myEvent));
         }
 
-        [HttpGet("my-joined-events")]
+        [HttpGet("joined/me")]
         public async Task<IActionResult> GetMyJoinedEvents()
         {
             var userId = User.GetUserId();
@@ -62,7 +63,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(joinedEvents));
         }
 
-        [HttpPost("join/{id}")]
+        [HttpPost("{id}/attendees")]
         public async Task<IActionResult> JoinEvent(Guid id)
         {
             var userId = User.GetUserId();
@@ -87,7 +88,15 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<List<ParticipantResponse>>.Success(participants));
         }
-        [HttpDelete("leave/{id}")]
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetEventStatistics()
+        {
+            var statistics = await _eventService.GetEventStatisticsAsync();
+            return Ok(ApiResponse<EventStatisticsResponse>.Success(statistics));
+        }
+
+        [HttpDelete("{id}/attendees/me")]
         public async Task<IActionResult> LeaveEvent(Guid id)
         {
             var userId = User.GetUserId();

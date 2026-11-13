@@ -5,7 +5,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/event-categories")]
     [ApiController]
     public sealed class EventCategoriesController : ControllerBase
     {

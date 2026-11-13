@@ -314,6 +314,26 @@ namespace UniVibe.Application.Services
 
             return _mapper.Map<List<ParticipantResponse>>(participants);
         }
+        public async Task<EventStatisticsResponse> GetEventStatisticsAsync()
+        {
+            var totalCreatedCount = await _eventRepository.CountAsync(e => !e.IsDeleted);
+
+            var activeCount = await _eventRepository.CountAsync(e =>
+                !e.IsDeleted &&
+                e.EventDate > DateTime.UtcNow &&
+                e.Status == EventStatus.Approved);
+
+            var pendingCount = await _eventRepository.CountAsync(e =>
+                !e.IsDeleted &&
+                e.Status == EventStatus.Pending);
+
+            return new EventStatisticsResponse
+            {
+                TotalCreatedEvents = totalCreatedCount,
+                ActiveEvents = activeCount,
+                PendingEvents = pendingCount
+            };
+        }
         public async Task<string> LeaveEventAsync(Guid eventId, Guid userId)
         {
             var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);

@@ -7,7 +7,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
     [Authorize]
     public sealed class UsersController : ControllerBase
@@ -19,7 +19,7 @@ namespace UniVibe.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("upload-profile-picture")]
+        [HttpPost("profile-picture")]
         public async Task<IActionResult> UploadProfilePicture(IFormFile profileImage)
         {
             var userId = User.GetUserId();
@@ -28,7 +28,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(newImageUrl));
         }
 
-        [HttpPut("update-profile")]
+        [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest updateDto)
         {
             var userId = User.GetUserId();
@@ -37,7 +37,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("profile")]
+        [HttpGet("profile/me")]
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = User.GetUserId();
@@ -53,7 +53,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<PublicUserProfileResponse>.Success(profileData));
         }
 
-        [HttpDelete("delete-account")]
+        [HttpDelete("account")]
         public async Task<IActionResult> DeleteAccount()
         {
             var userId = User.GetUserId();
@@ -62,7 +62,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPost("change-password")]
+        [HttpPost("password/change")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             var userId = User.GetUserId();

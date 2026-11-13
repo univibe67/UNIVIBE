@@ -194,5 +194,22 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<NotFoundException>()
                 .WithMessage("Bu etkinliğe katılmamışsınız.");
         }
+        [Fact]
+        public async Task GetEventStatisticsAsync_ShouldReturnCorrectStatistics()
+        {
+            // Arrange
+            // Repository CountAsync metodunun döneceği değerleri simüle ediyoruz
+            _eventRepoMock.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+                .ReturnsAsync(5); // Örnek olarak her biri için 5 dönsün
+
+            // Act
+            var result = await _eventService.GetEventStatisticsAsync();
+
+            // Assert
+            result.Should().NotBeNull();
+            result.TotalCreatedEvents.Should().Be(5);
+            result.ActiveEvents.Should().Be(5);
+            result.PendingEvents.Should().Be(5);
+        }
     }
 }
