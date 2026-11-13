@@ -384,4 +384,22 @@
   <data name="Res_RateLimit_TooManyRequests" xml:space="preserve">
     <value>Too many failed requests. Please try again later.</value>
   </data>
+  <data name="EventCompletedSubject" xml:space="preserve">
+    <value>UniVibe - Your Event Is Complete</value>
+  </data>
+  <data name="EventCompletedBody" xml:space="preserve">
+    <value>Hello {0}, the time for the event '{1}' has expired, and it has been marked as 'Completed' by the system. Thank you for your contributions!</value>
+  </data>
+  <data name="OrganizerReminderSubject" xml:space="preserve">
+    <value>UniVibe - Only {1} minutes left until your event '{0}'!</value>
+  </data>
+  <data name="OrganizerReminderBody" xml:space="preserve">
+    <value>Hello {0}, the event '{1}' that you are organizing will begin at {2} (in approximately {3} minutes). Don't forget to check your preparations!</value>
+  </data>
+  <data name="AttendeeReminderSubject" xml:space="preserve">
+    <value>UniVibe Reminder - The event you’re attending starts in {0} minutes!</value>
+  </data>
+  <data name="AttendeeReminderBody" xml:space="preserve">
+    <value>Hello {0}, the event '{1}' that you have joined begins at {2} ({3} minutes from now). We hope you have a great time!</value>
+  </data>
 </root>

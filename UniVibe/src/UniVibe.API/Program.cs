@@ -1,7 +1,9 @@
+using Hangfire;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using UniVibe.API;
 using UniVibe.Application;
+using UniVibe.Application.Interfaces;
 using UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;
 using UniVibe.Infrastructure.Extensions;
@@ -29,20 +31,25 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
-
 app.UseRequestLocalization();
 app.UseCors("AllowAll");
-
 app.UseRateLimiter();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+RecurringJob.AddOrUpdate<IEventBackgroundService>(
+    "check-completed-events",
+    service => service.CheckAndUpdateCompletedEventsAsync(),
+    "*/15 * * * *"
+);
 
 app.MapControllers();
 app.MapHealthChecks("/health");
