@@ -49,17 +49,12 @@ export default function RegisterComplete() {
         return;
       }
 
-      if (token === 'simulation-token') {
-        setIsTokenValid(true);
-        return;
-      }
-
       try {
-        await api.get(`/Auth/verify-token?token=${token}`);
+        await api.get(`/Auth/tokens/verification?token=${encodeURIComponent(token)}`);
         setIsTokenValid(true); 
       } catch {
         setIsTokenValid(false);
-        setTokenErrorMessage("Bu bağlantı geçerliliğini yitirmiştir, süresi dolmuş veya daha önce kullanılmıştır.");
+        setTokenErrorMessage(t('RegComplete_InvalidLinkMessage'));
       }
     };
 
@@ -78,7 +73,7 @@ export default function RegisterComplete() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/Auth/complete-registration', {
+      const response = await api.post('/Auth/register/completion', {
         token,
         username,
         password,

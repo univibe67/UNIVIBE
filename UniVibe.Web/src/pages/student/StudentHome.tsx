@@ -56,7 +56,7 @@ function getApiData<T>(response: unknown): T | undefined {
 }
 
 export default function StudentHome() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -111,7 +111,7 @@ export default function StudentHome() {
     fetchEventsAndCategories();
     const fetchProfile = async () => {
       try {
-        const response = await api.get<UserProfile | ApiResponse<UserProfile>>("/Users/profile");
+        const response = await api.get<UserProfile | ApiResponse<UserProfile>>("/users/profile/me");
         setProfile(getApiData<UserProfile>(response) ?? null);
       } catch (error) {
         console.error("Profil bilgileri alınamadı:", error);
@@ -226,7 +226,7 @@ export default function StudentHome() {
         {isLoading ? (
           <div className="flex flex-col justify-center items-center h-64 space-y-4">
             <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-gray-500 font-medium">{t("Admin_Loading") || "Etkinlikler Yükleniyor..."}</p>
+            <p className="text-gray-500 font-medium">{t("Student_Loading")}</p>
           </div>
         ) : filteredEvents.length > 0 ? (
           <div className="event-grid">
@@ -243,7 +243,7 @@ export default function StudentHome() {
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <Search className="text-gray-300" size={32} />
             </div>
-            <p className="text-gray-500 font-medium text-center">{t("Student_NoEvents") || "Şu an ufukta etkinlik görünmüyor."}</p>
+            <p className="text-gray-500 font-medium text-center">{t("Student_NoEvents")}</p>
           </div>
         )}
       </div>
@@ -271,7 +271,7 @@ export default function StudentHome() {
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
                       <Calendar size={48} className="text-blue-300 mb-2" />
-                      <span className="text-blue-400 font-bold text-sm">UniVibe Etkinliği</span>
+                      <span className="text-blue-400 font-bold text-sm">{t("Student_EventPlaceholder")}</span>
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -283,26 +283,26 @@ export default function StudentHome() {
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <Calendar size={18} className="text-blue-500" />
                     <span className="text-sm font-semibold">
-                      {new Date(selectedEventDetail.eventDate).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })}
+                      {new Date(selectedEventDetail.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", { dateStyle: "long", timeStyle: "short" })}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <MapPin size={18} className="text-red-500" />
-                    <span className="text-sm font-semibold">{selectedEventDetail.location || "Belirtilmemiş"}</span>
+                    <span className="text-sm font-semibold">{selectedEventDetail.location || t("Student_NotSpecified")}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <User size={16} className="text-purple-500" />
-                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || "Bilinmiyor"}</span>
+                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || t("Student_Unknown")}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <Tag size={16} className="text-green-500" />
-                      <span className="text-xs font-semibold truncate">{selectedEventDetail.categoryName || "Kategori Yok"}</span>
+                      <span className="text-xs font-semibold truncate">{selectedEventDetail.categoryName || t("Student_GeneralCategory")}</span>
                     </div>
                   </div>
                   <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                     <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                      {selectedEventDetail.description || "Açıklama bulunmuyor."}
+                      {selectedEventDetail.description || t("Student_NoEventDescription")}
                     </p>
                   </div>
                   

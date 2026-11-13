@@ -24,7 +24,7 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, onViewDetail }: EventCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="event-card group">
@@ -37,11 +37,11 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-semibold bg-purple-50">
-            {t("Student_NoImage") || "Görsel Yok"}
+            {t("Student_NoImage")}
           </div>
         )}
         <span className="absolute top-4 right-4 rounded-full bg-white/90 px-3.5 py-1.5 text-xs font-black text-blue-700 shadow-md">
-          {event.categoryName || "Genel"}
+          {event.categoryName || t("Student_GeneralCategory")}
         </span>
       </div>
 
@@ -49,7 +49,7 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
         <div className="space-y-2">
           <h3 className="line-clamp-1">{event.title}</h3>
           <p className="line-clamp-2 text-xs leading-relaxed font-medium text-gray-500">
-            {event.description || "Açıklama belirtilmemiş."}
+            {event.description || t("Student_NoDescription")}
           </p>
         </div>
 
@@ -57,7 +57,7 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
           <div className="flex items-center gap-2.5">
             <Calendar size={15} className="shrink-0 text-blue-500" />
             <span>
-              {event.eventDate ? new Date(event.eventDate).toLocaleDateString("tr-TR", {
+              {event.eventDate ? new Date(event.eventDate).toLocaleDateString(i18n.language === "en" ? "en-US" : "tr-TR", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -68,7 +68,7 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
           </div>
           <div className="flex items-center gap-2.5">
             <MapPin size={15} className="shrink-0 text-rose-400" />
-            <span className="truncate">{event.location || "Konum belirtilmemiş"}</span>
+            <span className="truncate">{event.location || t("Student_NoLocation")}</span>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
             className="event-card-action"
           >
             <Eye size={16} />
-            <span>{t("Student_ViewDetails") || "Detayları Gör"}</span>
+            <span>{t("Student_ViewDetails")}</span>
           </button>
         </div>
       </div>

@@ -117,7 +117,7 @@ export default function StudentProfile() {
 
   const fetchProfile = async () => {
     try {
-      const response: any = await api.get("/Users/profile");
+      const response: any = await api.get("/users/profile/me");
       let data = response.data ? response.data : response;
       if (data.data) {
         data = data.data;
@@ -170,7 +170,7 @@ export default function StudentProfile() {
 
     try {
       const response: any = await api.post(
-        "/Users/upload-profile-picture",
+        "/users/profile-picture",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -178,7 +178,7 @@ export default function StudentProfile() {
       );
 
       const newPhotoUrl =
-        (response.imageUrl || response.data?.imageUrl) +
+        (typeof response === "string" ? response : response.data) +
         "?t=" +
         new Date().getTime();
       setProfile((prev: any) => ({
@@ -207,7 +207,7 @@ export default function StudentProfile() {
     setUpdateError("");
 
     try {
-      await api.put("/Users/update-profile", {
+      await api.put("/users/profile", {
         username: editForm.username,
         bio: editForm.bio,
         socialMediaLink: editForm.socialMediaLink,
@@ -229,7 +229,7 @@ export default function StudentProfile() {
             error?.message ||
             "İşlem sırasında bir hata oluştu.";
 
-      setUpdateError(typeof errorMsg === "string" ? errorMsg : "İşlem sırasında bir hata oluştu.");
+      setUpdateError(typeof errorMsg === "string" ? errorMsg : t("Student_UpdateError"));
     } finally {
       setIsUpdating(false);
     }
@@ -240,7 +240,7 @@ export default function StudentProfile() {
     setLogoutModalOpen(false);
     showNotification(
       "success",
-      t("Auth_LogoutSuccess") || "Başarıyla çıkış yapıldı, yönlendiriliyorsunuz..."
+      t("Auth_LogoutSuccess")
     );
     
     setTimeout(() => {
@@ -253,11 +253,11 @@ export default function StudentProfile() {
     if (
       window.confirm(
         t("Auth_DeleteAccountConfirm") ||
-          "Bu işlem geri alınamaz. Hesabınızı silmek istediğinize emin misiniz?",
+          t("Auth_DeleteAccountConfirm"),
       )
     ) {
       api
-        .delete("/Users/delete-account")
+        .delete("/users/account")
         .then(() => {
           localStorage.clear();
           window.location.href = "/";
@@ -265,8 +265,7 @@ export default function StudentProfile() {
         .catch(() => {
           showNotification(
             "error",
-            t("Student_DeleteAccountError") ||
-              "Hesap silinirken bir sorun oluştu.",
+            t("Student_DeleteAccountError"),
           );
         });
     }
@@ -275,22 +274,22 @@ export default function StudentProfile() {
   const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
     if (passwordForm.newPassword.length < 6) {
-      setPasswordError("Yeni şifre en az 6 karakter olmalıdır.");
+      setPasswordError(t("Student_PasswordMinLength"));
       return;
     }
 
     setIsChangingPassword(true);
     setPasswordError("");
     try {
-      await api.post("/Users/change-password", passwordForm);
+      await api.post("/users/password/change", passwordForm);
       setPasswordForm({ currentPassword: "", newPassword: "" });
       setPasswordModalOpen(false);
-      showNotification("success", "Şifreniz başarıyla değiştirildi.");
+      showNotification("success", t("Student_PasswordChanged"));
     } catch (error: any) {
       setPasswordError(
         typeof error === "string"
           ? error
-          : error?.response?.data?.message || error?.message || "Şifre değiştirilemedi.",
+          : error?.response?.data?.message || error?.message || t("Student_PasswordChangeError"),
       );
     } finally {
       setIsChangingPassword(false);
@@ -301,7 +300,7 @@ export default function StudentProfile() {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-500 font-medium bg-gray-50">
         <Loader2 className="animate-spin mr-2 text-blue-600" size={28} />{" "}
-        {t("Admin_LoadingDetails") || "Yükleniyor..."}
+        {t("Admin_LoadingDetails")}
       </div>
     );
   }
@@ -345,10 +344,10 @@ export default function StudentProfile() {
             <input type="file" accept="image/*" onChange={handleImageChange} />
             <span className="profile-camera"><Camera size={15} /></span>
           </label>
-          <div className="profile-hero-eyebrow">{profile?.departmentName || t("Student_Department") || "Öğrenci"}</div>
+          <div className="profile-hero-eyebrow">{profile?.departmentName || t("Student_Department")}</div>
           <h1>{profile?.firstName} {profile?.lastName}</h1>
           <p>@{profile?.username} · {profile?.universityName || "-"}</p>
-          <p className="profile-bio">{profile?.bio || t("Student_NoBio") || "Henüz bir biyografi eklenmemiş."}</p>
+          <p className="profile-bio">{profile?.bio || t("Student_NoBio")}</p>
           <button
             type="button"
             className="profile-edit-button"
@@ -362,22 +361,22 @@ export default function StudentProfile() {
               setEditModalOpen(true);
             }}
           >
-            <Edit3 size={15} /> {t("Student_EditProfile") || "Profili düzenle"}
+            <Edit3 size={15} /> {t("Student_EditProfile")}
           </button>
         </section>
 
         <section className="profile-tabs">
           <button type="button" className={activeTab === "joined" ? "active" : ""} onClick={() => setActiveTab("joined")}>
-            Katıldığım etkinlikler <span>{joinedEvents.length}</span>
+            {t("Student_JoinedEvents")} <span>{joinedEvents.length}</span>
           </button>
           <button type="button" className={activeTab === "created" ? "active" : ""} onClick={() => setActiveTab("created")}>
-            Oluşturduklarım <span>{createdEvent ? 1 : 0}</span>
+            {t("Student_CreatedEvents")} <span>{createdEvent ? 1 : 0}</span>
           </button>
         </section>
 
         <section className="profile-event-list">
           {activeTab === "joined" && joinedEvents.length === 0 && (
-            <div className="profile-empty-state">Henüz bir etkinliğe katılmadınız.</div>
+            <div className="profile-empty-state">{t("Student_NoJoinedEvents")}</div>
           )}
           {activeTab === "joined" && joinedEvents.map((event) => (
             <EventCard key={event.id} event={event} onViewDetail={() => window.location.assign(`/student/events/${event.id}`)} />
@@ -386,14 +385,14 @@ export default function StudentProfile() {
             <EventCard event={createdEvent} onViewDetail={() => window.location.assign(`/student/events/${createdEvent.id}`)} />
           )}
           {activeTab === "created" && !createdEvent && (
-            <div className="profile-empty-state">Henüz oluşturduğunuz bir etkinlik bulunmuyor.</div>
+            <div className="profile-empty-state">{t("Student_NoCreatedEvents")}</div>
           )}
         </section>
 
         <section className="profile-settings">
-          <h2>Hesap ayarları</h2>
-          <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> Profili düzenle <span>›</span></button>
-          <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> Şifre değiştir <span>›</span></button>
+          <h2>{t("Student_AccountSettings")}</h2>
+          <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> {t("Student_EditProfile")} <span>›</span></button>
+          <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> {t("Student_ChangePassword")} <span>›</span></button>
           <button type="button" onClick={() => setLogoutModalOpen(true)}><LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"} <span>›</span></button>
           <button type="button" className="danger" onClick={handleDeleteAccount}><Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"} <span>›</span></button>
         </section>
@@ -712,14 +711,14 @@ export default function StudentProfile() {
               type="button"
               onClick={() => setPasswordModalOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-              aria-label="Şifre modalını kapat"
+              aria-label={t("Admin_Close")}
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold text-gray-900 border-b pb-3">Şifre değiştir</h2>
+            <h2 className="text-xl font-bold text-gray-900 border-b pb-3">{t("Student_ChangePassword")}</h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">Mevcut şifre</span>
+                <span className="text-xs font-bold text-gray-700">{t("Student_CurrentPassword")}</span>
                 <input
                   type="password"
                   required
@@ -729,7 +728,7 @@ export default function StudentProfile() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">Yeni şifre</span>
+                <span className="text-xs font-bold text-gray-700">{t("Student_NewPassword")}</span>
                 <input
                   type="password"
                   required
@@ -741,9 +740,9 @@ export default function StudentProfile() {
               </label>
               {passwordError && <p className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">{passwordError}</p>}
               <div className="flex gap-3">
-                <button type="button" onClick={() => setPasswordModalOpen(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl text-sm">İptal</button>
+                <button type="button" onClick={() => setPasswordModalOpen(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl text-sm">{t("Auth_Cancel")}</button>
                 <button type="submit" disabled={isChangingPassword} className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
-                  {isChangingPassword ? "Kaydediliyor..." : "Kaydet"}
+                  {isChangingPassword ? t("Student_Saving") : t("Student_Save")}
                 </button>
               </div>
             </form>

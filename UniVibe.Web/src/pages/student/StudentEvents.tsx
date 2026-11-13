@@ -301,15 +301,15 @@ export default function StudentEvents() {
               <div className="student-topbar">
                 <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
               </div>
-              <div className="auth-eyebrow">YENİ ETKİNLİK</div>
-              <h2>İnsanları bir araya getir.</h2>
-              <p>Etkinliğinin detaylarını ekle, kampüs topluluğuyla paylaş.</p>
+              <div className="auth-eyebrow">{t("Student_NewEventEyebrow")}</div>
+              <h2>{t("Student_NewEventTitle")}</h2>
+              <p>{t("Student_NewEventDescription")}</p>
             </div>
             <form onSubmit={handleCreateEvent} className="create-event-form">
               <section className="create-event-section">
                 <div className="create-event-section-heading">
                 <strong>01</strong>
-                <div><h3>Temel bilgiler</h3><p>Etkinliğini kısaca tanıt.</p></div>
+                <div><h3>{t("Student_BasicInfo")}</h3><p>{t("Student_BasicInfoDescription")}</p></div>
                 </div>
                 <label>
                 <span>{t("Student_FieldTitle") || "Etkinlik başlığı"}</span>
@@ -318,12 +318,12 @@ export default function StudentEvents() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Örn. Tasarımcılar Buluşması"
+                  placeholder={t("Student_PlaceholderTitle")}
                 />
                 </label>
                 <label>
                 <span>{t("Student_FieldDesc") || "Açıklama"}</span>
-                <textarea required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Katılımcılara etkinliğin hakkında bilgi ver..." />
+                <textarea required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Student_PlaceholderDesc")} />
                 </label>
                 <label>
                 <span>{t("Student_FieldCategory") || "Kategori"}</span>
@@ -344,32 +344,32 @@ export default function StudentEvents() {
               <section className="create-event-section">
                 <div className="create-event-section-heading">
                 <strong>02</strong>
-                <div><h3>Zaman ve konum</h3><p>Nerede, ne zaman buluşuyoruz?</p></div>
+                <div><h3>{t("Student_TimeAndLocation")}</h3><p>{t("Student_TimeAndLocationDescription")}</p></div>
                 </div>
                 <div className="create-event-grid">
-                <label><span>Tarih</span><input type="date" required value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></label>
-                <label><span>Saat</span><input type="time" required value={eventTime} onChange={(e) => setEventTime(e.target.value)} /></label>
+                <label><span>{t("Student_Date")}</span><input type="date" required value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></label>
+                <label><span>{t("Student_Time")}</span><input type="time" required value={eventTime} onChange={(e) => setEventTime(e.target.value)} /></label>
                 </div>
-                <label><span>{t("Student_FieldLocation") || "Konum"}</span><input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Bina, salon veya buluşma noktası" /></label>
+                <label><span>{t("Student_FieldLocation")}</span><input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("Student_LocationPlaceholder")} /></label>
               </section>
               <section className="create-event-section">
                 <div className="create-event-section-heading">
                 <strong>03</strong>
-                <div><h3>Katılım detayları</h3><p>Kimler katılabilir?</p></div>
+                <div><h3>{t("Student_AttendanceDetails")}</h3><p>{t("Student_AttendanceDetailsDescription")}</p></div>
                 </div>
-                <label><span>Minimum sınıf</span>
+                <label><span>{t("Student_MinimumGrade")}</span>
                 <select value={minGrade} onChange={(e) => setMinGrade(e.target.value)}>
-                  <option value="">Kısıtlama yok</option>
-                  <option value="0">Hazırlık</option><option value="1">1. sınıf</option><option value="2">2. sınıf</option><option value="3">3. sınıf</option><option value="4">4. sınıf</option><option value="7">Mezun</option>
+                  <option value="">{t("Student_NoRestriction")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
                 </select>
                 </label>
-                <label><span>Maksimum sınıf</span>
+                <label><span>{t("Student_MaximumGrade")}</span>
                 <select value={maxGrade} onChange={(e) => setMaxGrade(e.target.value)}>
-                  <option value="">Kısıtlama yok</option>
-                  <option value="0">Hazırlık</option><option value="1">1. sınıf</option><option value="2">2. sınıf</option><option value="3">3. sınıf</option><option value="4">4. sınıf</option><option value="7">Mezun</option>
+                  <option value="">{t("Student_NoRestriction")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
                 </select>
                 </label>
-                <label><span>{t("Student_FieldImage") || "Etkinlik görseli"} (opsiyonel)</span><input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} /></label>
+                <label><span>{t("Student_FieldImage")} ({t("Student_Optional")})</span><input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} /></label>
               </section>
               {createError && (
                 <div className="auth-error flex items-center gap-2">
@@ -385,13 +385,13 @@ export default function StudentEvents() {
                 >
                 {t("Student_CancelBtn") || "Vazgeç"}
                 </button>
-                <p>Yayınlayarak topluluk kurallarını kabul etmiş olursun.</p>
+                <p>{t("Student_PublishNotice")}</p>
                 <button
                 type="submit"
                 disabled={isCreating}
                 className="create-event-submit"
                 >
-                {isCreating ? t("Student_Creating") || "Oluşturuluyor..." : "Etkinliği yayınla ›"}
+                {isCreating ? t("Student_Creating") : `${t("Student_PublishEvent")} ›`}
                 </button>
               </div>
             </form>
@@ -403,9 +403,9 @@ export default function StudentEvents() {
       {cancelModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 space-y-4 shadow-2xl relative border border-blue-100">
-            <h3 className="text-xl font-black text-gray-900">Etkinliği İptal Et</h3>
+            <h3 className="text-xl font-black text-gray-900">{t("Student_CancelModalTitle")}</h3>
             <p className="text-xs text-gray-500 font-medium">
-              Lütfen bu etkinliği neden iptal ettiğinizi belirtin.
+              {t("Student_CancelModalDescription")}
             </p>
             <textarea
               value={cancelReason}
@@ -413,7 +413,7 @@ export default function StudentEvents() {
                 setCancelReason(e.target.value);
                 if (cancelError) setCancelError("");
               }}
-              placeholder="İptal nedeni..."
+              placeholder={t("Student_CancelReasonPlaceholder")}
               className="w-full p-4 border border-blue-100 rounded-2xl outline-none text-sm h-32 resize-none bg-blue-50/40 focus:border-blue-500 font-medium"
             />
             {cancelError && <p className="text-xs text-red-600 font-bold">{cancelError}</p>}
@@ -423,7 +423,7 @@ export default function StudentEvents() {
                 onClick={() => setCancelModalOpen(false)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl text-sm transition-colors"
               >
-                Vazgeç
+                {t("Student_CancelBtn")}
               </button>
               <button
                 type="button"
@@ -431,7 +431,7 @@ export default function StudentEvents() {
                 disabled={isCancelling}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
               >
-                {isCancelling ? "İptal Ediliyor..." : "İptali Onayla"}
+                {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
               </button>
             </div>
           </div>

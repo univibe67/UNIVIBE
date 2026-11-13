@@ -24,7 +24,7 @@ export default function ForgotPassword() {
 
     setIsLoading(true);
     try {
-      const response = (await api.post("/Auth/forgot-password", {
+      const response = (await api.post("/Auth/password/forgot", {
         email,
         resetUrl: `${window.location.origin}/reset-password`,
       })) as any;
@@ -71,31 +71,28 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="auth-form" noValidate>
-          <div>
-            <label htmlFor="forgot-email">{t("Login_Email")}</label>
-            <input
-              id="forgot-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="ad.soyad@universite.edu.tr"
-            />
+        {message.type === "success" ? (
+          <div className="auth-success">
+            {message.text}
+            <p className="mt-2 text-sm">{t("Forgot_CheckEmail")}</p>
           </div>
-          <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? t("Forgot_Sending") : t("Forgot_PageSubmit")} <span aria-hidden="true">›</span>
-          </button>
-        </form>
-
-        <button
-          type="button"
-          className="auth-simulate-link"
-          onClick={() =>
-            navigate(`/reset-password?email=${encodeURIComponent(email)}&token=simulation-token`)
-          }
-        >
-          {t("Forgot_SimulateLink")}
-        </button>
+        ) : (
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            <div>
+              <label htmlFor="forgot-email">{t("Login_Email")}</label>
+              <input
+                id="forgot-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="ad.soyad@universite.edu.tr"
+              />
+            </div>
+            <button type="submit" className="auth-submit" disabled={isLoading}>
+              {isLoading ? t("Forgot_Sending") : t("Forgot_PageSubmit")} <span aria-hidden="true">›</span>
+            </button>
+          </form>
+        )}
         <p className="auth-legal">{t("Auth_Legal")}</p>
       </main>
     </div>

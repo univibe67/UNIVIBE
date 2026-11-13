@@ -35,7 +35,7 @@ interface EventItem {
 export default function StudentEventDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,7 +202,7 @@ export default function StudentEventDetail() {
         </h1>
       </div>
 
-      <div className="px-6 py-6 max-w-4xl mx-auto">
+      <div className="px-6 py-6 w-full max-w-[940px] mx-auto">
         {loading ? (
           <div className="flex flex-col justify-center items-center h-64 space-y-4">
             <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -255,7 +255,7 @@ export default function StudentEventDetail() {
                     </span>
                     <span className="text-sm font-bold text-gray-800">
                       {event.eventDate
-                        ? new Date(event.eventDate).toLocaleString("tr-TR", {
+                        ? new Date(event.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", {
                             dateStyle: "long",
                             timeStyle: "short",
                           })
@@ -280,10 +280,10 @@ export default function StudentEventDetail() {
                   <User size={20} className="text-purple-500 shrink-0" />
                   <div>
                     <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      Düzenleyen
+                      {t("Student_OrganizerLabel")}
                     </span>
                     <span className="text-sm font-semibold text-gray-800">
-                      {event.creatorName || event.organizerName || "Bilinmiyor"}
+                      {event.creatorName || event.organizerName || t("Student_Unknown")}
                     </span>
                   </div>
                 </div>
@@ -292,10 +292,10 @@ export default function StudentEventDetail() {
                   <Tag size={20} className="text-emerald-500 shrink-0" />
                   <div>
                     <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      Kategori
+                      {t("Student_CategoryLabel")}
                     </span>
                     <span className="text-sm font-semibold text-gray-800">
-                      {event.categoryName || "Genel"}
+                      {event.categoryName || t("Student_GeneralCategory")}
                     </span>
                   </div>
                 </div>
@@ -304,10 +304,10 @@ export default function StudentEventDetail() {
               {/* Description */}
               <div className="bg-blue-50/40 p-5 rounded-2xl border border-blue-100 space-y-2">
                 <span className="text-xs uppercase tracking-wider font-extrabold text-blue-900 block">
-                  Etkinlik Açıklaması
+                  {t("Student_EventDescription")}
                 </span>
                 <p className="text-sm text-gray-700 leading-relaxed font-normal whitespace-pre-line">
-                  {event.description || "Bu etkinlik için bir açıklama girilmemiş."}
+                  {event.description || t("Student_NoEventDescription")}
                 </p>
               </div>
 
@@ -315,7 +315,7 @@ export default function StudentEventDetail() {
               {event.rejectionReason && (
                 <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl text-xs text-rose-800 space-y-1.5">
                   <span className="font-bold flex items-center gap-2 text-rose-900 text-sm">
-                    <AlertTriangle size={16} /> Reddetme Gerekçesi
+                    <AlertTriangle size={16} /> {t("Student_RejectionReason")}
                   </span>
                   <p className="leading-relaxed">{event.rejectionReason}</p>
                 </div>
@@ -324,7 +324,7 @@ export default function StudentEventDetail() {
               {event.cancellationReason && (
                 <div className="bg-gray-100 border border-gray-200 p-4 rounded-2xl text-xs text-gray-800 space-y-1.5">
                   <span className="font-bold flex items-center gap-2 text-gray-900 text-sm">
-                    <XCircle size={16} /> İptal Gerekçesi
+                    <XCircle size={16} /> {t("Student_CancellationReason")}
                   </span>
                   <p className="leading-relaxed">{event.cancellationReason}</p>
                 </div>
@@ -335,7 +335,7 @@ export default function StudentEventDetail() {
                 {event.isCreator ? (
                   <div className="space-y-3">
                     <div className="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold py-3 rounded-2xl text-xs text-center">
-                      Bu Etkinliği Siz Oluşturdunuz
+                      {t("Student_CreatedByYou")}
                     </div>
                     {String(event.status).toLowerCase() !== "cancelled" && event.status !== 4 && (
                       <button
@@ -347,14 +347,14 @@ export default function StudentEventDetail() {
                         className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3.5 rounded-2xl text-sm transition-colors flex items-center justify-center gap-2 border border-red-200"
                       >
                         <XCircle size={18} />
-                        Etkinliği İptal Et
+                        {t("Student_CancelEventButton")}
                       </button>
                     )}
                   </div>
                 ) : event.isJoined ? (
                   <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3.5 rounded-2xl text-sm text-center flex items-center justify-center gap-2">
                     <CheckCircle2 size={18} />
-                    Bu Etkinliğe Katıldınız
+                    {t("Student_JoinedEvent")}
                   </div>
                 ) : (
                   <button
@@ -374,9 +374,9 @@ export default function StudentEventDetail() {
       {cancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 space-y-4 shadow-2xl relative border border-blue-100">
-            <h3 className="text-xl font-black text-gray-900">Etkinliği İptal Et</h3>
+            <h3 className="text-xl font-black text-gray-900">{t("Student_CancelModalTitle")}</h3>
             <p className="text-xs text-gray-500 font-medium">
-              Lütfen bu etkinliği neden iptal ettiğinizi belirtin.
+              {t("Student_CancelModalDescription")}
             </p>
             <textarea
               value={cancelReason}
@@ -384,7 +384,7 @@ export default function StudentEventDetail() {
                 setCancelReason(e.target.value);
                 if (cancelError) setCancelError("");
               }}
-              placeholder="İptal nedeni..."
+              placeholder={t("Student_CancelReasonPlaceholder")}
               className="w-full p-4 border border-blue-100 rounded-2xl outline-none text-sm h-32 resize-none bg-blue-50/40 focus:border-blue-500 font-medium"
             />
             {cancelError && <p className="text-xs text-red-600 font-bold">{cancelError}</p>}
@@ -394,7 +394,7 @@ export default function StudentEventDetail() {
                 onClick={() => setCancelModalOpen(false)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl text-sm transition-colors"
               >
-                Vazgeç
+                {t("Student_CancelBtn")}
               </button>
               <button
                 type="button"
@@ -402,7 +402,7 @@ export default function StudentEventDetail() {
                 disabled={isCancelling}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
               >
-                {isCancelling ? "İptal Ediliyor..." : "İptali Onayla"}
+                {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
               </button>
             </div>
           </div>
