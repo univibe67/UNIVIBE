@@ -89,8 +89,8 @@ namespace UniVibe.Application.Services
 
         public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId)
         {
-             await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
-            
+            await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
+
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
                 request.PageNumber,
                 request.PageSize,
@@ -101,13 +101,19 @@ namespace UniVibe.Application.Services
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
+            var eventIds = items.Select(i => i.Id).ToList();
+
+            var joinedEventIds = await _eventRepository.GetJoinedEventIdsByUserAsync(eventIds, currentUserId);
+
+            var joinedEventIdSet = joinedEventIds.ToHashSet();
+
             foreach (var response in eventDetailResponses)
             {
                 var original = items.FirstOrDefault(i => i.Id == response.Id);
                 if (original != null)
                 {
                     response.IsCreator = (original.UserId == currentUserId);
-                    response.IsJoined = original.Attendees.Any(a => a.UserId == currentUserId && !a.IsDeleted);
+                    response.IsJoined = joinedEventIdSet.Contains(original.Id);
                 }
             }
 
