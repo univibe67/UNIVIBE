@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using System.Globalization;
 using System.Net;
@@ -31,6 +31,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("LoginLimit")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
@@ -38,6 +39,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("register/init")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
             var message = await _authService.InitiateRegistrationAsync(request);
@@ -116,6 +118,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("password/forgot")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             var message = await _authService.ForgotPasswordAsync(request);
@@ -123,6 +126,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("password/reset")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             var message = await _authService.ResetPasswordAsync(request);
