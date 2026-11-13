@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
@@ -19,10 +20,10 @@ namespace UniVibe.Infrastructure.Repositories
             EventStatus? status = null)
         {
             var query = _context.Events
+                .AsNoTracking()
                 .Include(e => e.Category)
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
-                .Include(e => e.Attendees)
                 .AsQueryable();
 
             if (onlyActive)
@@ -43,20 +44,36 @@ namespace UniVibe.Infrastructure.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var lowerTerm = searchTerm.ToLower();
-                query = query.Where(e => e.Title.ToLower().Contains(lowerTerm) ||
-                                         (e.Description != null && e.Description.ToLower().Contains(lowerTerm)));
+                var pattern = $"%{searchTerm.Trim()}%";
+                query = query.Where(e => EF.Functions.ILike(e.Title, pattern) ||
+                                         (e.Description != null && EF.Functions.ILike(e.Description, pattern)));
             }
 
             var totalCount = await query.CountAsync();
 
             var items = await query
                 .OrderBy(e => e.EventDate)
+                .ThenBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             return (items, totalCount);
+        }
+
+        public async Task<List<Guid>> GetJoinedEventIdsByUserAsync(List<Guid> eventIds, Guid userId)
+        {
+            if (eventIds == null || !eventIds.Any())
+                return new List<Guid>();
+
+            return await _context.EventAttendees
+                .AsNoTracking()
+                .Where(a => eventIds.Contains(a.EventId) &&
+                            a.UserId == userId &&
+                            !a.IsDeleted)
+                .Select(a => a.EventId)
+                .Distinct()
+                .ToListAsync();
         }
 
         public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId)
@@ -146,6 +163,10 @@ namespace UniVibe.Infrastructure.Repositories
                 .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
         }
 
+        public async Task<int> CountAsync(Expression<Func<Event, bool>> predicate)
+        {
+            return await _context.Events.Where(predicate).CountAsync();
+        }
         public void RemoveAttendee(EventAttendee attendee)
         {
             _context.EventAttendees.Remove(attendee);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using System.Globalization;
 using System.Net;
@@ -11,7 +12,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     [ApiController]
     public sealed class AuthController : ControllerBase
     {
@@ -30,20 +31,22 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("LoginLimit")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
-        [HttpPost("register-init")]
+        [HttpPost("register/init")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> InitiateRegistration([FromBody] RegisterInitRequest request)
         {
             var message = await _authService.InitiateRegistrationAsync(request);
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("verify-token")]
+        [HttpGet("tokens/verification")]
         public async Task<IActionResult> VerifyToken([FromQuery] string token)
         {
             var isValid = await _authService.VerifyTokenAsync(token);
@@ -54,21 +57,21 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(_localization["Res_Auth_TokenVerified"].Value));
         }
 
-        [HttpPost("complete-registration")]
+        [HttpPost("register/completion")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
             var result = await _authService.CompleteRegistrationAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
-        [HttpPost("refresh-token")]
+        [HttpPost("tokens/refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var result = await _authService.RefreshTokenAsync(request);
             return Ok(ApiResponse<LoginResponse>.Success(result));
         }
 
-        [HttpGet("verify-redirect")]
+        [HttpGet("verification/redirect")]
         public IActionResult VerifyRedirect([FromQuery] string token)
         {
             string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
@@ -114,14 +117,16 @@ namespace UniVibe.API.Controllers
             return Content(htmlContent, "text/html", Encoding.UTF8);
         }
 
-        [HttpPost("forgot-password")]
+        [HttpPost("password/forgot")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             var message = await _authService.ForgotPasswordAsync(request);
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPost("reset-password")]
+        [HttpPost("password/reset")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             var message = await _authService.ResetPasswordAsync(request);

@@ -6,7 +6,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/universities")]
     [ApiController]
     [AllowAnonymous]
     public sealed class UniversityController : ControllerBase

@@ -7,7 +7,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/feedbacks")]
     [ApiController]
     public sealed class FeedbacksController : ControllerBase
     {
@@ -36,8 +36,8 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<FeedbackResponseDto>>.Success(feedbacks));
         }
 
-        [HttpPatch("{id}/resolve")]
-        [Authorize(Roles = "Admin")] 
+        [HttpPatch("{id}/resolution")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Resolve(Guid id)
         {
             var message = await _feedbackService.ResolveFeedbackAsync(id);

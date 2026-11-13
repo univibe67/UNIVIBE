@@ -51,12 +51,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
         {
-            var validationResult = await _createEventValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _createEventValidator.ValidateAndThrowCustomAsync(request);
 
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
@@ -94,12 +89,7 @@ namespace UniVibe.Application.Services
 
         public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId)
         {
-            var validationResult = await _getAllEventsValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
 
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
                 request.PageNumber,
@@ -111,13 +101,19 @@ namespace UniVibe.Application.Services
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
+            var eventIds = items.Select(i => i.Id).ToList();
+
+            var joinedEventIds = await _eventRepository.GetJoinedEventIdsByUserAsync(eventIds, currentUserId);
+
+            var joinedEventIdSet = joinedEventIds.ToHashSet();
+
             foreach (var response in eventDetailResponses)
             {
                 var original = items.FirstOrDefault(i => i.Id == response.Id);
                 if (original != null)
                 {
                     response.IsCreator = (original.UserId == currentUserId);
-                    response.IsJoined = original.Attendees.Any(a => a.UserId == currentUserId && !a.IsDeleted);
+                    response.IsJoined = joinedEventIdSet.Contains(original.Id);
                 }
             }
 
@@ -275,12 +271,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request)
         {
-            var validationResult = await _cancelEventValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _cancelEventValidator.ValidateAndThrowCustomAsync(request);
 
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
@@ -322,6 +313,26 @@ namespace UniVibe.Application.Services
                 return new List<ParticipantResponse>();
 
             return _mapper.Map<List<ParticipantResponse>>(participants);
+        }
+        public async Task<EventStatisticsResponse> GetEventStatisticsAsync()
+        {
+            var totalCreatedCount = await _eventRepository.CountAsync(e => !e.IsDeleted);
+
+            var activeCount = await _eventRepository.CountAsync(e =>
+                !e.IsDeleted &&
+                e.EventDate > DateTime.UtcNow &&
+                e.Status == EventStatus.Approved);
+
+            var pendingCount = await _eventRepository.CountAsync(e =>
+                !e.IsDeleted &&
+                e.Status == EventStatus.Pending);
+
+            return new EventStatisticsResponse
+            {
+                TotalCreatedEvents = totalCreatedCount,
+                ActiveEvents = activeCount,
+                PendingEvents = pendingCount
+            };
         }
         public async Task<string> LeaveEventAsync(Guid eventId, Guid userId)
         {
