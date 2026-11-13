@@ -5,6 +5,7 @@
     <Project Path="src/UniVibe.Domain/UniVibe.Domain.csproj" />
     <Project Path="src/UniVibe.Infrastructure/UniVibe.Infrastructure.csproj" Id="9fd9bfa6-9be4-4833-bb05-5c1c6e22761b" />
   </Folder>
-  <Folder Name="/test/" />
-  <Project Path="test/UniVibe.UnitTests/UniVibe.UnitTests.csproj" Id="8ef441b3-118f-4d1c-908f-336cf65b3888" />
+  <Folder Name="/test/">
+    <Project Path="test/UniVibe.UnitTests/UniVibe.UnitTests.csproj" Id="8ef441b3-118f-4d1c-908f-336cf65b3888" />
+  </Folder>
 </Solution>
