@@ -1,5 +1,5 @@
 using Serilog;
-using UniVibe.API.Extensions;
+using UniVibe.API;
 using UniVibe.Application;
 using UniVibe.Application.Middlewares;
 using UniVibe.Infrastructure;

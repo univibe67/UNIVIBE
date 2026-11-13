@@ -14,7 +14,12 @@ namespace UniVibe.Application.Services
         private readonly IMemoryCache _memoryCache;
         private readonly IMapper _mapper;
 
-        public UniversityService(IUniversityRepository universityRepository, IFacultyRepository facultyRepository, IDepartmentRepository departmentRepository, IMemoryCache memoryCache, IMapper mapper)
+        public UniversityService(
+            IUniversityRepository universityRepository,
+            IFacultyRepository facultyRepository,
+            IDepartmentRepository departmentRepository,
+            IMemoryCache memoryCache,
+            IMapper mapper)
         {
             _universityRepository = universityRepository;
             _facultyRepository = facultyRepository;
@@ -25,59 +30,32 @@ namespace UniVibe.Application.Services
 
         public async Task<List<UniversityLookupResponse>> GetAllUniversitiesAsync()
         {
-            const string cacheKey = "all_universities_cache";
-
-            if (!_memoryCache.TryGetValue(cacheKey, out List<UniversityLookupResponse>? cachedUniversities))
+            return await _memoryCache.GetOrCreateAsync("all_universities_cache", async entry =>
             {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7);
                 var universities = await _universityRepository.GetAllAsync(u => u.IsActive);
-
-                cachedUniversities = _mapper.Map<List<UniversityLookupResponse>>(universities.OrderBy(u => u.Name));
-
-                var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromDays(7));
-
-                _memoryCache.Set(cacheKey, cachedUniversities, cacheOptions);
-            }
-
-            return cachedUniversities ?? new();
+                return _mapper.Map<List<UniversityLookupResponse>>(universities.OrderBy(u => u.Name));
+            }) ?? new();
         }
 
         public async Task<List<FacultyLookupResponse>> GetFacultiesByUniversityIdAsync(Guid universityId)
         {
-            string cacheKey = $"faculties_univ_{universityId}";
-
-            if (!_memoryCache.TryGetValue(cacheKey, out List<FacultyLookupResponse>? cachedFaculties))
+            return await _memoryCache.GetOrCreateAsync($"faculties_univ_{universityId}", async entry =>
             {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7);
                 var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive);
-
-                cachedFaculties = _mapper.Map<List<FacultyLookupResponse>>(faculties.OrderBy(f => f.Name));
-
-                var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromDays(7));
-
-                _memoryCache.Set(cacheKey, cachedFaculties, cacheOptions);
-            }
-
-            return cachedFaculties ?? new();
+                return _mapper.Map<List<FacultyLookupResponse>>(faculties.OrderBy(f => f.Name));
+            }) ?? new();
         }
 
         public async Task<List<DepartmentLookupResponse>> GetDepartmentsByFacultyIdAsync(Guid facultyId)
         {
-            string cacheKey = $"depts_fac_{facultyId}";
-
-            if (!_memoryCache.TryGetValue(cacheKey, out List<DepartmentLookupResponse>? cachedDepartments))
+            return await _memoryCache.GetOrCreateAsync($"depts_fac_{facultyId}", async entry =>
             {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7);
                 var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive);
-
-                cachedDepartments = _mapper.Map<List<DepartmentLookupResponse>>(departments.OrderBy(d => d.Name));
-
-                var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromDays(7));
-
-                _memoryCache.Set(cacheKey, cachedDepartments, cacheOptions);
-            }
-
-            return cachedDepartments ?? new();
+                return _mapper.Map<List<DepartmentLookupResponse>>(departments.OrderBy(d => d.Name));
+            }) ?? new();
         }
     }
 }

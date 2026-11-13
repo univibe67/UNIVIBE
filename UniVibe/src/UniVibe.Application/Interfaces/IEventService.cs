@@ -16,5 +16,6 @@ namespace UniVibe.Application.Interfaces
         Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request);
         Task<List<ParticipantResponse>> GetEventParticipantsAsync(Guid eventId);
         Task<string> LeaveEventAsync(Guid eventId, Guid userId);
+        Task<EventStatisticsResponse> GetEventStatisticsAsync();
     }
 }
