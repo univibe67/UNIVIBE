@@ -51,12 +51,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
         {
-            var validationResult = await _createEventValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _createEventValidator.ValidateAndThrowCustomAsync(request);
 
             var hasActiveEvent = await _eventRepository.AnyAsync(e =>
                 e.UserId == userId &&
@@ -94,13 +89,8 @@ namespace UniVibe.Application.Services
 
         public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId)
         {
-            var validationResult = await _getAllEventsValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
-
+             await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
+            
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
                 request.PageNumber,
                 request.PageSize,
@@ -275,12 +265,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request)
         {
-            var validationResult = await _cancelEventValidator.ValidateAsync(request);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _cancelEventValidator.ValidateAndThrowCustomAsync(request);
 
             var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 

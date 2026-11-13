@@ -74,12 +74,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest updateDto)
         {
-            var validationResult = await _updateProfileValidator.ValidateAsync(updateDto);
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                throw new BadRequestException(string.Join(" • ", errors));
-            }
+            await _updateProfileValidator.ValidateAndThrowCustomAsync(updateDto);
 
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
 
