@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -6,7 +6,6 @@ import {
   PlusCircle,
   XCircle,
   AlertTriangle,
-  X,
 } from "lucide-react";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
@@ -45,8 +44,11 @@ export default function StudentEvents() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
   const [location, setLocation] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [minGrade, setMinGrade] = useState("");
+  const [maxGrade, setMaxGrade] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -69,7 +71,7 @@ export default function StudentEvents() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const activeRes = await api.get("/Events/my-active-event");
+      const activeRes = await api.get("/events/active/me");
       const activeData = activeRes.data?.data || activeRes.data || activeRes;
       if (activeData && activeData.id) {
         setActiveEvent(activeData);
@@ -81,7 +83,7 @@ export default function StudentEvents() {
     }
 
     try {
-      const joinedRes = await api.get("/Events/my-joined-events");
+      const joinedRes = await api.get("/events/joined/me");
       const joinedData = joinedRes.data?.data || joinedRes.data || joinedRes;
       setJoinedEvents(Array.isArray(joinedData) ? joinedData : []);
     } catch {
@@ -89,7 +91,7 @@ export default function StudentEvents() {
     }
 
     try {
-      const catResponse = await api.get("/EventCategories");
+      const catResponse = await api.get("/event-categories");
       const rawData = catResponse.data || catResponse;
       const catData = (rawData as any)?.data || (rawData as any)?.items || rawData;
       setCategories(Array.isArray(catData) ? catData : []);
@@ -104,7 +106,7 @@ export default function StudentEvents() {
     fetchData();
   }, []);
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = useCallback(() => {
     if (activeEvent) {
       showNotification("error", t("Student_AlreadyHasPending") || "Zaten aktif bir etkinliğiniz var.");
       return;
@@ -112,12 +114,15 @@ export default function StudentEvents() {
     setTitle("");
     setDescription("");
     setEventDate("");
+    setEventTime("");
     setLocation("");
     setCategoryId("");
+    setMinGrade("");
+    setMaxGrade("");
     setImageFile(null);
     setCreateError("");
     setIsCreateModalOpen(true);
-  };
+  }, [activeEvent, t]);
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,18 +133,26 @@ export default function StudentEvents() {
       return;
     }
 
+    if (minGrade && maxGrade && Number(minGrade) > Number(maxGrade)) {
+      setCreateError("Minimum sınıf, maksimum sınıftan büyük olamaz.");
+      return;
+    }
+
     setIsCreating(true);
     try {
-      const utcEventDate = eventDate ? new Date(eventDate).toISOString() : "";
+      const localEventDate = eventDate && eventTime ? `${eventDate}T${eventTime}` : "";
+      const utcEventDate = localEventDate ? new Date(localEventDate).toISOString() : "";
       const formData = new FormData();
       formData.append("Title", title);
       formData.append("Description", description);
       formData.append("EventDate", utcEventDate);
       formData.append("Location", location);
       formData.append("CategoryId", categoryId);
+      if (minGrade) formData.append("MinGrade", minGrade);
+      if (maxGrade) formData.append("MaxGrade", maxGrade);
       if (imageFile) formData.append("ImageFile", imageFile);
 
-      await api.post("/Events/create-event", formData, {
+      await api.post("/events", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -162,7 +175,7 @@ export default function StudentEvents() {
 
     setIsCancelling(true);
     try {
-      await api.post(`/Events/cancel-event/${activeEvent.id}`, {
+      await api.patch(`/events/${activeEvent.id}/cancel`, {
         reason: cancelReason,
       });
       showNotification("success", t("Student_CancelSuccess") || "Etkinlik iptal edildi.");
@@ -178,7 +191,7 @@ export default function StudentEvents() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="student-events-page">
       {notification && (
         <div
           className={`fixed top-4 right-4 z-50 p-4 rounded-xl text-white font-bold shadow-lg max-w-sm w-full transform transition-all duration-300 translate-y-0 ${
@@ -192,51 +205,56 @@ export default function StudentEvents() {
         </div>
       )}
 
-      <div className="bg-white px-6 pt-10 pb-6 rounded-b-[40px] shadow-sm mb-6 border-b border-gray-100 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">{t("Student_Events_Title") || "Etkinliklerim"}</h1>
-          <p className="text-sm text-gray-500 font-medium">
-            {t("Student_Events_Desc") || "Oluşturduğun ve katıldığın etkinlikler"}
-          </p>
+      <div className="student-events-brand">
+        <div className="brand-lockup">
+          <span className="brand-mark">U</span>
+          <span>Uni<strong>Vibe</strong></span>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          disabled={!!activeEvent}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <PlusCircle size={18} />
-          <span className="hidden sm:inline">{t("Student_CreateEvent") || "Yeni Etkinlik"}</span>
-        </button>
       </div>
 
-      <div className="px-6 space-y-8 max-w-5xl mx-auto">
+      <header className="student-events-header">
+        <div>
+          <h1>{t("Student_Events_Title", { defaultValue: "Kampüs Etkinlikleri" })}</h1>
+          <p>{t("Student_Events_Desc", { defaultValue: "Oluşturduğun ve katıldığın etkinlikler" })}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpenCreateModal}
+          className="student-events-create-button"
+        >
+          <PlusCircle size={18} />
+          <span>{t("Student_CreateEvent", { defaultValue: "Etkinlik oluştur" })}</span>
+        </button>
+      </header>
+
+      <main className="student-events-content">
         {loading ? (
-          <div className="flex flex-col justify-center items-center h-40 space-y-4">
+          <div className="student-events-loading">
             <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-gray-500 font-medium text-sm">Yükleniyor...</p>
+            <p>Etkinliklerin yükleniyor...</p>
           </div>
         ) : (
           <>
             <section>
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <h2 className="student-events-section-title">
                 <Calendar className="text-blue-500" size={20} />
                 Aktif Etkinliğim
               </h2>
               {activeEvent ? (
-                <div className="bg-white rounded-3xl p-5 shadow-sm border border-blue-100 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
+                <div className="student-event-panel">
                   <EventCard
                     event={activeEvent}
                     onViewDetail={() => navigate(`/student/events/${activeEvent.id}`)}
                   />
                   <div className="mt-4 flex justify-end">
                     <button
+                      type="button"
                       onClick={() => {
                         setCancelReason("");
                         setCancelError("");
                         setCancelModalOpen(true);
                       }}
-                      className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
+                      className="student-event-cancel"
                     >
                       <XCircle size={18} />
                       Etkinliği İptal Et
@@ -244,19 +262,19 @@ export default function StudentEvents() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-100/50 border border-dashed border-gray-300 rounded-3xl p-8 text-center">
-                  <p className="text-gray-500 font-medium text-sm">Henüz aktif bir etkinliğiniz bulunmuyor.</p>
+                <div className="student-events-empty">
+                  <p>Henüz aktif bir etkinliğiniz bulunmuyor.</p>
                 </div>
               )}
             </section>
 
             <section>
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <h2 className="student-events-section-title">
                 <Calendar className="text-indigo-500" size={20} />
                 Katıldığım Etkinlikler
               </h2>
               {joinedEvents.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="student-events-list">
                   {joinedEvents.map((event) => (
                     <EventCard
                       key={event.id}
@@ -266,132 +284,114 @@ export default function StudentEvents() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-gray-100/50 border border-dashed border-gray-300 rounded-3xl p-8 text-center">
-                  <p className="text-gray-500 font-medium text-sm">Henüz bir etkinliğe katılmadınız.</p>
+                <div className="student-events-empty">
+                  <p>Henüz bir etkinliğe katılmadınız.</p>
                 </div>
               )}
             </section>
           </>
         )}
-      </div>
+      </main>
 
       {/* Etkinlik Oluşturma Modalı */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 space-y-5 shadow-2xl relative my-8 border border-blue-100">
-            <button
-              onClick={() => setIsCreateModalOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-2xl font-black text-gray-900 border-b border-blue-50 pb-4">
-              {t("Student_ModalTitleCreate") || "Yeni Etkinlik Oluştur"}
-            </h2>
-            <form onSubmit={handleCreateEvent} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {t("Student_FieldTitle") || "Etkinlik Başlığı"}
-                </label>
+        <div className="create-event-page">
+          <div className="create-event-sheet">
+            <div className="create-event-header">
+              <div className="student-topbar">
+                <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
+              </div>
+              <div className="auth-eyebrow">{t("Student_NewEventEyebrow")}</div>
+              <h2>{t("Student_NewEventTitle")}</h2>
+              <p>{t("Student_NewEventDescription")}</p>
+            </div>
+            <form onSubmit={handleCreateEvent} className="create-event-form">
+              <section className="create-event-section">
+                <div className="create-event-section-heading">
+                <strong>01</strong>
+                <div><h3>{t("Student_BasicInfo")}</h3><p>{t("Student_BasicInfoDescription")}</p></div>
+                </div>
+                <label>
+                <span>{t("Student_FieldTitle") || "Etkinlik başlığı"}</span>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Örn: Yazılım Kampı Buluşması"
-                  className="w-full p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm font-medium outline-none focus:border-blue-500"
+                  placeholder={t("Student_PlaceholderTitle")}
                 />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <Calendar size={14} />
-                    <span>{t("Student_FieldDate") || "Tarih & Saat"}</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    className="w-full p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm font-bold text-blue-900 outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Student_FieldCategory") || "Kategori"}
-                  </label>
-                  <select
-                    required
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm font-medium outline-none focus:border-blue-500"
-                  >
-                    <option value="">Kategori Seçin</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {t("Student_FieldLocation") || "Konum"}
                 </label>
-                <input
-                  type="text"
+                <label>
+                <span>{t("Student_FieldDesc") || "Açıklama"}</span>
+                <textarea required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Student_PlaceholderDesc")} />
+                </label>
+                <label>
+                <span>{t("Student_FieldCategory") || "Kategori"}</span>
+                <select
                   required
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Örn: Mühendislik Fakültesi Amfi-1"
-                  className="w-full p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm font-medium outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {t("Student_FieldDesc") || "Açıklama"}
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                >
+                  <option value="">{t("Student_SelectCategory") || "Kategori seçin"}</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
                 </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Etkinlik hakkında detaylı bilgi verin..."
-                  className="w-full p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl text-sm font-medium outline-none focus:border-blue-500 resize-none"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {t("Student_FieldImage") || "Etkinlik Görseli"}
+              </section>
+              <section className="create-event-section">
+                <div className="create-event-section-heading">
+                <strong>02</strong>
+                <div><h3>{t("Student_TimeAndLocation")}</h3><p>{t("Student_TimeAndLocationDescription")}</p></div>
+                </div>
+                <div className="create-event-grid">
+                <label><span>{t("Student_Date")}</span><input type="date" required value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></label>
+                <label><span>{t("Student_Time")}</span><input type="time" required value={eventTime} onChange={(e) => setEventTime(e.target.value)} /></label>
+                </div>
+                <label><span>{t("Student_FieldLocation")}</span><input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("Student_LocationPlaceholder")} /></label>
+              </section>
+              <section className="create-event-section">
+                <div className="create-event-section-heading">
+                <strong>03</strong>
+                <div><h3>{t("Student_AttendanceDetails")}</h3><p>{t("Student_AttendanceDetailsDescription")}</p></div>
+                </div>
+                <label><span>{t("Student_MinimumGrade")}</span>
+                <select value={minGrade} onChange={(e) => setMinGrade(e.target.value)}>
+                  <option value="">{t("Student_NoRestriction")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
+                </select>
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-5 file:rounded-2xl file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700 cursor-pointer"
-                />
-              </div>
+                <label><span>{t("Student_MaximumGrade")}</span>
+                <select value={maxGrade} onChange={(e) => setMaxGrade(e.target.value)}>
+                  <option value="">{t("Student_NoRestriction")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
+                </select>
+                </label>
+                <label><span>{t("Student_FieldImage")} ({t("Student_Optional")})</span><input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} /></label>
+              </section>
               {createError && (
-                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs font-bold flex items-center gap-2">
-                  <AlertTriangle size={16} className="shrink-0" />
-                  <span>{createError}</span>
+                <div className="auth-error flex items-center gap-2">
+                <AlertTriangle size={16} className="shrink-0" />
+                <span>{createError}</span>
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
+              <div className="create-event-actions">
                 <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 rounded-2xl text-sm transition-colors"
+                type="button"
+                onClick={() => navigate("/student/home")}
+                className="create-event-cancel"
                 >
-                  Vazgeç
+                {t("Student_CancelBtn") || "Vazgeç"}
                 </button>
+                <p>{t("Student_PublishNotice")}</p>
                 <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition-colors disabled:opacity-50"
+                type="submit"
+                disabled={isCreating}
+                className="create-event-submit"
                 >
-                  {isCreating ? "Oluşturuluyor..." : "Oluştur"}
+                {isCreating ? t("Student_Creating") : `${t("Student_PublishEvent")} ›`}
                 </button>
               </div>
             </form>
@@ -403,9 +403,9 @@ export default function StudentEvents() {
       {cancelModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 space-y-4 shadow-2xl relative border border-blue-100">
-            <h3 className="text-xl font-black text-gray-900">Etkinliği İptal Et</h3>
+            <h3 className="text-xl font-black text-gray-900">{t("Student_CancelModalTitle")}</h3>
             <p className="text-xs text-gray-500 font-medium">
-              Lütfen bu etkinliği neden iptal ettiğinizi belirtin.
+              {t("Student_CancelModalDescription")}
             </p>
             <textarea
               value={cancelReason}
@@ -413,7 +413,7 @@ export default function StudentEvents() {
                 setCancelReason(e.target.value);
                 if (cancelError) setCancelError("");
               }}
-              placeholder="İptal nedeni..."
+              placeholder={t("Student_CancelReasonPlaceholder")}
               className="w-full p-4 border border-blue-100 rounded-2xl outline-none text-sm h-32 resize-none bg-blue-50/40 focus:border-blue-500 font-medium"
             />
             {cancelError && <p className="text-xs text-red-600 font-bold">{cancelError}</p>}
@@ -423,7 +423,7 @@ export default function StudentEvents() {
                 onClick={() => setCancelModalOpen(false)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl text-sm transition-colors"
               >
-                Vazgeç
+                {t("Student_CancelBtn")}
               </button>
               <button
                 type="button"
@@ -431,7 +431,7 @@ export default function StudentEvents() {
                 disabled={isCancelling}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
               >
-                {isCancelling ? "İptal Ediliyor..." : "İptali Onayla"}
+                {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
               </button>
             </div>
           </div>

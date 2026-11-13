@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { tokenService } from '../../services/tokenService';
-import { GraduationCap, AlertCircle, ChevronDown } from 'lucide-react';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 
 import { useRegistrationData } from '../../hooks/useRegistrationData';
 import { TokenCheckingView, TokenErrorView } from '../../components/TokenStatusViews';
@@ -50,11 +50,11 @@ export default function RegisterComplete() {
       }
 
       try {
-        await api.get(`/Auth/verify-token?token=${token}`);
+        await api.get(`/Auth/tokens/verification?token=${encodeURIComponent(token)}`);
         setIsTokenValid(true); 
       } catch {
         setIsTokenValid(false);
-        setTokenErrorMessage("Bu bağlantı geçerliliğini yitirmiştir, süresi dolmuş veya daha önce kullanılmıştır.");
+        setTokenErrorMessage(t('RegComplete_InvalidLinkMessage'));
       }
     };
 
@@ -73,7 +73,7 @@ export default function RegisterComplete() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/Auth/complete-registration', {
+      const response = await api.post('/Auth/register/completion', {
         token,
         username,
         password,
@@ -142,17 +142,16 @@ export default function RegisterComplete() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl p-8 space-y-6 shadow-2xl shadow-purple-500/20">
-        
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-pink-500/30">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-            {t('RegComplete_Title')}
-          </h1>
-          <p className="text-gray-500 text-sm">{t('RegComplete_Desc')}</p>
+    <div className="auth-shell">
+      <div className="auth-card register-card">
+        <button type="button" className="auth-back" onClick={() => navigate('/register')}>
+          <span aria-hidden="true">‹</span> {t('RegComplete_Back')}
+        </button>
+
+        <div className="auth-forgot-heading register-heading">
+          <div className="auth-eyebrow">{t('RegComplete_Eyebrow')}</div>
+          <h1 className="auth-title">{t('RegComplete_Title')}</h1>
+          <p className="auth-subtitle">{t('RegComplete_Desc')}</p>
         </div>
 
         {errorMessage && (
@@ -162,36 +161,30 @@ export default function RegisterComplete() {
           </div>
         )}
 
-        <form onSubmit={handleComplete} className="space-y-4" noValidate>
+        <form onSubmit={handleComplete} className="auth-form register-form" noValidate>
           
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">{t('RegComplete_FirstName')}</label>
-              <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_FirstNamePlaceholder')} />
+          <div className="register-section register-basic-section">
+            <label className="register-section-title"><span>01</span>{t('RegComplete_BasicInfo')}</label>
+            <div className="reg-field">
+              <label>{t('RegComplete_Username')}</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="mehmetyilmaz" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-700">{t('RegComplete_LastName')}</label>
-              <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder={t('RegComplete_LastNamePlaceholder')} />
+            <div className="reg-field">
+              <label>{t('RegComplete_FirstName')}</label>
+              <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('RegComplete_FirstNamePlaceholder')} />
+            </div>
+            <div className="reg-field">
+              <label>{t('RegComplete_LastName')}</label>
+              <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('RegComplete_LastNamePlaceholder')} />
+            </div>
+            <div className="reg-field">
+              <label>{t('RegComplete_Password')}</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('RegComplete_PasswordPlaceholder')} />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">{t('RegComplete_Username')}</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="kullaniciadi" />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">{t('RegComplete_Password')}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="••••••••" />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">{t('RegComplete_Phone')}</label>
-            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500" placeholder="555..." />
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-gray-100">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">{t('RegComplete_EduInfo')}</label>
+          <div className="register-section register-education-section">
+            <label className="register-section-title"><span>02</span>{t('RegComplete_EduInfo')}</label>
 
             <button type="button" onClick={() => { setModalType('uni'); setIsModalOpen(true); }} className="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg flex justify-between items-center text-sm text-gray-700 hover:bg-gray-100 transition-all">
               <span>{selectedUni ? selectedUni.name : t('RegComplete_SelectUni')}</span>
@@ -208,18 +201,36 @@ export default function RegisterComplete() {
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
 
-            <button type="button" onClick={() => { setModalType('grade'); setIsModalOpen(true); }} className="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg flex justify-between items-center text-sm text-gray-700 hover:bg-gray-100 transition-all">
-              <span>{grade ? grade.name : t('RegComplete_SelectGrade')}</span>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
-            </button>
+            <div className="reg-field">
+              <label>{t('RegComplete_Role')}</label>
+              <div className="reg-select-display">
+                <span>{t('Role_Student')}</span>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+            <div className="reg-field">
+              <label>{t('RegComplete_SelectGrade')}</label>
+              <button type="button" onClick={() => { setModalType('grade'); setIsModalOpen(true); }} className="reg-select-display">
+                <span>{grade ? grade.name : t('RegComplete_SelectGrade')}</span>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
+
+          <div className="register-section register-contact-section">
+            <label className="register-section-title"><span>03</span>{t('RegComplete_ContactInfo')}</label>
+            <div className="reg-field">
+              <label>{t('RegComplete_Phone')}</label>
+              <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="555..." />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={isLoading || !token}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium py-2.5 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md shadow-pink-500/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+            className="auth-submit"
           >
-            {isLoading ? t('RegComplete_Loading') : t('RegComplete_SubmitBtn')}
+            {isLoading ? t('RegComplete_Loading') : t('RegComplete_SubmitBtn')} <span aria-hidden="true">›</span>
           </button>
         </form>
       </div>
