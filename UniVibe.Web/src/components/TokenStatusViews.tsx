@@ -6,7 +6,7 @@ interface TokenCheckingViewProps {
 
 export function TokenCheckingView({ message }: TokenCheckingViewProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-medium">
+    <div className="auth-shell">
       {message}
     </div>
   );
@@ -21,7 +21,7 @@ interface TokenErrorViewProps {
 
 export function TokenErrorView({ title, errorMessage, buttonText, onBackToLogin }: TokenErrorViewProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+    <div className="auth-shell">
       <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-2xl p-8 text-center space-y-4 shadow-2xl">
         <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center text-red-600">
           <ShieldAlert className="w-8 h-8" />
