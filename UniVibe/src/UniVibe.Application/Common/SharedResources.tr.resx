@@ -381,4 +381,7 @@
   <data name="Category_Music" xml:space="preserve">
     <value>Müzik ve Eğlence</value>
   </data>
+  <data name="Res_RateLimit_TooManyRequests" xml:space="preserve">
+    <value>Çok fazla başarısız istek atıldı. Lütfen biraz bekleyin.</value>
+  </data>
 </root>

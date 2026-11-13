@@ -381,4 +381,7 @@
   <data name="Category_Music" xml:space="preserve">
     <value>Music &amp; Entertainment</value>
   </data>
+  <data name="Res_RateLimit_TooManyRequests" xml:space="preserve">
+    <value>Too many failed requests. Please try again later.</value>
+  </data>
 </root>
