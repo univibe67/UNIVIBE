@@ -11,9 +11,11 @@ import {
   AlertTriangle,
   Loader2,
   CheckCircle,
+  LockKeyhole,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import EventCard from "../../components/EventCard";
 
 function LanguageSelector() {
   const { i18n } = useTranslation();
@@ -21,6 +23,7 @@ function LanguageSelector() {
   return (
     <div className="absolute top-5 right-5 flex bg-white/90 backdrop-blur-md rounded-2xl p-1.5 border border-purple-100 z-20 shadow-md">
       <button
+        type="button"
         onClick={() => i18n.changeLanguage("tr")}
         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
           i18n.language === "tr"
@@ -31,6 +34,7 @@ function LanguageSelector() {
         TR
       </button>
       <button
+        type="button"
         onClick={() => i18n.changeLanguage("en")}
         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
           i18n.language === "en"
@@ -58,6 +62,19 @@ interface UserProfile {
   profilePictureUrl?: string;
 }
 
+interface ProfileEvent {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  location?: string;
+  eventDate: string;
+  status: string | number;
+  categoryName?: string;
+  isJoined?: boolean;
+  isCreator?: boolean;
+}
+
 export default function StudentProfile() {
   const { t, i18n } = useTranslation();
 
@@ -65,6 +82,10 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   
   // Çıkış yapma onay modalı için state
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -83,6 +104,9 @@ export default function StudentProfile() {
 
   const [updateError, setUpdateError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [joinedEvents, setJoinedEvents] = useState<ProfileEvent[]>([]);
+  const [createdEvent, setCreatedEvent] = useState<ProfileEvent | null>(null);
+  const [activeTab, setActiveTab] = useState<"joined" | "created">("joined");
 
   const showNotification = (type: "success" | "error", text: string) => {
     setNotification({ type, text });
@@ -114,6 +138,26 @@ export default function StudentProfile() {
 
   useEffect(() => {
     fetchProfile();
+    const fetchProfileEvents = async () => {
+      try {
+        const [joinedResponse, createdResponse] = await Promise.all([
+          api.get("/events/joined/me"),
+          api.get("/events/active/me"),
+        ]);
+        const joinedData: any = joinedResponse.data || joinedResponse;
+        const createdData: any = createdResponse.data || createdResponse;
+        const joined = joinedData?.data || joinedData;
+        const created = createdData?.data || createdData;
+        setJoinedEvents(Array.isArray(joined) ? joined : []);
+        setCreatedEvent(created?.id ? created : null);
+      } catch (error) {
+        console.error("Profil etkinlikleri alınamadı:", error);
+        setJoinedEvents([]);
+        setCreatedEvent(null);
+      }
+    };
+
+    fetchProfileEvents();
   }, []);
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +272,31 @@ export default function StudentProfile() {
     }
   };
 
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("Yeni şifre en az 6 karakter olmalıdır.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setPasswordError("");
+    try {
+      await api.post("/Users/change-password", passwordForm);
+      setPasswordForm({ currentPassword: "", newPassword: "" });
+      setPasswordModalOpen(false);
+      showNotification("success", "Şifreniz başarıyla değiştirildi.");
+    } catch (error: any) {
+      setPasswordError(
+        typeof error === "string"
+          ? error
+          : error?.response?.data?.message || error?.message || "Şifre değiştirilemedi.",
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-500 font-medium bg-gray-50">
@@ -263,7 +332,75 @@ export default function StudentProfile() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-6 pt-6 sm:pt-0">
+      <div className="profile-modern">
+        <section className="profile-hero">
+          <label className="profile-hero-avatar">
+            {uploading ? (
+              <Loader2 className="animate-spin" size={28} />
+            ) : profile?.profilePictureUrl ? (
+              <img src={profile.profilePictureUrl} alt={`${profile.firstName} ${profile.lastName}`} />
+            ) : (
+              <span>{profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}</span>
+            )}
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            <span className="profile-camera"><Camera size={15} /></span>
+          </label>
+          <div className="profile-hero-eyebrow">{profile?.departmentName || t("Student_Department") || "Öğrenci"}</div>
+          <h1>{profile?.firstName} {profile?.lastName}</h1>
+          <p>@{profile?.username} · {profile?.universityName || "-"}</p>
+          <p className="profile-bio">{profile?.bio || t("Student_NoBio") || "Henüz bir biyografi eklenmemiş."}</p>
+          <button
+            type="button"
+            className="profile-edit-button"
+            onClick={() => {
+              setEditForm({
+                username: profile?.username || "",
+                bio: profile?.bio || "",
+                socialMediaLink: profile?.socialMediaLink || "",
+              });
+              setUpdateError("");
+              setEditModalOpen(true);
+            }}
+          >
+            <Edit3 size={15} /> {t("Student_EditProfile") || "Profili düzenle"}
+          </button>
+        </section>
+
+        <section className="profile-tabs">
+          <button type="button" className={activeTab === "joined" ? "active" : ""} onClick={() => setActiveTab("joined")}>
+            Katıldığım etkinlikler <span>{joinedEvents.length}</span>
+          </button>
+          <button type="button" className={activeTab === "created" ? "active" : ""} onClick={() => setActiveTab("created")}>
+            Oluşturduklarım <span>{createdEvent ? 1 : 0}</span>
+          </button>
+        </section>
+
+        <section className="profile-event-list">
+          {activeTab === "joined" && joinedEvents.length === 0 && (
+            <div className="profile-empty-state">Henüz bir etkinliğe katılmadınız.</div>
+          )}
+          {activeTab === "joined" && joinedEvents.map((event) => (
+            <EventCard key={event.id} event={event} onViewDetail={() => window.location.assign(`/student/events/${event.id}`)} />
+          ))}
+          {activeTab === "created" && createdEvent && (
+            <EventCard event={createdEvent} onViewDetail={() => window.location.assign(`/student/events/${createdEvent.id}`)} />
+          )}
+          {activeTab === "created" && !createdEvent && (
+            <div className="profile-empty-state">Henüz oluşturduğunuz bir etkinlik bulunmuyor.</div>
+          )}
+        </section>
+
+        <section className="profile-settings">
+          <h2>Hesap ayarları</h2>
+          <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> Profili düzenle <span>›</span></button>
+          <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> Şifre değiştir <span>›</span></button>
+          <button type="button" onClick={() => setLogoutModalOpen(true)}><LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"} <span>›</span></button>
+          <button type="button" className="danger" onClick={handleDeleteAccount}><Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"} <span>›</span></button>
+        </section>
+      </div>
+
+      <div className="profile-legacy">
+        <div className="max-w-7xl mx-auto space-y-6 pt-6 sm:pt-0">
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Profil Header */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
@@ -432,7 +569,8 @@ export default function StudentProfile() {
               </button>
             </div>
           </div>
-        
+        </div>
+        </div>
 
         {/* Çıkış Yap Onay Modalı */}
         {isLogoutModalOpen && (
@@ -566,7 +704,52 @@ export default function StudentProfile() {
             </div>
           </div>
         )}
-      </div>
+
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setPasswordModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+              aria-label="Şifre modalını kapat"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 border-b pb-3">Şifre değiştir</h2>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <label className="block space-y-1">
+                <span className="text-xs font-bold text-gray-700">Mevcut şifre</span>
+                <input
+                  type="password"
+                  required
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs font-bold text-gray-700">Yeni şifre</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+              {passwordError && <p className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">{passwordError}</p>}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setPasswordModalOpen(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl text-sm">İptal</button>
+                <button type="submit" disabled={isChangingPassword} className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
+                  {isChangingPassword ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

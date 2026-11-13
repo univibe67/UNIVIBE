@@ -1,29 +1,32 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { Home, Calendar, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function StudentLayout() {
   const location = useLocation();
+  const { t } = useTranslation();
 
   const navItems = [
-    { path: '/student/home', icon: Home, label: 'Ana Sayfa' },
-    { path: '/student/events', icon: Calendar, label: 'Etkinlikler' },
-    { path: '/student/profile', icon: User, label: 'Profil' },
+    { path: '/student/home', icon: Home, label: t('Nav_Home') },
+    { path: '/student/events', icon: Calendar, label: t('Nav_Events') },
+    { path: '/student/profile', icon: User, label: t('Nav_Profile') },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="student-page flex flex-col">
       <main className="flex-1 w-full pb-16">
         <Outlet /> 
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <nav className="bottom-nav">
         <div className="max-w-md mx-auto px-6 flex justify-between items-center h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
             // Highlight active if exactly matches, or if '/student' matches '/student/home' implicitly, 
             // but we'll use exact path matching or base path matching
-            const isActive = location.pathname === item.path || (item.path === '/student/home' && location.pathname === '/student');
+            const isActive = location.pathname === item.path ||
+              (item.path === '/student/home' && location.pathname === '/student');
             
             return (
               <NavLink

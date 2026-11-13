@@ -61,7 +61,7 @@ export default function StudentEventDetail() {
     setLoading(true);
     setError("");
     try {
-      const response: any = await api.get(`/Events/${id}`);
+      const response: any = await api.get(`/events/${id}`);
       const data = response.data?.data || response.data || response;
       if (data && data.id) {
         setEvent(data);
@@ -85,7 +85,7 @@ export default function StudentEventDetail() {
   const handleJoinEvent = async () => {
     if (!id) return;
     try {
-      await api.post(`/Events/join/${id}`);
+      await api.post(`/events/${id}/attendees`);
       showNotification(
         "success",
         t("Student_JoinSuccess") || "Etkinliğe başarıyla katıldınız!"
@@ -110,7 +110,7 @@ export default function StudentEventDetail() {
 
     setIsCancelling(true);
     try {
-      await api.post(`/Events/cancel-event/${id}`, {
+      await api.patch(`/events/${id}/cancel`, {
         reason: cancelReason,
       });
       showNotification(
