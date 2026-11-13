@@ -29,7 +29,11 @@ namespace UniVibe.API
             {
                 options.AddPolicy("LoginLimit", context =>
                 {
-                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var forwardedHeader = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    var ip = !string.IsNullOrEmpty(forwardedHeader)
+                        ? forwardedHeader.Split(',')[0].Trim()
+                        : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 5,
@@ -41,7 +45,11 @@ namespace UniVibe.API
 
                 options.AddPolicy("StrictAuthLimit", context =>
                 {
-                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var forwardedHeader = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    var ip = !string.IsNullOrEmpty(forwardedHeader)
+                        ? forwardedHeader.Split(',')[0].Trim()
+                        : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 3,
@@ -55,8 +63,7 @@ namespace UniVibe.API
                 {
                     var localizationService = context.HttpContext.RequestServices.GetRequiredService<IStringLocalizer<SharedResources>>();
 
-                    var message = localizationService["Res_RateLimit_TooManyRequests"].Value
-                                  ?? "Çok fazla başarısız istek atıldı. Lütfen biraz bekleyin.";
+                    var message = localizationService["Res_RateLimit_TooManyRequests"].Value;
 
                     context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                     context.HttpContext.Response.ContentType = "application/json";
