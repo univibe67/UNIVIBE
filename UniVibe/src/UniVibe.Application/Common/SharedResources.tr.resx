@@ -384,4 +384,22 @@
   <data name="Res_RateLimit_TooManyRequests" xml:space="preserve">
     <value>Çok fazla başarısız istek atıldı. Lütfen biraz bekleyin.</value>
   </data>
+  <data name="EventCompletedSubject" xml:space="preserve">
+    <value>UniVibe - Etkinliğiniz Tamamlandı</value>
+  </data>
+  <data name="EventCompletedBody" xml:space="preserve">
+    <value>Merhaba {0}, '{1}' adlı etkinliğin zamanı doldu ve sistem tarafından 'Tamamlandı' olarak işaretlendi. Katkılarınız için teşekkür ederiz!</value>
+  </data>
+  <data name="OrganizerReminderSubject" xml:space="preserve">
+    <value>UniVibe - '{0}' Etkinliğinize {1} Dakika Kaldı!</value>
+  </data>
+  <data name="OrganizerReminderBody" xml:space="preserve">
+    <value>Merhaba {0}, organize ettiğiniz '{1}' etkinliği saat {2}'de (yaklaşık {3} dakika sonra) başlayacak. Hazırlıklarınızı kontrol etmeyi unutmayın!</value>
+  </data>
+  <data name="AttendeeReminderSubject" xml:space="preserve">
+    <value>UniVibe Hatırlatıcısı - Katıldığınız Etkinliğe {0} Dakika Kaldı!</value>
+  </data>
+  <data name="AttendeeReminderBody" xml:space="preserve">
+    <value>Merhaba {0}, katıldığınız '{1}' etkinliği saat {2}'de ({3} dakika sonra) başlıyor. Şimdiden iyi eğlenceler dileriz!</value>
+  </data>
 </root>
