@@ -7,7 +7,7 @@ using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/admin/events")]
     [ApiController]
     [Authorize(Roles = "Admin")]
     public sealed class AdminEventController : ControllerBase
@@ -26,21 +26,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<EventListResponse>>.Success(events));
         }
 
-        [HttpPut("approve/{id}")]
-        public async Task<IActionResult> ApproveEvent(Guid id)
-        {
-            var message = await _adminEventService.ApproveEventAsync(id);
-            return Ok(ApiResponse<string>.Success(message));
-        }
-
-        [HttpPut("reject/{id}")]
-        public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest request)
-        {
-            var message = await _adminEventService.RejectEventAsync(id, request.Reason);
-            return Ok(ApiResponse<string>.Success(message));
-        }
-
-        [HttpGet("all")]
+        [HttpGet]
         public async Task<IActionResult> GetAllEvents()
         {
             var events = await _adminEventService.GetAllEventsAsync();
@@ -52,6 +38,20 @@ namespace UniVibe.API.Controllers
         {
             var eventDetails = await _adminEventService.GetEventDetailsByIdAsync(id);
             return Ok(ApiResponse<EventDetailResponse>.Success(eventDetails));
+        }
+
+        [HttpPatch("{id}/approval")]
+        public async Task<IActionResult> ApproveEvent(Guid id)
+        {
+            var message = await _adminEventService.ApproveEventAsync(id);
+            return Ok(ApiResponse<string>.Success(message));
+        }
+
+        [HttpPatch("{id}/rejection")]
+        public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest request)
+        {
+            var message = await _adminEventService.RejectEventAsync(id, request.Reason);
+            return Ok(ApiResponse<string>.Success(message));
         }
     }
 }

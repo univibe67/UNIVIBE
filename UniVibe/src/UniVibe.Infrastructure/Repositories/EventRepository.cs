@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
@@ -162,6 +163,10 @@ namespace UniVibe.Infrastructure.Repositories
                 .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
         }
 
+        public async Task<int> CountAsync(Expression<Func<Event, bool>> predicate)
+        {
+            return await _context.Events.Where(predicate).CountAsync();
+        }
         public void RemoveAttendee(EventAttendee attendee)
         {
             _context.EventAttendees.Remove(attendee);

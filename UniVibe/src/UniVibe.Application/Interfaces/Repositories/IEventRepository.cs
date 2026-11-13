@@ -1,4 +1,5 @@
-﻿using UniVibe.Domain.Entities;
+﻿using System.Linq.Expressions;
+using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Interfaces.Repositories
@@ -22,6 +23,8 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<bool> IsUserJoinedEventAsync(Guid eventId, Guid userId);
         Task AddAttendeeAsync(EventAttendee attendee);
         Task<EventAttendee?> GetAttendeeAsync(Guid eventId, Guid userId);
+        Task<int> CountAsync(Expression<Func<Event, bool>> predicate);
         void RemoveAttendee(EventAttendee attendee);
+
     }
 }

@@ -5,7 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using UniVibe.Application.Common;
 
-namespace UniVibe.API.Extensions
+namespace UniVibe.API
 {
     public static class DependencyInjection
     {
