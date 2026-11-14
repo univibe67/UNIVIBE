@@ -1,6 +1,7 @@
 using AutoMapper;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
@@ -19,7 +20,7 @@ namespace UniVibe.Application.Services
         private readonly IEventCategoryRepository _categoryRepository;
         private readonly IImageService _imageService;
         private readonly IEmailService _emailService;
-
+        private readonly ILogger<EventService> _logger;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
@@ -38,7 +39,8 @@ namespace UniVibe.Application.Services
             IValidator<GetAllEventsRequest> getAllEventsValidator,
             IUserRepository userRepository,
             IValidator<CancelEventRequest> cancelEventValidator,
-            IEmailService emailService)
+            IEmailService emailService,
+            ILogger<EventService> logger)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -51,6 +53,7 @@ namespace UniVibe.Application.Services
             _userRepository = userRepository;
             _cancelEventValidator = cancelEventValidator;
             _emailService = emailService;
+            _logger = logger;
         }
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -87,6 +90,28 @@ namespace UniVibe.Application.Services
 
             await _eventRepository.AddAsync(newEvent);
             await _unitOfWork.SaveChangesAsync();
+
+            try
+            {
+                var organizer = await _userRepository.GetUserWithDetailsByIdAsync(userId);
+                if (organizer != null && !string.IsNullOrEmpty(organizer.Email))
+                {
+                    var turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+                    var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(newEvent.EventDate, turkeyTimeZone);
+                    var formattedDate = localEventTime.ToString("dd.MM.yyyy");
+                    var formattedTime = localEventTime.ToString("HH:mm");
+
+                    string subject = _localizer["EventCreatedEmailSubject"].Value;
+                    string template = _localizer["EventCreatedEmailBody"].Value;
+                    string mailBody = string.Format(template, organizer.FirstName, newEvent.Title, formattedDate, formattedTime);
+
+                    await _emailService.SendEmailAsync(organizer.Email, subject, mailBody);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Etkinlik olu?turma e-postas? gönderilirken hata olu?tu. EventId: {EventId}, UserId: {UserId}", newEvent.Id, userId);
+            }
 
             return _localizer["Res_Event_Created"].Value;
         }
