@@ -92,11 +92,14 @@ export default function StudentEventDetail() {
       );
       fetchEventDetail();
     } catch (err: any) {
+      const errorKey = typeof err === "string" ? err : "";
       showNotification(
         "error",
-        err?.response?.data?.message ||
-          t("Student_JoinError") ||
-          "Katılım sırasında bir hata oluştu."
+        errorKey
+          ? t(errorKey, { defaultValue: errorKey })
+          : err?.response?.data?.message ||
+            t("Student_JoinError") ||
+            "Katılım sırasında bir hata oluştu."
       );
     }
   };
