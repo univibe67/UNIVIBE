@@ -432,4 +432,7 @@
   <data name="EventCreatedEmailBody" xml:space="preserve">
     <value>Merhaba {0}, '{1}' adlı etkinliğiniz başarıyla oluşturulmuştur.\n\nTarih: {2}\nSaat: {3}\n\nİyi eğlenceler dileriz!</value>
   </data>
+  <data name="Log_EventCreateEmailFailed" xml:space="preserve">
+    <value>Etkinlik oluşturma e-postası gönderilirken hata oluştu. EventId: {0}, UserId: {1}</value>
+  </data>
 </root>

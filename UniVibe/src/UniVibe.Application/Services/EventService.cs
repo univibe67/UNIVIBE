@@ -110,7 +110,8 @@ namespace UniVibe.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Etkinlik olu?turma e-postas? gönderilirken hata olu?tu. EventId: {EventId}, UserId: {UserId}", newEvent.Id, userId);
+                string logTemplate = _localizer["Log_EventCreateEmailFailed"].Value;
+                _logger.LogError(ex, logTemplate, newEvent.Id, userId);
             }
 
             return _localizer["Res_Event_Created"].Value;
