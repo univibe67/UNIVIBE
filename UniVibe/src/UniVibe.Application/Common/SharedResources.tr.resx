@@ -388,7 +388,7 @@
     <value>UniVibe - Etkinliğiniz Tamamlandı</value>
   </data>
   <data name="EventCompletedBody" xml:space="preserve">
-    <value>Merhaba {0}, '{1}' adlı etkinliğin zamanı doldu ve sistem tarafından 'Tamamlandı' olarak işaretlendi. Katkılarınız için teşekkür ederiz!</value>
+    <value>Merhaba {0}, '{1}' etkinliğimiz sona ermiştir. Katılımınız için teşekkür eder, bir sonraki etkinlikte görüşmek üzere!</value>
   </data>
   <data name="OrganizerReminderSubject" xml:space="preserve">
     <value>UniVibe - '{0}' Etkinliğinize {1} Dakika Kaldı!</value>
@@ -401,5 +401,29 @@
   </data>
   <data name="AttendeeReminderBody" xml:space="preserve">
     <value>Merhaba {0}, katıldığınız '{1}' etkinliği saat {2}'de ({3} dakika sonra) başlıyor. Şimdiden iyi eğlenceler dileriz!</value>
+  </data>
+  <data name="EventJoinedEmailSubject" xml:space="preserve">
+    <value>Etkinliğe Katılımınız Onaylandı!</value>
+  </data>
+  <data name="EventJoinedEmailBody" xml:space="preserve">
+    <value>Merhaba {0}, '{1}' adlı etkinliğe katılımınız başarıyla gerçekleşmiştir.\n\nTarih: {2}\nSaat: {3}\n\nBekliyoruz!</value>
+  </data>
+  <data name="EventLeftEmailSubject" xml:space="preserve">
+    <value>Etkinlik Kaydınız Silindi</value>
+  </data>
+  <data name="EventLeftEmailBody" xml:space="preserve">
+    <value>Merhaba {0}, '{1}' adlı etkinlikten kaydınız başarıyla kaldırılmıştır.</value>
+  </data>
+  <data name="EventCancelledOrganizerSubject" xml:space="preserve">
+    <value>Etkinliğiniz İptal Edildi</value>
+  </data>
+  <data name="EventCancelledOrganizerBody" xml:space="preserve">
+    <value>Merhaba {0}, '{1}' adlı etkinliğiniz başarıyla iptal edilmiştir. İptal Sebebi: {2}</value>
+  </data>
+  <data name="EventCancelledParticipantSubject" xml:space="preserve">
+    <value>Katıldığınız Bir Etkinlik İptal Edildi</value>
+  </data>
+  <data name="String1" xml:space="preserve">
+    <value>Merhaba {0}, kayıt olduğunuz '{1}' adlı etkinlik organizatör tarafından iptal edilmiştir. İptal Sebebi: {2}</value>
   </data>
 </root>

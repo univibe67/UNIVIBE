@@ -42,6 +42,15 @@ interface ApiResponse<T> {
   isSuccessful?: boolean;
 }
 
+interface EventStatistics {
+  totalCreatedEvents?: number;
+  activeEvents?: number;
+  pendingEvents?: number;
+  TotalCreatedEvents?: number;
+  ActiveEvents?: number;
+  PendingEvents?: number;
+}
+
 function getApiData<T>(response: unknown): T | undefined {
   if (!response || typeof response !== "object") {
     return undefined;
@@ -92,6 +101,17 @@ export default function StudentHome() {
       ].find((value) => typeof value === "number");
 
       setEventCount(typeof count === "number" ? count : items.length);
+
+      try {
+        const statistics = await api.get<EventStatistics | ApiResponse<EventStatistics>>("/events/statistics");
+        const statisticsData = getApiData<EventStatistics>(statistics);
+        const activeEventCount = statisticsData?.activeEvents ?? statisticsData?.ActiveEvents;
+        if (typeof activeEventCount === "number") {
+          setEventCount(activeEventCount);
+        }
+      } catch (statisticsError) {
+        console.error("Etkinlik istatistikleri yüklenemedi:", statisticsError);
+      }
     } catch (error) {
       console.error("Etkinlikler veya etkinlik istatistikleri yüklenirken hata oluştu:", error);
       setEvents([]);
@@ -145,7 +165,15 @@ export default function StudentHome() {
       fetchEventsAndCategories();
       setIsDetailModalOpen(false);
     } catch (error: any) {
-      showNotification("error", error?.response?.data?.message || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.");
+      const errorKey = typeof error === "string" ? error : "";
+      showNotification(
+        "error",
+        errorKey
+          ? t(errorKey, { defaultValue: errorKey })
+          : error?.response?.data?.message ||
+            t("Student_JoinError") ||
+            "Katılım sırasında bir hata oluştu.",
+      );
     }
   };
 

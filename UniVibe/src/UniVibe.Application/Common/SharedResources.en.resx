@@ -388,7 +388,7 @@
     <value>UniVibe - Your Event Is Complete</value>
   </data>
   <data name="EventCompletedBody" xml:space="preserve">
-    <value>Hello {0}, the time for the event '{1}' has expired, and it has been marked as 'Completed' by the system. Thank you for your contributions!</value>
+    <value>Hello {0}, our event '{1}' has come to an end. Thank you for participating, and we hope to see you at the next event!</value>
   </data>
   <data name="OrganizerReminderSubject" xml:space="preserve">
     <value>UniVibe - Only {1} minutes left until your event '{0}'!</value>
@@ -401,5 +401,29 @@
   </data>
   <data name="AttendeeReminderBody" xml:space="preserve">
     <value>Hello {0}, the event '{1}' that you have joined begins at {2} ({3} minutes from now). We hope you have a great time!</value>
+  </data>
+  <data name="EventJoinedEmailSubject" xml:space="preserve">
+    <value>Your Event Registration is Confirmed!</value>
+  </data>
+  <data name="EventJoinedEmailBody" xml:space="preserve">
+    <value>Hello {0}, your registration for the event '{1}' has been successfully completed.\n\nDate: {2}\nTime: {3}\n\nWe are looking forward to seeing you!</value>
+  </data>
+  <data name="EventLeftEmailSubject" xml:space="preserve">
+    <value>Event Registration Cancelled</value>
+  </data>
+  <data name="EventLeftEmailBody" xml:space="preserve">
+    <value>Hello {0}, your registration for the event '{1}' has been successfully cancelled.</value>
+  </data>
+  <data name="EventCancelledOrganizerSubject" xml:space="preserve">
+    <value>Your Event Has Been Cancelled</value>
+  </data>
+  <data name="EventCancelledOrganizerBody" xml:space="preserve">
+    <value>Hello {0}, your event '{1}' has been successfully cancelled. Cancellation Reason: {2}</value>
+  </data>
+  <data name="EventCancelledParticipantSubject" xml:space="preserve">
+    <value>An Event You Joined Has Been Cancelled</value>
+  </data>
+  <data name="String1" xml:space="preserve">
+    <value>Hello {0}, the event '{1}' you registered for has been cancelled by the organizer. Cancellation Reason: {2}</value>
   </data>
 </root>
