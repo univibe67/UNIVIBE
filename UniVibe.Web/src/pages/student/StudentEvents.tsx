@@ -31,7 +31,7 @@ interface Category {
 }
 
 export default function StudentEvents() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [activeEvent, setActiveEvent] = useState<EventItem | null>(null);
@@ -134,7 +134,7 @@ export default function StudentEvents() {
     }
 
     if (minGrade && maxGrade && Number(minGrade) > Number(maxGrade)) {
-      setCreateError("Minimum sınıf, maksimum sınıftan büyük olamaz.");
+      setCreateError(t("Student_GradeRangeError"));
       return;
     }
 
@@ -231,14 +231,14 @@ export default function StudentEvents() {
         {loading ? (
           <div className="student-events-loading">
             <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p>Etkinliklerin yükleniyor...</p>
+            <p>{t("Student_LoadingEvents")}</p>
           </div>
         ) : (
           <>
             <section>
               <h2 className="student-events-section-title">
                 <Calendar className="text-blue-500" size={20} />
-                Aktif Etkinliğim
+                {t("Student_MyActiveEvent")}
               </h2>
               {activeEvent ? (
                 <div className="student-event-panel">
@@ -257,13 +257,13 @@ export default function StudentEvents() {
                       className="student-event-cancel"
                     >
                       <XCircle size={18} />
-                      Etkinliği İptal Et
+                      {t("Student_CancelEventBtn")}
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="student-events-empty">
-                  <p>Henüz aktif bir etkinliğiniz bulunmuyor.</p>
+                  <p>{t("Student_NoActiveEvent")}</p>
                 </div>
               )}
             </section>
@@ -271,7 +271,7 @@ export default function StudentEvents() {
             <section>
               <h2 className="student-events-section-title">
                 <Calendar className="text-indigo-500" size={20} />
-                Katıldığım Etkinlikler
+                {t("Student_JoinedEvents")}
               </h2>
               {joinedEvents.length > 0 ? (
                 <div className="student-events-list">
@@ -285,7 +285,7 @@ export default function StudentEvents() {
                 </div>
               ) : (
                 <div className="student-events-empty">
-                  <p>Henüz bir etkinliğe katılmadınız.</p>
+                  <p>{t("Student_NoJoinedEvents")}</p>
                 </div>
               )}
             </section>
@@ -347,7 +347,17 @@ export default function StudentEvents() {
                 <div><h3>{t("Student_TimeAndLocation")}</h3><p>{t("Student_TimeAndLocationDescription")}</p></div>
                 </div>
                 <div className="create-event-grid">
-                <label><span>{t("Student_Date")}</span><input type="date" required value={eventDate} onChange={(e) => setEventDate(e.target.value)} /></label>
+                <label>
+                  <span>{t("Student_Date")}</span>
+                  <input
+                    type="date"
+                    lang={i18n.language === "en" ? "en-US" : "tr-TR"}
+                    aria-label={t("Student_Date")}
+                    required
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                  />
+                </label>
                 <label><span>{t("Student_Time")}</span><input type="time" required value={eventTime} onChange={(e) => setEventTime(e.target.value)} /></label>
                 </div>
                 <label><span>{t("Student_FieldLocation")}</span><input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("Student_LocationPlaceholder")} /></label>
@@ -360,16 +370,30 @@ export default function StudentEvents() {
                 <label><span>{t("Student_MinimumGrade")}</span>
                 <select value={minGrade} onChange={(e) => setMinGrade(e.target.value)}>
                   <option value="">{t("Student_NoRestriction")}</option>
-                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="5">{t("Grade_5")}</option><option value="6">{t("Grade_6")}</option><option value="7">{t("Grade_Graduated")}</option>
                 </select>
                 </label>
                 <label><span>{t("Student_MaximumGrade")}</span>
                 <select value={maxGrade} onChange={(e) => setMaxGrade(e.target.value)}>
                   <option value="">{t("Student_NoRestriction")}</option>
-                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="7">{t("Grade_Graduated")}</option>
+                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="5">{t("Grade_5")}</option><option value="6">{t("Grade_6")}</option><option value="7">{t("Grade_Graduated")}</option>
                 </select>
                 </label>
-                <label><span>{t("Student_FieldImage")} ({t("Student_Optional")})</span><input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} /></label>
+                <label>
+                  <span>{t("Student_FieldImage")} ({t("Student_Optional")})</span>
+                  <span className="create-event-file-picker">
+                    <input
+                      className="create-event-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    />
+                    <span className="create-event-file-button">{t("Student_ChooseFile")}</span>
+                    <span className="create-event-file-name">
+                      {imageFile?.name || t("Student_NoFileSelected")}
+                    </span>
+                  </span>
+                </label>
               </section>
               {createError && (
                 <div className="auth-error flex items-center gap-2">

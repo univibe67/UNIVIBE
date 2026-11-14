@@ -187,6 +187,11 @@ button { cursor: pointer; }
 .create-event-section input, .create-event-section textarea, .create-event-section select { width: 100%; min-height: 47px; padding: 0 14px; border: 1px solid #dfe5e2; border-radius: 12px; outline: 0; color: #17212b; background: #fff; font-size: 13px; font-weight: 400; }
 .create-event-section textarea { padding-top: 13px; resize: vertical; }
 .create-event-section input:focus, .create-event-section textarea:focus, .create-event-section select:focus { border-color: #1559ac; box-shadow: 0 0 0 3px #1559ac1c; }
+.create-event-file-picker { position: relative; display: flex; align-items: center; gap: 12px; min-height: 47px; padding: 6px 10px; border: 1px solid #dfe5e2; border-radius: 12px; background: #fff; color: #17212b; font-size: 13px; font-weight: 400; cursor: pointer; }
+.create-event-file-picker:focus-within { border-color: #1559ac; box-shadow: 0 0 0 3px #1559ac1c; }
+.create-event-file-input { position: absolute; width: 1px !important; height: 1px !important; padding: 0 !important; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0 !important; }
+.create-event-file-button { flex: 0 0 auto; padding: 8px 12px; border-radius: 8px; color: #1559ac; background: #edf4ff; font-weight: 700; }
+.create-event-file-name { overflow: hidden; color: #819098; text-overflow: ellipsis; white-space: nowrap; }
 .create-event-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .create-event-actions { display: grid; gap: 10px; padding: 18px; border-radius: 18px; background: #edf4ff; text-align: center; }
 .create-event-actions p { order: 1; margin: 0; color: #819098; font-size: 10px; }
