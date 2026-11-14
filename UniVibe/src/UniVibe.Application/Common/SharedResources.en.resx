@@ -388,7 +388,7 @@
     <value>UniVibe - Your Event Is Complete</value>
   </data>
   <data name="EventCompletedBody" xml:space="preserve">
-    <value>Hello {0}, the time for the event '{1}' has expired, and it has been marked as 'Completed' by the system. Thank you for your contributions!</value>
+    <value>Hello {0}, our event '{1}' has come to an end. Thank you for participating, and we hope to see you at the next event!</value>
   </data>
   <data name="OrganizerReminderSubject" xml:space="preserve">
     <value>UniVibe - Only {1} minutes left until your event '{0}'!</value>

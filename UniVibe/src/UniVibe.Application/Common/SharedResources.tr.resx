@@ -388,7 +388,7 @@
     <value>UniVibe - Etkinliğiniz Tamamlandı</value>
   </data>
   <data name="EventCompletedBody" xml:space="preserve">
-    <value>Merhaba {0}, '{1}' adlı etkinliğin zamanı doldu ve sistem tarafından 'Tamamlandı' olarak işaretlendi. Katkılarınız için teşekkür ederiz!</value>
+    <value>Merhaba {0}, '{1}' etkinliğimiz sona ermiştir. Katılımınız için teşekkür eder, bir sonraki etkinlikte görüşmek üzere!</value>
   </data>
   <data name="OrganizerReminderSubject" xml:space="preserve">
     <value>UniVibe - '{0}' Etkinliğinize {1} Dakika Kaldı!</value>
