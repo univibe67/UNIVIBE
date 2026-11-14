@@ -75,44 +75,14 @@ namespace UniVibe.API.Controllers
         public IActionResult VerifyRedirect([FromQuery] string token)
         {
             string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
-            string target = $"{expoBaseUrl}/--/register-complete";
-            string linkToOpen = $"{target}?token={Uri.EscapeDataString(token)}";
+            string linkToOpen = $"{expoBaseUrl}/--/register-complete?token={Uri.EscapeDataString(token)}";
 
             string title = _localization["Auth_RedirectTitle"].Value ?? "UniVibe'a Yönlendiriliyorsunuz";
             string message = _localization["Auth_RedirectMessage"].Value ?? "E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.";
             string buttonText = _localization["Auth_RedirectButton"].Value ?? "UniVibe Uygulamasını Aç";
-
             string currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
-            string safeLink = JavaScriptEncoder.Default.Encode(linkToOpen);
-            string safeHtmlLink = WebUtility.HtmlEncode(linkToOpen);
-
-            string htmlContent = $@"
-                <!DOCTYPE html>
-                <html lang='{currentLang}'>
-                <head>
-                    <meta charset='UTF-8'>
-                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                    <title>{WebUtility.HtmlEncode(title)}</title>
-                    <style>
-                        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #F3F4F6; color: #1F2937; }}
-                        .card {{ background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; max-width: 400px; }}
-                        h1 {{ color: #3B82F6; margin-bottom: 10px; }}
-                        p {{ color: #6B7280; margin-bottom: 30px; }}
-                        .btn {{ background-color: #3B82F6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }}
-                    </style>
-                </head>
-                <body>
-                    <div class='card'>
-                        <h1>UniVibe</h1>
-                        <p>{WebUtility.HtmlEncode(message)}</p>
-                        <a href='{safeHtmlLink}' class='btn'>{WebUtility.HtmlEncode(buttonText)}</a>
-                    </div>
-                    <script>
-                        window.location.href = '{safeLink}';
-                    </script>
-                </body>
-                </html>";
+            string htmlContent = GenerateRedirectHtml(linkToOpen, title, message, buttonText, currentLang);
 
             return Content(htmlContent, "text/html", Encoding.UTF8);
         }
@@ -131,6 +101,38 @@ namespace UniVibe.API.Controllers
         {
             var message = await _authService.ResetPasswordAsync(request);
             return Ok(ApiResponse<string>.Success(message));
+        }
+        private string GenerateRedirectHtml(string link, string title, string message, string buttonText, string lang)
+        {
+            string safeLink = JavaScriptEncoder.Default.Encode(link);
+            string safeHtmlLink = WebUtility.HtmlEncode(link);
+
+            return $@"
+        <!DOCTYPE html>
+        <html lang='{lang}'>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>{WebUtility.HtmlEncode(title)}</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #F3F4F6; color: #1F2937; }}
+                .card {{ background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; max-width: 400px; }}
+                h1 {{ color: #3B82F6; margin-bottom: 10px; }}
+                p {{ color: #6B7280; margin-bottom: 30px; }}
+                .btn {{ background-color: #3B82F6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }}
+            </style>
+        </head>
+        <body>
+            <div class='card'>
+                <h1>UniVibe</h1>
+                <p>{WebUtility.HtmlEncode(message)}</p>
+                <a href='{safeHtmlLink}' class='btn'>{WebUtility.HtmlEncode(buttonText)}</a>
+            </div>
+            <script>
+                window.location.href = '{safeLink}';
+            </script>
+        </body>
+        </html>";
         }
     }
 }
