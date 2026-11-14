@@ -423,7 +423,16 @@
   <data name="EventCancelledParticipantSubject" xml:space="preserve">
     <value>An Event You Joined Has Been Cancelled</value>
   </data>
-  <data name="String1" xml:space="preserve">
+  <data name="EventCancelledParticipantBody" xml:space="preserve">
     <value>Hello {0}, the event '{1}' you registered for has been cancelled by the organizer. Cancellation Reason: {2}</value>
+  </data>
+  <data name="EventCreatedEmailSubject" xml:space="preserve">
+    <value>Your Event Has Been Successfully Created!</value>
+  </data>
+  <data name="EventCreatedEmailBody" xml:space="preserve">
+    <value>Hello {0}, your event '{1}' has been successfully created.\n\nDate: {2}\nTime: {3}\n\nWe wish you a great event!</value>
+  </data>
+  <data name="Log_EventCreateEmailFailed" xml:space="preserve">
+    <value>An error occurred while sending event creation email. EventId: {0}, UserId: {1}</value>
   </data>
 </root>

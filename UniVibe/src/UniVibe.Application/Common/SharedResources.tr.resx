@@ -423,7 +423,16 @@
   <data name="EventCancelledParticipantSubject" xml:space="preserve">
     <value>Katıldığınız Bir Etkinlik İptal Edildi</value>
   </data>
-  <data name="String1" xml:space="preserve">
+  <data name="EventCancelledParticipantBody" xml:space="preserve">
     <value>Merhaba {0}, kayıt olduğunuz '{1}' adlı etkinlik organizatör tarafından iptal edilmiştir. İptal Sebebi: {2}</value>
+  </data>
+  <data name="EventCreatedEmailSubject" xml:space="preserve">
+    <value>Etkinliğiniz Başarıyla Oluşturuldu!</value>
+  </data>
+  <data name="EventCreatedEmailBody" xml:space="preserve">
+    <value>Merhaba {0}, '{1}' adlı etkinliğiniz başarıyla oluşturulmuştur.\n\nTarih: {2}\nSaat: {3}\n\nİyi eğlenceler dileriz!</value>
+  </data>
+  <data name="Log_EventCreateEmailFailed" xml:space="preserve">
+    <value>Etkinlik oluşturma e-postası gönderilirken hata oluştu. EventId: {0}, UserId: {1}</value>
   </data>
 </root>
