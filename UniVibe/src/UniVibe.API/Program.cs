@@ -31,12 +31,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
     app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseHttpsRedirection();
-
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseRequestLocalization();
@@ -45,11 +43,16 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-RecurringJob.AddOrUpdate<IEventBackgroundService>(
-    "check-completed-events",
-    service => service.CheckAndUpdateCompletedEventsAsync(),
-    "*/15 * * * *"
-);
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    recurringJobManager.AddOrUpdate<IEventBackgroundService>(
+        "check-completed-events",
+        service => service.CheckAndUpdateCompletedEventsAsync(),
+        "*/15 * * * *"
+    );
+}
 
 app.MapControllers();
 app.MapHealthChecks("/health");

@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Domain.Enums;
 using UniVibe.Infrastructure.Persistence.Context;
@@ -10,12 +12,12 @@ namespace UniVibe.Infrastructure.Services
     {
         private readonly UniVibeDbContext _context;
         private readonly IEmailService _emailService;
-        private readonly IStringLocalizer<EventBackgroundService> _localizer;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public EventBackgroundService(
             UniVibeDbContext context,
             IEmailService emailService,
-            IStringLocalizer<EventBackgroundService> localizer)
+            IStringLocalizer<SharedResources> localizer)
         {
             _context = context;
             _emailService = emailService;
@@ -24,6 +26,10 @@ namespace UniVibe.Infrastructure.Services
 
         public async Task CheckAndUpdateCompletedEventsAsync()
         {
+            var culture = new CultureInfo("tr-TR");
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+
             var utcNow = DateTime.UtcNow;
 
             var expiredEvents = await _context.Events
@@ -38,8 +44,8 @@ namespace UniVibe.Infrastructure.Services
 
                 if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
                 {
-                    var subject = _localizer["EventCompletedSubject"];
-                    var body = string.Format(_localizer["EventCompletedBody"], ev.User.FirstName, ev.Title);
+                    var subject = _localizer["EventCompletedSubject"].Value;
+                    var body = string.Format(_localizer["EventCompletedBody"].Value, ev.User.FirstName, ev.Title);
 
                     await _emailService.SendEmailAsync(ev.User.Email, subject, body);
                 }
@@ -66,8 +72,8 @@ namespace UniVibe.Infrastructure.Services
 
                 if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
                 {
-                    var subject = string.Format(_localizer["OrganizerReminderSubject"], ev.Title, remainingMinutes);
-                    var body = string.Format(_localizer["OrganizerReminderBody"], ev.User.FirstName, ev.Title, formattedTime, remainingMinutes);
+                    var subject = string.Format(_localizer["OrganizerReminderSubject"].Value, ev.Title, remainingMinutes);
+                    var body = string.Format(_localizer["OrganizerReminderBody"].Value, ev.User.FirstName, ev.Title, formattedTime, remainingMinutes);
 
                     await _emailService.SendEmailAsync(ev.User.Email, subject, body);
                 }
@@ -79,8 +85,8 @@ namespace UniVibe.Infrastructure.Services
                         var attendee = attendeeRelation.User;
                         if (attendee != null && !string.IsNullOrEmpty(attendee.Email))
                         {
-                            var subject = string.Format(_localizer["AttendeeReminderSubject"], remainingMinutes);
-                            var body = string.Format(_localizer["AttendeeReminderBody"], attendee.FirstName, ev.Title, formattedTime, remainingMinutes);
+                            var subject = string.Format(_localizer["AttendeeReminderSubject"].Value, remainingMinutes);
+                            var body = string.Format(_localizer["AttendeeReminderBody"].Value, attendee.FirstName, ev.Title, formattedTime, remainingMinutes);
 
                             await _emailService.SendEmailAsync(attendee.Email, subject, body);
                         }
