@@ -325,7 +325,7 @@ namespace UniVibe.Application.Services
 
             try
             {
-                var organizer = await _userRepository.GetByIdAsync(userId);
+                var organizer = await _userRepository.GetUserWithDetailsByIdAsync(userId);
                 if (organizer != null && !string.IsNullOrEmpty(organizer.Email))
                 {
                     string organizerSubject = _localizer["EventCancelledOrganizerSubject"].Value;
