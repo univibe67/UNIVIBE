@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
@@ -29,7 +30,7 @@ namespace UniVibe.Application.Services
         private readonly IValidator<RegisterInitRequest> _registerInitValidator;
         private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
         private readonly IHttpContextAccessor _httpContextAccessor;
-
+        private readonly ILogger<AuthService> _logger;
         public AuthService(
             IPendingUserRepository pendingUserRepository,
             IEmailService emailService,
@@ -44,7 +45,8 @@ namespace UniVibe.Application.Services
             IValidator<RegisterCompleteRequest> registerCompleteValidator,
             IHttpContextAccessor httpContextAccessor,
             IFacultyRepository facultyRepository,
-            IUniversityRepository universityRepository)
+            IUniversityRepository universityRepository,
+            ILogger<AuthService> logger)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -60,6 +62,7 @@ namespace UniVibe.Application.Services
             _httpContextAccessor = httpContextAccessor;
             _facultyRepository = facultyRepository;
             _universityRepository = universityRepository;
+            _logger = logger;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -146,8 +149,6 @@ namespace UniVibe.Application.Services
                 _pendingUserRepository.Delete(existingPending);
             }
 
-            // ... kodun kalanı aynen devam eder ...
-
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
@@ -200,9 +201,12 @@ namespace UniVibe.Application.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Kayıt doğrulama e-postası gönderilemedi. E-posta: {Email}, Hata: {ErrorMessage}", request.Email, ex.Message);
+
                 _pendingUserRepository.Delete(pendingUser);
                 await _unitOfWork.SaveChangesAsync();
-                throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+
+                throw new BadRequestException(_localizer["Auth_EmailSendFailedGeneric"].Value);
             }
 
             return _localizer["Res_Auth_LinkSent"].Value;
@@ -384,7 +388,8 @@ namespace UniVibe.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                    _logger.LogError(ex, "Şifre sıfırlama e-postası gönderilemedi. E-posta: {Email}, Hata: {ErrorMessage}", user.Email, ex.Message);
+                    throw new BadRequestException(_localizer["Auth_EmailSendFailedGeneric"].Value);
                 }
             }
 
@@ -423,6 +428,7 @@ namespace UniVibe.Application.Services
 
             return _localizer["Auth_PasswordResetSuccessful"].Value;
         }
+
         public async Task<string> GetVerificationRedirectUrlAsync(string token)
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == token && !u.IsUsed);
