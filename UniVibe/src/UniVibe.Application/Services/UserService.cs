@@ -84,26 +84,32 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
-            if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
+            if (!string.IsNullOrWhiteSpace(updateDto.Username))
             {
-                if (user.LastUsernameUpdatedAt.HasValue)
+                var normalizedNewUsername = updateDto.Username.ToLowerInvariant();
+
+                if (normalizedNewUsername != user.Username)
                 {
-                    var daysSinceLastUpdate = (DateTime.UtcNow - user.LastUsernameUpdatedAt.Value).TotalDays;
-                    if (daysSinceLastUpdate < 30)
+                    if (user.LastUsernameUpdatedAt.HasValue)
                     {
-                        var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        var daysSinceLastUpdate = (DateTime.UtcNow - user.LastUsernameUpdatedAt.Value).TotalDays;
+                        if (daysSinceLastUpdate < 30)
+                        {
+                            var remainingDays = 30 - (int)daysSinceLastUpdate;
+                            throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        }
                     }
+
+                    var isUsernameTaken = await _userRepository.AnyAsync(u =>
+                        u.Id != userId &&
+                        u.Username == normalizedNewUsername);
+
+                    if (isUsernameTaken)
+                        throw new ConflictException(_localizer["User_UsernameTaken"].Value);
+
+                    user.Username = normalizedNewUsername;
+                    user.LastUsernameUpdatedAt = DateTime.UtcNow;
                 }
-                var isUsernameTaken = await _userRepository.AnyAsync(u =>
-                    u.Id != userId &&
-                    u.Username.ToLower() == updateDto.Username.ToLower());
-
-                if (isUsernameTaken)
-                    throw new ConflictException(_localizer["User_UsernameTaken"].Value);
-
-                user.Username = updateDto.Username;
-                user.LastUsernameUpdatedAt = DateTime.UtcNow;
             }
 
             user.Bio = updateDto.Bio;

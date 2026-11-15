@@ -27,7 +27,7 @@ namespace UniVibe.Domain.Entities
         public DateTime? DeletedAt { get; set; }
         public UserRole Role { get; set; } = UserRole.Student;
 
-        public Guid DepartmentId { get; set; }
+        public Guid? DepartmentId { get; set; }
         public Department Department { get; set; } = null!;
         public ICollection<Event> Events { get; set; } = new List<Event>();
         public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();

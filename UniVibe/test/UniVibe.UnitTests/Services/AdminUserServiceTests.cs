@@ -44,31 +44,32 @@ namespace UniVibe.UnitTests.Services
         // 1. TESTS FOR GetAllUsersAsync
         // ==========================================
         [Fact]
-        public async Task GetAllUsersAsync_ShouldReturnListOfUserListResponses()
+        public async Task GetAllUsersAsync_ShouldReturnPaginatedUsers_WhenUsersExist()
         {
             // Arrange
             var users = new List<User>
-            {
-                new User { Id = Guid.NewGuid(), FirstName = "Mertcan", Email = "mertcan@test.com" }
-            };
+                {
+                 new User { Id = Guid.NewGuid(), FirstName = "Mertcan", Email = "mertcan@test.com" }
+                };
             var expectedResponse = new List<UserListResponse>
-            {
-                new UserListResponse { FirstName = "Mertcan", Email = "mertcan@test.com" }
-            };
+                {
+               new UserListResponse { FirstName = "Mertcan", Email = "mertcan@test.com" }
+                };
 
-            _userRepoMock.Setup(r => r.GetAllIncludingDeletedAsync())
-                .ReturnsAsync(users);
+            _userRepoMock.Setup(r => r.GetPagedUsersIncludingDeletedAsync(1, 10))
+                .ReturnsAsync((users, users.Count));
 
             _mapperMock.Setup(m => m.Map<List<UserListResponse>>(users))
                 .Returns(expectedResponse);
 
-            // Act
-            var result = await _adminUserService.GetAllUsersAsync();
+            var result = await _adminUserService.GetAllUsersAsync(1, 10);
 
-            // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(1);
-            result[0].FirstName.Should().Be("Mertcan");
+            result.Items.Should().HaveCount(1);
+            result.Items[0].FirstName.Should().Be("Mertcan");
+            result.TotalCount.Should().Be(1);
+            result.PageNumber.Should().Be(1);
+            result.PageSize.Should().Be(10);
         }
 
         // ==========================================

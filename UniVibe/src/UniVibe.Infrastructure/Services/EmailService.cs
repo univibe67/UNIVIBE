@@ -1,7 +1,7 @@
+using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.Infrastructure.Services

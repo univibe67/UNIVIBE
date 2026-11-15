@@ -34,19 +34,19 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task<T?> GetAsync(Expression<Func<T, bool>> filter)
         {
-            return await _dbSet.SingleOrDefaultAsync(filter);
+            return await _dbSet.AsNoTracking().SingleOrDefaultAsync(filter);
         }
 
         public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
         {
             return filter == null
-                ? await _dbSet.ToListAsync()
-                : await _dbSet.Where(filter).ToListAsync();
+                ? await _dbSet.AsNoTracking().ToListAsync()
+                : await _dbSet.AsNoTracking().Where(filter).ToListAsync();
         }
 
         public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _dbSet.FirstOrDefaultAsync(predicate);
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate);
         }
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)

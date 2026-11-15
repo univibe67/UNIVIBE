@@ -55,7 +55,6 @@ namespace UniVibe.Infrastructure.Repositories
                 .OrderBy(e => e.EventDate)
                 .ThenBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
                 .ToListAsync();
 
             return (items, totalCount);
@@ -79,6 +78,7 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId)
         {
             return await _context.Events
+                .AsNoTracking()
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
                 .Include(e => e.Category)
@@ -89,6 +89,7 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<Event?> GetActiveEventByUserIdAsync(Guid userId)
         {
             return await _context.Events
+                .AsNoTracking()
                 .Include(e => e.Category)
                 .Include(e => e.Attendees)
                 .Include(e => e.User)
@@ -105,6 +106,7 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null)
         {
             var query = _context.Events
+                .AsNoTracking()
                 .Include(e => e.User)
                 .Include(e => e.Attendees)
                 .Include(e => e.Category)
@@ -121,17 +123,15 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId)
         {
-            return await _context.EventAttendees
-                .Where(ea => ea.UserId == userId && !ea.IsDeleted)
-                .Include(ea => ea.Event)
-                    .ThenInclude(e => e.Category)
-                .Include(ea => ea.Event)
-                    .ThenInclude(e => e.User)
-                        .ThenInclude(u => u.Department)
-                .Include(ea => ea.Event)
-                    .ThenInclude(e => e.Attendees)
-                .Select(ea => ea.Event)
-                .Where(e => !e.IsDeleted && e.IsActive)
+            return await _context.Events
+                .AsNoTracking()
+                .Include(e => e.Category)
+                .Include(e => e.User)
+                    .ThenInclude(u => u.Department)
+                .Include(e => e.Attendees)
+                .Where(e => !e.IsDeleted &&
+                            e.IsActive &&
+                            e.Attendees.Any(a => a.UserId == userId && !a.IsDeleted))
                 .OrderByDescending(e => e.EventDate)
                 .ToListAsync();
         }
@@ -139,6 +139,7 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<List<User>> GetParticipantsByEventIdAsync(Guid eventId)
         {
             return await _context.EventAttendees
+                .AsNoTracking()
                 .Where(ea => ea.EventId == eventId && !ea.IsDeleted)
                 .Include(ea => ea.User)
                 .Select(ea => ea.User)
@@ -167,10 +168,12 @@ namespace UniVibe.Infrastructure.Repositories
         {
             return await _context.Events.Where(predicate).CountAsync();
         }
+
         public void RemoveAttendee(EventAttendee attendee)
         {
             _context.EventAttendees.Remove(attendee);
         }
+
         public async Task RemoveAttendeesByUserIdAsync(Guid userId)
         {
             var attendees = await _context.EventAttendees

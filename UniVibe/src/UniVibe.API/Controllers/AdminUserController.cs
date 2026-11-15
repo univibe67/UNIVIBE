@@ -20,10 +20,10 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var users = await _adminUserService.GetAllUsersAsync();
-            return Ok(ApiResponse<List<UserListResponse>>.Success(users));
+            var pagedUsers = await _adminUserService.GetAllUsersAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PaginatedResult<UserListResponse>>.Success(pagedUsers));
         }
 
         [HttpPatch("{id}/suspension")]

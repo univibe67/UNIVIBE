@@ -247,6 +247,7 @@ namespace UniVibe.Application.Services
             UserRole assignedRole;
             University? matchedUniversity = null;
             string facultyCode = string.Empty;
+            Guid? finalDepartmentId = null;
 
             var universities = await _universityRepository.GetAllAsync();
 
@@ -269,7 +270,7 @@ namespace UniVibe.Application.Services
                     throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
                 }
 
-                var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.EmailSubDomain == facultyCode);
+                var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.EmailSubDomain == facultyCode && f.UniversityId == matchedUniversity.Id);
                 if (faculty == null)
                 {
                     throw new NotFoundException(_localizer["Auth_FacultyNotFound"].Value);
@@ -283,15 +284,15 @@ namespace UniVibe.Application.Services
                 {
                     throw new BadRequestException(_localizer["Auth_DepartmentFacultyMismatch"].Value);
                 }
+
+                finalDepartmentId = request.DepartmentId;
             }
             else if (teacherUni != null)
             {
                 assignedRole = UserRole.Teacher;
                 matchedUniversity = teacherUni;
 
-                var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
-                if (department == null)
-                    throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
+                finalDepartmentId = null;
             }
             else
             {
@@ -315,15 +316,14 @@ namespace UniVibe.Application.Services
 
             var newUser = new User
             {
-                Username = request.Username,
+                Username = request.Username.ToLowerInvariant(),
                 Email = pendingUser.Email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
                 Title = request.Title,
-                DepartmentId = request.DepartmentId,
-                Grade = request.Grade,
+                DepartmentId = finalDepartmentId,
                 Role = assignedRole,
                 IsActive = true,
                 ProfilePictureUrl = $"https://ui-avatars.com/api/?name={request.FirstName}+{request.LastName}&background=random&color=fff",
@@ -346,6 +346,9 @@ namespace UniVibe.Application.Services
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
                 throw new UnauthorizedException(_localizer["Auth_SessionExpired"].Value);
+
+            if (!user.IsActive || user.IsDeleted)
+                throw new UnauthorizedException(_localizer["Auth_Suspended"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
