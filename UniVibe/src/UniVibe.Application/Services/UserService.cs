@@ -182,6 +182,7 @@ namespace UniVibe.Application.Services
 
             user.IsActive = false;
             user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
 
