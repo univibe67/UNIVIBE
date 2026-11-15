@@ -25,14 +25,14 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<UniversityLookupResponse>>.Success(result));
         }
 
-        [HttpGet("{universityId}/faculties")]
+        [HttpGet("{universityId:guid}/faculties")]
         public async Task<IActionResult> GetFacultiesByUniversityId(Guid universityId)
         {
             var result = await _universityService.GetFacultiesByUniversityIdAsync(universityId);
             return Ok(ApiResponse<List<FacultyLookupResponse>>.Success(result));
         }
 
-        [HttpGet("faculties/{facultyId}/departments")]
+        [HttpGet("faculties/{facultyId:guid}/departments")]
         public async Task<IActionResult> GetDepartments(Guid facultyId)
         {
             var result = await _universityService.GetDepartmentsByFacultyIdAsync(facultyId);

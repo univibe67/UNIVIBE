@@ -36,7 +36,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<FeedbackResponseDto>>.Success(feedbacks));
         }
 
-        [HttpPatch("{id}/resolution")]
+        [HttpPatch("{id:guid}/resolution")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Resolve(Guid id)
         {

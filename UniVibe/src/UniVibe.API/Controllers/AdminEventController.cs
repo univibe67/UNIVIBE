@@ -33,21 +33,21 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<EventListResponse>>.Success(events));
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetEventDetails(Guid id)
         {
             var eventDetails = await _adminEventService.GetEventDetailsByIdAsync(id);
             return Ok(ApiResponse<EventDetailResponse>.Success(eventDetails));
         }
 
-        [HttpPatch("{id}/approval")]
+        [HttpPatch("{id:guid}/approval")]
         public async Task<IActionResult> ApproveEvent(Guid id)
         {
             var message = await _adminEventService.ApproveEventAsync(id);
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPatch("{id}/rejection")]
+        [HttpPatch("{id:guid}/rejection")]
         public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest request)
         {
             var message = await _adminEventService.RejectEventAsync(id, request.Reason);

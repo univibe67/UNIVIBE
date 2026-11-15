@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Moq;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
@@ -33,6 +34,7 @@ namespace UniVibe.UnitTests.Services
         private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
 
         private readonly AuthService _authService;
+        private readonly Mock<ILogger<AuthService>> _loggerMock;
 
         public AuthServiceTests()
         {
@@ -50,6 +52,7 @@ namespace UniVibe.UnitTests.Services
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
             _registerInitValidator = new InlineValidator<RegisterInitRequest>();
             _registerCompleteValidator = new InlineValidator<RegisterCompleteRequest>();
+            _loggerMock = new Mock<ILogger<AuthService>>();
 
             _authService = new AuthService(
                 _pendingUserRepoMock.Object,        // 1. IPendingUserRepository
@@ -65,7 +68,8 @@ namespace UniVibe.UnitTests.Services
                 _registerCompleteValidator,         // 11. IValidator<RegisterCompleteRequest>
                 _httpContextAccessorMock.Object,    // 12. IHttpContextAccessor
                 _facultyRepositoryMock.Object,      // 13. IFacultyRepository
-                _universityRepositoryMock.Object    // 14. IUniversityRepository (YENİ)
+                _universityRepositoryMock.Object,
+                _loggerMock.Object                  // 14. ILogger<AuthService> (YENİ)
             );
         }
 
