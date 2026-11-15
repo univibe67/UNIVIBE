@@ -435,4 +435,55 @@
   <data name="Log_EventCreateEmailFailed" xml:space="preserve">
     <value>An error occurred while sending event creation email. EventId: {0}, UserId: {1}</value>
   </data>
+  <data name="Val_CurrentPasswordRequired" xml:space="preserve">
+    <value>Current password cannot be empty.</value>
+  </data>
+  <data name="Val_NewPasswordRequired" xml:space="preserve">
+    <value>New password cannot be empty.</value>
+  </data>
+  <data name="Auth_CurrentPasswordIncorrect" xml:space="preserve">
+    <value>Your current password is incorrect.</value>
+  </data>
+  <data name="Auth_NewPasswordSameAsOld" xml:space="preserve">
+    <value>Your new password cannot be the same as your current password.</value>
+  </data>
+  <data name="Res_PasswordChangedSuccessfully" xml:space="preserve">
+    <value>Şifreniz başarıyla değiştirildi.</value>
+  </data>
+  <data name="Log_AccountDeletionEmailFailed" xml:space="preserve">
+    <value>User account was deleted but the deletion notification email could not be sent. Email: {0}</value>
+  </data>
+  <data name="Event_OrganizerDeletedReason" xml:space="preserve">
+    <value>Organizatör hesabı silindiği için etkinlik iptal edildi.</value>
+  </data>
+  <data name="Event_OrganizerAdminDeletedReason" xml:space="preserve">
+    <value>Event cancelled because the organizer account was deleted by an administrator.</value>
+  </data>
+  <data name="Admin_CannotDeleteOwnAccount" xml:space="preserve">
+    <value>You cannot delete your own account.</value>
+  </data>
+  <data name="Admin_CannotSuspendOwnAccount" xml:space="preserve">
+    <value>You cannot suspend your own account.</value>
+  </data>
+  <data name="Admin_CannotChangeOwnRole" xml:space="preserve">
+    <value>You cannot change your own role.</value>
+  </data>
+  <data name="Admin_EventMustBePendingToApprove" xml:space="preserve">
+    <value>Only pending events can be approved.</value>
+  </data>
+  <data name="Admin_EventCannotApprovePast" xml:space="preserve">
+    <value>An event with a past date cannot be approved.</value>
+  </data>
+  <data name="Admin_EventCannotApproveCancelled" xml:space="preserve">
+    <value>A cancelled event cannot be approved.</value>
+  </data>
+  <data name="Val_ReasonMaxLength" xml:space="preserve">
+    <value>Cancellation reason cannot exceed 250 characters.</value>
+  </data>
+  <data name="Val_ReasonMinLength" xml:space="preserve">
+    <value>Cancellation reason must be at least 10 characters long.</value>
+  </data>
+  <data name="Val_ReasonNotEmpty" xml:space="preserve">
+    <value>Cancellation reason cannot be empty.</value>
+  </data>
 </root>
