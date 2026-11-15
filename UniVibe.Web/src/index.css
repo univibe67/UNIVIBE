@@ -100,8 +100,9 @@ button { cursor: pointer; }
 .bottom-nav > div { height: 100%; }
 .bottom-nav a { position: relative; color: #9aa5a4; }
 .bottom-nav a[aria-current="page"] { color: #1559ac; }
-.bottom-nav a:nth-child(2)::after { content: "+"; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; display: grid; place-items: center; transform: translate(-50%, -50%); border-radius: 14px; color: #fff; background: #ef3653; box-shadow: 0 7px 15px #ef365355; font-size: 27px; font-weight: 300; }
-.bottom-nav a:nth-child(2) svg, .bottom-nav a:nth-child(2) span { visibility: hidden; }
+.bottom-nav .bottom-nav-add { width: 45px; height: 45px; flex: 0 0 45px; margin: 0 12px; border: 4px solid #ef3653; border-radius: 14px; color: #ef3653; background: #fff; box-shadow: none; }
+.bottom-nav .bottom-nav-add.active { color: #fff; background: #ef3653; box-shadow: 0 7px 15px #ef365355; }
+.bottom-nav .bottom-nav-add span { display: none; }
 
 .event-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
 .event-card { overflow: hidden; border: 1px solid #e4e9e6; border-radius: 20px; background: #fff; box-shadow: 0 4px 12px #26352d0b; }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
@@ -36,11 +37,7 @@ export default function ForgotPassword() {
     } catch (error: any) {
       setMessage({
         type: "error",
-        text:
-          error?.response?.data?.message ||
-          error?.message ||
-          t("Forgot_ErrorMessage") ||
-          "E-posta gönderilirken bir hata oluştu.",
+        text: getErrorMessage(error) || t("Forgot_ErrorMessage") || "E-posta gönderilirken bir hata oluştu.",
       });
     } finally {
       setIsLoading(false);

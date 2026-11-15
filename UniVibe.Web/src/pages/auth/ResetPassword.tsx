@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { ResetSuccessView } from '../../components/ResetSuccessView';
+import { getErrorMessage } from '../../services/errorMessage';
 
 export default function ResetPassword() {
   const { t } = useTranslation();
@@ -51,7 +52,7 @@ export default function ResetPassword() {
 
       setIsSuccess(true);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || t('Reset_DefaultError') || 'Şifre sıfırlama başarısız oldu.';
+      const msg = getErrorMessage(err) || t('Reset_DefaultError') || 'Şifre sıfırlama başarısız oldu.';
       setErrorMessage(msg);
     } finally {
       setIsLoading(false);

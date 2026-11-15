@@ -7,25 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { tokenService } from "../../services/tokenService";
-
-const decodeToken = (token: string) => {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      window
-        .atob(base64)
-        .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-};
+import { getErrorMessage } from "../../services/errorMessage";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -65,36 +47,13 @@ export default function Login() {
       const refreshToken = response.refreshToken || response.data?.refreshToken;
       if (!token) throw new Error(t("Login_Error_NoToken"));
 
-      const decoded = decodeToken(token);
-      const userRole =
-        decoded?.role ||
-        decoded?.[
-          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-        ];
+      const userRole = tokenService.getRole(token);
+      if (!userRole) throw new Error(t("Login_Error_NoRole") || "Geçerli kullanıcı rolü alınamadı.");
 
-      const expectedRole = userType === "admin" ? "Admin" : "Student";
-      const roleKey = expectedRole === "Admin" ? "Role_Admin" : "Role_Student";
-
-      if (
-        !userRole ||
-        (Array.isArray(userRole)
-          ? !userRole.includes(expectedRole)
-          : userRole !== expectedRole)
-      ) {
-        throw new Error(
-          `${t("Login_Error_Unauthorized_Start")}${t(roleKey)}${t("Login_Error_Unauthorized_End")}`
-        );
-      }
       tokenService.saveTokens(token, refreshToken);
-      navigate(
-        userType === "admin" ? "/admin/dashboard" : "/student"
-      );
+      navigate("/");
     } catch (err: any) {
-      const errorMessage =
-        typeof err === "string"
-          ? err
-          : err?.response?.data?.message || err?.message || t("Login_Error_Default");
-      setError(errorMessage);
+      setError(getErrorMessage(err) || t("Login_Error_Default"));
     } finally {
       setIsLoading(false);
     }

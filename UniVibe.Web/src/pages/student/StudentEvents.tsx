@@ -8,6 +8,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
 import EventCard from "../../components/EventCard";
 
 interface EventItem {
@@ -160,7 +161,7 @@ export default function StudentEvents() {
       setIsCreateModalOpen(false);
       fetchData();
     } catch (error: any) {
-      setCreateError(error?.response?.data?.message || t("Student_CreateError") || "Etkinlik oluşturulamadı.");
+      setCreateError(getErrorMessage(error) || t("Student_CreateError") || "Etkinlik oluşturulamadı.");
     } finally {
       setIsCreating(false);
     }
@@ -184,7 +185,7 @@ export default function StudentEvents() {
         navigate("/student/home");
       }, 700);
     } catch (error: any) {
-      setCancelError(error?.response?.data?.message || t("Student_CancelError") || "İptal başarısız oldu.");
+      setCancelError(getErrorMessage(error) || t("Student_CancelError") || "İptal başarısız oldu.");
     } finally {
       setIsCancelling(false);
     }

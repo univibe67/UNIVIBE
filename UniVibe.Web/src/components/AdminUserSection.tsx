@@ -1,10 +1,12 @@
 import { CheckCircle, Ban, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatUserRole, normalizeRole } from "../utils/userRole";
 
 interface UserItem {
   id: string;
   firstName: string;
   lastName: string;
+  title?: string;
   email: string;
   role: string | number;
   isActive: boolean;
@@ -42,18 +44,8 @@ export default function AdminUserSection({
           const isDeleted = user.isDeleted === true || (user as any).IsDeleted === true;
           const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
 
-          const roleStr = String(user.role).toLowerCase();
-          const isAdmin = user.role === 3 || roleStr === "admin";
-          const isTeacher = user.role === 2 || roleStr === "teacher";
-          const isStudent = user.role === 1 || roleStr === "student";
-
-          const displayRole = isAdmin
-            ? t("Role_Admin")
-            : isTeacher
-              ? t("Role_Teacher")
-              : isStudent
-                ? t("Role_Student")
-                : roleStr;
+          const isAdmin = normalizeRole(user.role) === "Admin";
+          const displayRole = formatUserRole(user.role, t);
 
           return (
             <div
@@ -69,9 +61,12 @@ export default function AdminUserSection({
                     <p className="text-xs text-gray-500 mt-0.5 break-all">
                       {user.email}
                     </p>
+                    {user.title && (
+                      <p className="text-xs text-gray-400 mt-1">{user.title}</p>
+                    )}
                   </div>
                   <span
-                    className={`shrink-0 py-1 px-2.5 rounded-md text-[10px] sm:text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : isTeacher ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
+                    className={`shrink-0 py-1 px-2.5 rounded-md text-[10px] sm:text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}
                   >
                     {displayRole}
                   </span>
@@ -141,28 +136,19 @@ export default function AdminUserSection({
               const isDeleted = user.isDeleted === true || (user as any).IsDeleted === true;
               const isCurrentAdmin = safeAdminId && user.id.toLowerCase() === safeAdminId;
 
-              const roleStr = String(user.role).toLowerCase();
-              const isAdmin = user.role === 3 || roleStr === "admin";
-              const isTeacher = user.role === 2 || roleStr === "teacher";
-              const isStudent = user.role === 1 || roleStr === "student";
-
-              const displayRole = isAdmin
-                ? t("Role_Admin")
-                : isTeacher
-                  ? t("Role_Teacher")
-                  : isStudent
-                    ? t("Role_Student")
-                    : roleStr;
+              const isAdmin = normalizeRole(user.role) === "Admin";
+              const displayRole = formatUserRole(user.role, t);
 
               return (
                 <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-4 font-medium text-gray-800">
-                    {user.firstName} {user.lastName}
+                    <span className="block">{user.firstName} {user.lastName}</span>
+                    {user.title && <span className="text-xs font-normal text-gray-400">{user.title}</span>}
                   </td>
                   <td className="py-4 text-gray-600">{user.email}</td>
                   <td className="py-4 text-gray-600">
                     <span
-                      className={`py-1 px-2 rounded-md text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : isTeacher ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}
+                      className={`py-1 px-2 rounded-md text-xs font-medium ${isAdmin ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}
                     >
                       {displayRole}
                     </span>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
 
 export default function RegisterInitiate() {
   const { t } = useTranslation();
@@ -31,7 +32,7 @@ export default function RegisterInitiate() {
     } catch (error: any) {
       setMessage({
         type: "error",
-        text: error?.response?.data?.message || error?.message || t("Register_ErrorMessage"),
+        text: getErrorMessage(error) || t("Register_ErrorMessage"),
       });
     } finally {
       setIsLoading(false);
@@ -42,7 +43,7 @@ export default function RegisterInitiate() {
     <div className="auth-shell">
       <main className="auth-card auth-forgot-card">
         <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
-        <button type="button" className="auth-back" onClick={() => navigate("/")}>
+        <button type="button" className="auth-back" onClick={() => navigate("/login")}>
           <span aria-hidden="true">‹</span> {t("Register_BackToLogin")}
         </button>
         <div className="auth-forgot-heading">
