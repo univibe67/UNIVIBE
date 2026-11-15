@@ -15,7 +15,9 @@ import {
   Search,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { api } from "../services/api";
+import { adminApi } from "../services/adminApi";
+import { getErrorMessage } from "../services/errorMessage";
+import { formatCategoryName } from "../utils/categoryLabel";
 
 interface EventItem {
   id: string;
@@ -84,8 +86,8 @@ export default function AdminEventSection({
     setIsDetailModalOpen(true);
 
     try {
-      const response = (await api.get(`/AdminEvent/${eventItem.id}`)) as any;
-      const fetchedData = response.data || response;
+      const response = await adminApi.getEvent(eventItem.id);
+      const fetchedData = response;
 
       setSelectedEventDetail({
         ...fetchedData,
@@ -93,11 +95,11 @@ export default function AdminEventSection({
         rejectionReason:
           eventItem.rejectionReason || fetchedData.rejectionReason,
         cancellationReason:
-          eventItem.cancellationReason || fetchedData.cancellationReason || fetchedData.CancellationReason,
+          eventItem.cancellationReason || fetchedData.cancellationReason,
         status: eventItem.status ?? fetchedData.status,
       });
     } catch (error) {
-      console.error(error);
+      setRejectError(getErrorMessage(error));
     } finally {
       setDetailLoading(false);
     }
@@ -112,26 +114,18 @@ export default function AdminEventSection({
 
   const handleConfirmReject = async () => {
     if (!rejectReason || !rejectReason.trim()) {
-      setRejectError(
-        t("Admin_Reason_Required") || "Lütfen bir red nedeni giriniz.",
-      );
+      setRejectError(t("Admin_Reason_Required"));
       return;
     }
 
     setRejectError("");
     setIsRejecting(true);
     try {
-      await api.put(`/AdminEvent/reject/${eventToRejectId}`, {
-        reason: rejectReason,
-      });
+      await adminApi.rejectEvent(eventToRejectId!, rejectReason);
       setRejectModalOpen(false);
       window.location.reload();
     } catch (error: any) {
-      setRejectError(
-        error?.response?.data?.message ||
-          t("Admin_Error_Reject") ||
-          "İşlem sırasında bir hata oluştu.",
-      );
+      setRejectError(getErrorMessage(error) || t("Admin_Error_Reject"));
     } finally {
       setIsRejecting(false);
     }
@@ -196,10 +190,7 @@ export default function AdminEventSection({
               type="text"
               value={eventSearchTerm}
               onChange={(e) => setEventSearchTerm(e.target.value)}
-              placeholder={
-                t("Admin_SearchPlaceholder") ||
-                "Etkinlik veya organizatör ara..."
-              }
+              placeholder={t("Admin_SearchPlaceholder")}
               className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-gray-400 shadow-sm"
             />
           </div>
@@ -502,13 +493,12 @@ export default function AdminEventSection({
                     <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-gray-600">
                       <AlertTriangle size={16} />
                       <span>
-                        {t("Admin_Cancellation_Reason") || "İptal Nedeni"}
+                        {t("Admin_Cancellation_Reason")}
                       </span>
                     </div>
                     <p className="text-sm">
                       {selectedEventDetail.cancellationReason ||
-                        t("Admin_Event_Cancelled_Notice") ||
-                        "Bu etkinlik sahibi (kullanıcı) tarafından iptal edildi / silindi."}
+                        t("Admin_Event_Cancelled_Notice")}
                     </p>
                   </div>
                 ) : String(selectedEventDetail.status) === "3" ||
@@ -581,8 +571,9 @@ export default function AdminEventSection({
                     <Tag size={16} className="text-purple-500 shrink-0" />
                     <span>
                       <strong>{t("Admin_CategoryLabel")}:</strong>{" "}
-                      {selectedEventDetail.categoryName ||
-                        t("Admin_NoCategory")}
+                      {selectedEventDetail.categoryName
+                        ? formatCategoryName(selectedEventDetail.categoryName, t)
+                        : t("Admin_NoCategory")}
                     </span>
                   </div>
 

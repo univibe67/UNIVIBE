@@ -4,6 +4,8 @@ import { Search, MapPin, Calendar, User, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
+import { getErrorMessage } from "../../services/errorMessage";
+import { formatCategoryName } from "../../utils/categoryLabel";
 
 interface EventItem {
   id: string;
@@ -113,7 +115,7 @@ export default function StudentHome() {
         console.error("Etkinlik istatistikleri yüklenemedi:", statisticsError);
       }
     } catch (error) {
-      console.error("Etkinlikler veya etkinlik istatistikleri yüklenirken hata oluştu:", error);
+      console.error("Etkinlikler veya etkinlik istatistikleri yüklenirken hata oluştu:", getErrorMessage(error));
       setEvents([]);
       setEventCount(0);
     }
@@ -165,14 +167,9 @@ export default function StudentHome() {
       fetchEventsAndCategories();
       setIsDetailModalOpen(false);
     } catch (error: any) {
-      const errorKey = typeof error === "string" ? error : "";
       showNotification(
         "error",
-        errorKey
-          ? t(errorKey, { defaultValue: errorKey })
-          : error?.response?.data?.message ||
-            t("Student_JoinError") ||
-            "Katılım sırasında bir hata oluştu.",
+        getErrorMessage(error) || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.",
       );
     }
   };
@@ -325,7 +322,7 @@ export default function StudentHome() {
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <Tag size={16} className="text-green-500" />
-                      <span className="text-xs font-semibold truncate">{selectedEventDetail.categoryName || t("Student_GeneralCategory")}</span>
+                      <span className="text-xs font-semibold truncate">{formatCategoryName(selectedEventDetail.categoryName, t)}</span>
                     </div>
                   </div>
                   <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">

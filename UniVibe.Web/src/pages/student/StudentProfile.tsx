@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import {
   User,
@@ -12,10 +12,14 @@ import {
   Loader2,
   CheckCircle,
   LockKeyhole,
+  ShieldCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
+import { getErrorMessage } from "../../services/errorMessage";
+import { normalizeRole } from "../../utils/userRole";
 
 function LanguageSelector() {
   const { i18n } = useTranslation();
@@ -60,6 +64,8 @@ interface UserProfile {
   facultyName?: string;
   departmentName?: string;
   profilePictureUrl?: string;
+  role?: string | number;
+  title?: string;
 }
 
 interface ProfileEvent {
@@ -77,10 +83,13 @@ interface ProfileEvent {
 
 export default function StudentProfile() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isPhotoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
@@ -220,16 +229,7 @@ export default function StudentProfile() {
       setEditModalOpen(false);
       fetchProfile();
     } catch (error: any) {
-      const errorMsg =
-        typeof error === "string"
-          ? error
-          : error?.response?.data?.errors?.[0] ||
-            error?.response?.data?.message ||
-            error?.response?.data?.title ||
-            error?.message ||
-            "İşlem sırasında bir hata oluştu.";
-
-      setUpdateError(typeof errorMsg === "string" ? errorMsg : t("Student_UpdateError"));
+      setUpdateError(getErrorMessage(error) || t("Student_UpdateError"));
     } finally {
       setIsUpdating(false);
     }
@@ -262,10 +262,10 @@ export default function StudentProfile() {
           localStorage.clear();
           window.location.href = "/";
         })
-        .catch(() => {
+        .catch((error) => {
           showNotification(
             "error",
-            t("Student_DeleteAccountError"),
+            getErrorMessage(error) || t("Student_DeleteAccountError"),
           );
         });
     }
@@ -286,11 +286,7 @@ export default function StudentProfile() {
       setPasswordModalOpen(false);
       showNotification("success", t("Student_PasswordChanged"));
     } catch (error: any) {
-      setPasswordError(
-        typeof error === "string"
-          ? error
-          : error?.response?.data?.message || error?.message || t("Student_PasswordChangeError"),
-      );
+      setPasswordError(getErrorMessage(error) || t("Student_PasswordChangeError"));
     } finally {
       setIsChangingPassword(false);
     }
@@ -333,18 +329,32 @@ export default function StudentProfile() {
 
       <div className="profile-modern">
         <section className="profile-hero">
-          <label className="profile-hero-avatar">
+          <div className="profile-hero-avatar">
             {uploading ? (
               <Loader2 className="animate-spin" size={28} />
             ) : profile?.profilePictureUrl ? (
-              <img src={profile.profilePictureUrl} alt={`${profile.firstName} ${profile.lastName}`} />
+              <button
+                type="button"
+                className="h-full w-full rounded-full"
+                onClick={() => setPhotoViewerOpen(true)}
+                aria-label={t("Student_ViewProfilePhoto")}
+              >
+                <img src={profile.profilePictureUrl} alt={`${profile.firstName} ${profile.lastName}`} />
+              </button>
             ) : (
               <span>{profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}</span>
             )}
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-            <span className="profile-camera"><Camera size={15} /></span>
-          </label>
-          <div className="profile-hero-eyebrow">{profile?.departmentName || t("Student_Department")}</div>
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handleImageChange} />
+            <button
+              type="button"
+              className="profile-camera"
+              onClick={() => photoInputRef.current?.click()}
+              aria-label={t("Student_ChangeProfilePhoto")}
+            >
+              <Camera size={15} />
+            </button>
+          </div>
+          <div className="profile-hero-eyebrow">{profile?.title || profile?.departmentName || t("Student_Department")}</div>
           <h1>{profile?.firstName} {profile?.lastName}</h1>
           <p>@{profile?.username} · {profile?.universityName || "-"}</p>
           <p className="profile-bio">{profile?.bio || t("Student_NoBio")}</p>
@@ -364,6 +374,31 @@ export default function StudentProfile() {
             <Edit3 size={15} /> {t("Student_EditProfile")}
           </button>
         </section>
+
+        {isPhotoViewerOpen && profile?.profilePictureUrl && (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("Student_ViewProfilePhoto")}
+            onClick={() => setPhotoViewerOpen(false)}
+          >
+            <button
+              type="button"
+              className="absolute right-5 top-5 rounded-full bg-white/90 p-2 text-gray-700 shadow-lg"
+              onClick={() => setPhotoViewerOpen(false)}
+              aria-label={t("Admin_Close")}
+            >
+              <X size={22} />
+            </button>
+            <img
+              src={profile.profilePictureUrl}
+              alt={`${profile.firstName} ${profile.lastName}`}
+              className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        )}
 
         <section className="profile-tabs">
           <button type="button" className={activeTab === "joined" ? "active" : ""} onClick={() => setActiveTab("joined")}>
@@ -393,6 +428,9 @@ export default function StudentProfile() {
           <h2>{t("Student_AccountSettings")}</h2>
           <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> {t("Student_EditProfile")} <span>›</span></button>
           <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> {t("Student_ChangePassword")} <span>›</span></button>
+          {normalizeRole(profile?.role ?? "") === "Admin" && (
+            <button type="button" onClick={() => navigate("/admin")}><ShieldCheck size={18} /> {t("Admin_NavigationOverview")} <span>›</span></button>
+          )}
           <button type="button" onClick={() => setLogoutModalOpen(true)}><LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"} <span>›</span></button>
           <button type="button" className="danger" onClick={handleDeleteAccount}><Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"} <span>›</span></button>
         </section>
