@@ -13,43 +13,53 @@ namespace UniVibe.Infrastructure.Repositories
         {
             return await _context.Users
                 .Include(u => u.Department)
-                .ThenInclude(d => d.Faculty)
-                .ThenInclude(f => f.University)
+                    .ThenInclude(d => d.Faculty)
+                        .ThenInclude(f => f.University)
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         }
+
         public async Task<User?> GetUserWithDetailsByIdAsync(Guid userId)
         {
             return await _context.Users
                 .Include(u => u.Department)
-                .ThenInclude(d => d.Faculty)
-                .ThenInclude(f => f.University)
+                    .ThenInclude(d => d.Faculty)
+                        .ThenInclude(f => f.University)
                 .FirstOrDefaultAsync(u => u.Id == userId);
         }
+
         public async Task<List<User>> GetAllIncludingDeletedAsync()
         {
             return await _context.Set<User>()
+                .Include(u => u.Department)
+                    .ThenInclude(d => d.Faculty)
+                        .ThenInclude(f => f.University)
                 .IgnoreQueryFilters()
                 .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
         }
+
         public async Task<User?> GetByIdIncludingDeletedAsync(Guid id)
         {
             return await _context.Set<User>()
+                .Include(u => u.Department)
+                    .ThenInclude(d => d.Faculty)
+                        .ThenInclude(f => f.University)
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
+
         public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
         {
             return await _context.Set<User>()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
         }
+
         public async Task<bool> IsUsernameTakenAsync(string username)
         {
             return await _context.Users
                 .IgnoreQueryFilters()
                 .AnyAsync(u => u.Username.ToLower() == username.ToLower());
         }
-
     }
 }
