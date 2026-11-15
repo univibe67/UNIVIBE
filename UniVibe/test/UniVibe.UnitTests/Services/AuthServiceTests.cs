@@ -23,11 +23,11 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IPasswordHasher> _passwordHasherMock;
         private readonly Mock<ITokenService> _tokenServiceMock;
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+        private readonly Mock<IFacultyRepository> _facultyRepositoryMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
         private readonly Mock<IConfiguration> _configurationMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
 
-        // Validator'lar için InlineValidator kullanarak NullReferenceException'ı engelliyoruz
         private readonly IValidator<RegisterInitRequest> _registerInitValidator;
         private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
 
@@ -42,6 +42,7 @@ namespace UniVibe.UnitTests.Services
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _tokenServiceMock = new Mock<ITokenService>();
             _unitOfWorkMock = new Mock<IUnitOfWork>();
+            _facultyRepositoryMock = new Mock<IFacultyRepository>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
             _configurationMock = new Mock<IConfiguration>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
@@ -65,9 +66,6 @@ namespace UniVibe.UnitTests.Services
             );
         }
 
-        // ==========================================
-        // 1. TESTS FOR LoginAsync
-        // ==========================================
         [Fact]
         public async Task LoginAsync_WhenUserNotFound_ShouldThrowUnauthorizedException()
         {
@@ -95,7 +93,7 @@ namespace UniVibe.UnitTests.Services
                 .ReturnsAsync(user);
 
             _passwordHasherMock.Setup(p => p.Verify(request.Password, user.PasswordHash))
-                .Returns(false); // Şifre yanlış
+                .Returns(false); 
 
             _localizerMock.Setup(l => l["Auth_InvalidCredentials"])
                 .Returns(new LocalizedString("Auth_InvalidCredentials", "Geçersiz kimlik bilgileri."));
@@ -105,10 +103,6 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<UnauthorizedException>()
                 .WithMessage("Geçersiz kimlik bilgileri.");
         }
-
-        // ==========================================
-        // 2. TESTS FOR VerifyTokenAsync
-        // ==========================================
         [Fact]
         public async Task VerifyTokenAsync_WhenTokenInvalidOrExpired_ShouldReturnFalse()
         {
@@ -129,7 +123,7 @@ namespace UniVibe.UnitTests.Services
             {
                 Token = token,
                 IsUsed = false,
-                ExpiryDate = DateTime.UtcNow.AddMinutes(10) // Süresi geçmemiş
+                ExpiryDate = DateTime.UtcNow.AddMinutes(10) 
             };
 
             _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>()))
@@ -139,10 +133,6 @@ namespace UniVibe.UnitTests.Services
 
             result.Should().BeTrue();
         }
-
-        // ==========================================
-        // 3. TESTS FOR ResetPasswordAsync
-        // ==========================================
         [Fact]
         public async Task ResetPasswordAsync_WhenTokenIsEmpty_ShouldThrowUnauthorizedException()
         {
@@ -157,7 +147,7 @@ namespace UniVibe.UnitTests.Services
                 .WithMessage("Geçersiz veya süresi dolmuş token.");
         }
 
-        // --- Helper setup for PendingUser null checks ---
+
         private void _pendingUserRepositoryMockSetupForNullToken(string token)
         {
             _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>()))
