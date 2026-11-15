@@ -27,14 +27,14 @@ export function useRegistrationData(t: (key: string) => string) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    api.get("/University")
+    api.get("/universities")
       .then((res: any) => setUniversities(res.data || res))
       .catch(() => setUniversities([]));
   }, []);
 
   useEffect(() => {
     if (selectedUni) {
-      api.get(`/University/${selectedUni.id}/faculties`)
+      api.get(`/universities/${selectedUni.id}/faculties`)
         .then((res: any) => setFaculties(res.data || res))
         .catch(() => setFaculties([]));
     } else {
@@ -44,7 +44,7 @@ export function useRegistrationData(t: (key: string) => string) {
 
   useEffect(() => {
     if (selectedFac) {
-      api.get(`/University/faculties/${selectedFac.id}/departments`)
+      api.get(`/universities/faculties/${selectedFac.id}/departments`)
         .then((res: any) => setDepartments(res.data || res))
         .catch(() => setDepartments([]));
     } else {
