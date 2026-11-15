@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import { tokenService } from "../../services/tokenService";
 import { getErrorMessage } from "../../services/errorMessage";
+import { normalizeRole } from "../../utils/userRole";
 import { useTranslation } from "react-i18next";
 
 export default function AdminLogin() {
@@ -13,6 +14,13 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const token = tokenService.getAccessToken();
+    if (token && tokenService.getRole(token) === "Admin") {
+      navigate("/admin", { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -25,17 +33,18 @@ export default function AdminLogin() {
 
     setIsLoading(true);
     try {
-      const response = (await api.post("/Auth/login", { email, password })) as {
-        token?: string;
-        refreshToken?: string;
-      };
-      const token = response.token;
-      const refreshToken = response.refreshToken;
+      const response = (await api.post("/Auth/login", { email, password })) as any;
+      const token = response.token || response.data?.token;
+      const refreshToken = response.refreshToken || response.data?.refreshToken;
       if (!token || !refreshToken) {
         throw new Error(t("Admin_LoginNoToken"));
       }
 
-      const isAdmin = tokenService.getRole(token) === "Admin";
+      const backendRole = response.role || response.data?.role;
+      const role =
+        tokenService.getRole(token) ||
+        (backendRole ? normalizeRole(backendRole) : null);
+      const isAdmin = role === "Admin";
 
       if (!isAdmin) {
         tokenService.clearTokens();
@@ -43,7 +52,7 @@ export default function AdminLogin() {
         return;
       }
 
-      tokenService.saveTokens(token, refreshToken);
+      tokenService.saveTokens(token, refreshToken, "Admin");
       navigate("/admin", { replace: true });
     } catch (loginError) {
       tokenService.clearTokens();
