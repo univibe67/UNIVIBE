@@ -24,6 +24,7 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
         private readonly Mock<IValidator<UpdateUserProfileRequest>> _updateProfileValidatorMock;
+        private readonly Mock<IValidator<ChangePasswordRequest>> _changePasswordValidatorMock; // 📌 1. Mock eklendi
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IPasswordHasher> _passwordHasherMock;
         private readonly Mock<ILogger<UserService>> _loggerMock;
@@ -32,7 +33,7 @@ namespace UniVibe.UnitTests.Services
 
         public UserServiceTests()
         {
-            // 1. UserService'in constructor'ındaki 10 bağımlılığın tamamını Moq ile taklit ediyoruz
+            // 1. Bağımlılıkların tamamını Moq ile taklit ediyoruz
             _userRepoMock = new Mock<IUserRepository>();
             _eventRepoMock = new Mock<IEventRepository>();
             _imageServiceMock = new Mock<IImageService>();
@@ -40,11 +41,13 @@ namespace UniVibe.UnitTests.Services
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
             _updateProfileValidatorMock = new Mock<IValidator<UpdateUserProfileRequest>>();
+            _changePasswordValidatorMock = new Mock<IValidator<ChangePasswordRequest>>(); // 📌 2. New'lendi
             _emailServiceMock = new Mock<IEmailService>();
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _loggerMock = new Mock<ILogger<UserService>>();
 
-            // 2. Servisimizi bu sahte bağımlılıklarla ayağa kaldırıyoruz
+            // 2. Servisimizi bu sahte bağımlılıklarla ayağa kaldırıyoruz 
+            // (UserService'in constructor sıralamasına birebir dikkat edildi)
             _userService = new UserService(
                 _userRepoMock.Object,
                 _imageServiceMock.Object,
@@ -55,7 +58,8 @@ namespace UniVibe.UnitTests.Services
                 _emailServiceMock.Object,
                 _passwordHasherMock.Object,
                 _eventRepoMock.Object,
-                _loggerMock.Object
+                _loggerMock.Object,
+                _changePasswordValidatorMock.Object // 📌 3. Constructor'a geçirildi
             );
         }
 
