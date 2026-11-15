@@ -118,10 +118,11 @@ namespace UniVibe.Application.Services
 
             var joinedEventIdSet = joinedEventIds.ToHashSet();
 
+            var itemDict = items.ToDictionary(i => i.Id);
+
             foreach (var response in eventDetailResponses)
             {
-                var original = items.FirstOrDefault(i => i.Id == response.Id);
-                if (original != null)
+                if (itemDict.TryGetValue(response.Id, out var original))
                 {
                     response.IsCreator = (original.UserId == currentUserId);
                     response.IsJoined = joinedEventIdSet.Contains(original.Id);

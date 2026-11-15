@@ -29,10 +29,7 @@ namespace UniVibe.API
             {
                 options.AddPolicy("LoginLimit", context =>
                 {
-                    var forwardedHeader = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-                    var ip = !string.IsNullOrEmpty(forwardedHeader)
-                        ? forwardedHeader.Split(',')[0].Trim()
-                        : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {
@@ -45,10 +42,7 @@ namespace UniVibe.API
 
                 options.AddPolicy("StrictAuthLimit", context =>
                 {
-                    var forwardedHeader = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-                    var ip = !string.IsNullOrEmpty(forwardedHeader)
-                        ? forwardedHeader.Split(',')[0].Trim()
-                        : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {

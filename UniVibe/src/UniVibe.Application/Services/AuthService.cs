@@ -131,10 +131,6 @@ namespace UniVibe.Application.Services
                     }
                     else
                     {
-                        string damga = Guid.NewGuid().ToString().Substring(0, 8);
-
-                        existingUser.Email = $"deleted_{damga}@univibe.com";
-                        existingUser.Username = $"deleted_user_{damga}";
                         existingUser.FirstName = "Silinmiş";
                         existingUser.LastName = "Kullanıcı";
                         existingUser.Bio = null;
@@ -149,6 +145,8 @@ namespace UniVibe.Application.Services
             {
                 _pendingUserRepository.Delete(existingPending);
             }
+
+            // ... kodun kalanı aynen devam eder ...
 
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
