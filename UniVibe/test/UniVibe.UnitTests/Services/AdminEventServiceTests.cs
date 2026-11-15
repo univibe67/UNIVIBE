@@ -125,14 +125,15 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task ApproveEventAsync_WhenEventIsCancelled_ShouldThrowBadRequestException()
         {
-            // Arrange
             var eventId = Guid.NewGuid();
             var cancelledEvent = new Event { Id = eventId, Status = EventStatus.Cancelled, IsDeleted = false };
 
             _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
                 .ReturnsAsync(cancelledEvent);
 
-            // Act & Assert
+            _localizerMock.Setup(l => l["Admin_EventCannotApproveCancelled"])
+                .Returns(new LocalizedString("Admin_EventCannotApproveCancelled", "İptal edilmiş bir etkinlik onaylanamaz."));
+
             Func<Task> act = async () => await _adminEventService.ApproveEventAsync(eventId);
 
             await act.Should().ThrowAsync<BadRequestException>()
@@ -142,20 +143,21 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task ApproveEventAsync_WhenEventDateIsInPast_ShouldThrowBadRequestException()
         {
-            // Arrange
             var eventId = Guid.NewGuid();
             var pastEvent = new Event
             {
                 Id = eventId,
                 Status = EventStatus.Pending,
-                EventDate = DateTime.UtcNow.AddDays(-1), // Geçmiş tarih
+                EventDate = DateTime.UtcNow.AddDays(-1),
                 IsDeleted = false
             };
 
             _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
                 .ReturnsAsync(pastEvent);
 
-            // Act & Assert
+            _localizerMock.Setup(l => l["Admin_EventCannotApprovePast"])
+                .Returns(new LocalizedString("Admin_EventCannotApprovePast", "Tarihi geçmiş bir etkinlik onaylanamaz."));
+
             Func<Task> act = async () => await _adminEventService.ApproveEventAsync(eventId);
 
             await act.Should().ThrowAsync<BadRequestException>()

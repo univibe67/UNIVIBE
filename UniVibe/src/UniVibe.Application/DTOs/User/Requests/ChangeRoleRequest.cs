@@ -4,6 +4,6 @@ namespace UniVibe.Application.DTOs.User.Requests
 {
     public class ChangeRoleRequest
     {
-        public UserRole NewRole { get; set; }
+        public required UserRole NewRole { get; set; }
     }
 }
