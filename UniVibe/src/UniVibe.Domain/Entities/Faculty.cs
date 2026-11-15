@@ -3,6 +3,7 @@
     public sealed class Faculty : BaseEntity
     {
         public string Name { get; set; } = string.Empty;
+        public string EmailSubDomain { get; set; } = string.Empty;
 
         public Guid UniversityId { get; set; }
         public University University { get; set; } = null!;

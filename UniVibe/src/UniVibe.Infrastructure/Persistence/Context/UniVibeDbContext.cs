@@ -64,7 +64,8 @@ namespace UniVibe.Infrastructure.Persistence.Context
             modelBuilder.Entity<University>(entity =>
             {
                 entity.Property(u => u.Name).HasMaxLength(150).IsRequired();
-                entity.Property(u => u.EmailDomain).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.AcademicEmailDomain).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.StudentEmailDomain).HasMaxLength(50).IsRequired();
             });
 
             modelBuilder.Entity<Faculty>(entity =>
