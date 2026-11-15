@@ -19,6 +19,7 @@ namespace UniVibe.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IDepartmentRepository _departmentRepository;
         private readonly IFacultyRepository _facultyRepository;
+        private readonly IUniversityRepository _universityRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
@@ -42,7 +43,8 @@ namespace UniVibe.Application.Services
             IValidator<RegisterInitRequest> registerInitValidator,
             IValidator<RegisterCompleteRequest> registerCompleteValidator,
             IHttpContextAccessor httpContextAccessor,
-            IFacultyRepository facultyRepository)
+            IFacultyRepository facultyRepository,
+            IUniversityRepository universityRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -57,6 +59,7 @@ namespace UniVibe.Application.Services
             _registerCompleteValidator = registerCompleteValidator;
             _httpContextAccessor = httpContextAccessor;
             _facultyRepository = facultyRepository;
+            _universityRepository = universityRepository;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -235,21 +238,30 @@ namespace UniVibe.Application.Services
                 throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 
             var email = pendingUser.Email.ToLowerInvariant();
-            var assignedRole = UserRole.Student;
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+                throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
+
+            var emailDomain = parts[1];
+
+            UserRole assignedRole;
+            University? matchedUniversity = null;
             string facultyCode = string.Empty;
 
-            if (email.EndsWith(".karaelmas.edu.tr"))
+            var universities = await _universityRepository.GetAllAsync();
+
+            var studentUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.StudentEmailDomain) && emailDomain.EndsWith(u.StudentEmailDomain, StringComparison.OrdinalIgnoreCase));
+            var teacherUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.AcademicEmailDomain) && emailDomain.EndsWith(u.AcademicEmailDomain, StringComparison.OrdinalIgnoreCase));
+
+            if (studentUni != null)
             {
                 assignedRole = UserRole.Student;
+                matchedUniversity = studentUni;
 
-                var parts = email.Split('@');
-                if (parts.Length == 2)
+                var domainParts = emailDomain.Split('.');
+                if (domainParts.Length >= 3)
                 {
-                    var domainParts = parts[1].Split('.');
-                    if (domainParts.Length >= 3)
-                    {
-                        facultyCode = domainParts[0];
-                    }
+                    facultyCode = domainParts[0];
                 }
 
                 if (string.IsNullOrEmpty(facultyCode))
@@ -272,9 +284,10 @@ namespace UniVibe.Application.Services
                     throw new BadRequestException(_localizer["Auth_DepartmentFacultyMismatch"].Value);
                 }
             }
-            else if (email.EndsWith("beun.edu.tr"))
+            else if (teacherUni != null)
             {
                 assignedRole = UserRole.Teacher;
+                matchedUniversity = teacherUni;
 
                 var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
                 if (department == null)
