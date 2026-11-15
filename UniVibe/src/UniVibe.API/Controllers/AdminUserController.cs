@@ -26,7 +26,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<PaginatedResult<UserListResponse>>.Success(pagedUsers));
         }
 
-        [HttpPatch("{id}/suspension")]
+        [HttpPatch("{id:guid}/suspension")]
         public async Task<IActionResult> SuspendUser(Guid id)
         {
             var currentAdminId = User.GetUserId();
@@ -34,14 +34,14 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPatch("{id}/activation")]
+        [HttpPatch("{id:guid}/activation")]
         public async Task<IActionResult> ActivateUser(Guid id)
         {
             var message = await _adminUserService.ActivateUserAsync(id);
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             var currentAdminId = User.GetUserId();
@@ -49,7 +49,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPatch("{id}/role")]
+        [HttpPatch("{id:guid}/role")]
         public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest request)
         {
             var currentAdminId = User.GetUserId();
