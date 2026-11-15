@@ -389,16 +389,21 @@ namespace UniVibe.Application.Services
                 throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
             }
 
-            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-            user.PasswordResetToken = null;
-            user.ResetTokenExpires = null;
-
             if (user.IsDeleted)
             {
+                if (!user.DeletedAt.HasValue || (DateTime.UtcNow - user.DeletedAt.Value).TotalDays >= 15)
+                {
+                    throw new BadRequestException(_localizer["Auth_DeletedTooLong"].Value);
+                }
+
                 user.IsDeleted = false;
                 user.IsActive = true;
                 user.DeletedAt = null;
             }
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            user.PasswordResetToken = null;
+            user.ResetTokenExpires = null;
 
             await _unitOfWork.SaveChangesAsync();
 
