@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Domain.Enums;
@@ -13,15 +14,18 @@ namespace UniVibe.Infrastructure.Services
         private readonly UniVibeDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly ILogger<EventBackgroundService> _logger;
 
         public EventBackgroundService(
             UniVibeDbContext context,
             IEmailService emailService,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            ILogger<EventBackgroundService> logger)
         {
             _context = context;
             _emailService = emailService;
             _localizer = localizer;
+            _logger = logger;
         }
 
         public async Task CheckAndUpdateCompletedEventsAsync()
@@ -32,9 +36,11 @@ namespace UniVibe.Infrastructure.Services
 
             var utcNow = DateTime.UtcNow;
 
+            var completionThreshold = utcNow.AddHours(-3);
+
             var expiredEvents = await _context.Events
                 .Include(e => e.User)
-                .Where(e => e.EventDate < utcNow && e.Status == EventStatus.Approved)
+                .Where(e => e.EventDate < completionThreshold && e.Status == EventStatus.Approved)
                 .ToListAsync();
 
             foreach (var ev in expiredEvents)
@@ -44,53 +50,81 @@ namespace UniVibe.Infrastructure.Services
 
                 if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
                 {
-                    var subject = _localizer["EventCompletedSubject"].Value;
-                    var body = string.Format(_localizer["EventCompletedBody"].Value, ev.User.FirstName, ev.Title);
+                    try
+                    {
+                        var subject = _localizer["EventCompletedSubject"].Value;
+                        var body = string.Format(_localizer["EventCompletedBody"].Value, ev.User.FirstName, ev.Title);
 
-                    await _emailService.SendEmailAsync(ev.User.Email, subject, body);
+                        await _emailService.SendEmailAsync(ev.User.Email, subject, body);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Etkinlik tamamlanma e-postası gönderilemedi. EventId: {EventId}", ev.Id);
+                    }
                 }
             }
 
             var oneHourLater = utcNow.AddHours(1);
-            var windowStart = oneHourLater.AddMinutes(-5);
-            var windowEnd = oneHourLater.AddMinutes(5);
+            var windowStart = oneHourLater.AddMinutes(-7.5);
+            var windowEnd = oneHourLater.AddMinutes(7.5);
 
             var upcomingEvents = await _context.Events
                 .Include(e => e.User)
                 .Include(e => e.Attendees)
                     .ThenInclude(ea => ea.User)
-                .Where(e => e.EventDate >= windowStart && e.EventDate <= windowEnd && e.Status == EventStatus.Approved)
+                .Where(e => e.EventDate <= oneHourLater &&
+                            e.EventDate > utcNow &&
+                            e.Status == EventStatus.Approved &&
+                            !e.IsReminderSent)
                 .ToListAsync();
 
-            var turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+            TimeZoneInfo turkeyTimeZone;
+            try
+            {
+                turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul");
+            }
 
             foreach (var ev in upcomingEvents)
             {
-                var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(ev.EventDate, turkeyTimeZone);
-                var formattedTime = localEventTime.ToString("HH:mm");
-                var remainingMinutes = (int)Math.Round((ev.EventDate - utcNow).TotalMinutes);
-
-                if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
+                try
                 {
-                    var subject = string.Format(_localizer["OrganizerReminderSubject"].Value, ev.Title, remainingMinutes);
-                    var body = string.Format(_localizer["OrganizerReminderBody"].Value, ev.User.FirstName, ev.Title, formattedTime, remainingMinutes);
+                    var utcDate = DateTime.SpecifyKind(ev.EventDate, DateTimeKind.Utc);
+                    var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, turkeyTimeZone);
+                    var formattedTime = localEventTime.ToString("HH:mm");
+                    var remainingMinutes = (int)Math.Round((ev.EventDate - utcNow).TotalMinutes);
 
-                    await _emailService.SendEmailAsync(ev.User.Email, subject, body);
-                }
-
-                if (ev.Attendees != null)
-                {
-                    foreach (var attendeeRelation in ev.Attendees)
+                    if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
                     {
-                        var attendee = attendeeRelation.User;
-                        if (attendee != null && !string.IsNullOrEmpty(attendee.Email))
-                        {
-                            var subject = string.Format(_localizer["AttendeeReminderSubject"].Value, remainingMinutes);
-                            var body = string.Format(_localizer["AttendeeReminderBody"].Value, attendee.FirstName, ev.Title, formattedTime, remainingMinutes);
+                        var subject = string.Format(_localizer["OrganizerReminderSubject"].Value, ev.Title, remainingMinutes);
+                        var body = string.Format(_localizer["OrganizerReminderBody"].Value, ev.User.FirstName, ev.Title, formattedTime, remainingMinutes);
 
-                            await _emailService.SendEmailAsync(attendee.Email, subject, body);
+                        await _emailService.SendEmailAsync(ev.User.Email, subject, body);
+                    }
+
+                    if (ev.Attendees != null)
+                    {
+                        foreach (var attendeeRelation in ev.Attendees)
+                        {
+                            var attendee = attendeeRelation.User;
+                            if (attendee != null && !string.IsNullOrEmpty(attendee.Email))
+                            {
+                                var subject = string.Format(_localizer["AttendeeReminderSubject"].Value, remainingMinutes);
+                                var body = string.Format(_localizer["AttendeeReminderBody"].Value, attendee.FirstName, ev.Title, formattedTime, remainingMinutes);
+
+                                await _emailService.SendEmailAsync(attendee.Email, subject, body);
+                            }
                         }
                     }
+
+                    ev.IsReminderSent = true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Etkinlik hatırlatması gönderilirken hata oluştu. EventId: {EventId}", ev.Id);
                 }
             }
 

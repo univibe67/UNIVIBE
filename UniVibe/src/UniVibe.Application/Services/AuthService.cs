@@ -18,6 +18,8 @@ namespace UniVibe.Application.Services
         private readonly IPendingUserRepository _pendingUserRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepartmentRepository _departmentRepository;
+        private readonly IFacultyRepository _facultyRepository;
+        private readonly IUniversityRepository _universityRepository;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
@@ -40,7 +42,9 @@ namespace UniVibe.Application.Services
             IConfiguration configuration,
             IValidator<RegisterInitRequest> registerInitValidator,
             IValidator<RegisterCompleteRequest> registerCompleteValidator,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IFacultyRepository facultyRepository,
+            IUniversityRepository universityRepository)
         {
             _pendingUserRepository = pendingUserRepository;
             _emailService = emailService;
@@ -54,6 +58,8 @@ namespace UniVibe.Application.Services
             _registerInitValidator = registerInitValidator;
             _registerCompleteValidator = registerCompleteValidator;
             _httpContextAccessor = httpContextAccessor;
+            _facultyRepository = facultyRepository;
+            _universityRepository = universityRepository;
         }
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -125,10 +131,6 @@ namespace UniVibe.Application.Services
                     }
                     else
                     {
-                        string damga = Guid.NewGuid().ToString().Substring(0, 8);
-
-                        existingUser.Email = $"deleted_{damga}@univibe.com";
-                        existingUser.Username = $"deleted_user_{damga}";
                         existingUser.FirstName = "Silinmiş";
                         existingUser.LastName = "Kullanıcı";
                         existingUser.Bio = null;
@@ -143,6 +145,8 @@ namespace UniVibe.Application.Services
             {
                 _pendingUserRepository.Delete(existingPending);
             }
+
+            // ... kodun kalanı aynen devam eder ...
 
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
@@ -185,7 +189,7 @@ namespace UniVibe.Application.Services
                 }
                 else
                 {
-                    linkForEmail = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}&redirectUrl={Uri.EscapeDataString(targetUrl)}";
+                    linkForEmail = $"{apiBaseUrl}/api/auth/verification/redirect?token={token}&redirectUrl={Uri.EscapeDataString(targetUrl)}";
                 }
 
                 string subject = _localizer["Auth_RegisterEmailSubject"].Value;
@@ -231,34 +235,68 @@ namespace UniVibe.Application.Services
             if (isUsernameTaken)
                 throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 
-            var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
-            if (department == null)
-                throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
+            var email = pendingUser.Email.ToLowerInvariant();
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+                throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
 
-            // --- ŞU ANLIK ROL AYRIMINI KAPATIYORUZ, HERKES STUDENT (ÖĞRENCİ) OLUŞTURULUYOR ---
-            var assignedRole = UserRole.Student;
+            var emailDomain = parts[1];
 
-            /* 
-            // İleride burayı açmak istediğinde kullanabilmen için yorumda kalıyor kankam:
-            var emailLower = pendingUser.Email.ToLowerInvariant();
-            if (emailLower.Contains("ogr.") || emailLower.Contains("ogrenci"))
+            UserRole assignedRole;
+            University? matchedUniversity = null;
+            string facultyCode = string.Empty;
+            Guid? finalDepartmentId = null;
+
+            var universities = await _universityRepository.GetAllAsync();
+
+            var studentUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.StudentEmailDomain) && emailDomain.EndsWith(u.StudentEmailDomain, StringComparison.OrdinalIgnoreCase));
+            var teacherUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.AcademicEmailDomain) && emailDomain.EndsWith(u.AcademicEmailDomain, StringComparison.OrdinalIgnoreCase));
+
+            if (studentUni != null)
             {
                 assignedRole = UserRole.Student;
+                matchedUniversity = studentUni;
+
+                var domainParts = emailDomain.Split('.');
+                if (domainParts.Length >= 3)
+                {
+                    facultyCode = domainParts[0];
+                }
+
+                if (string.IsNullOrEmpty(facultyCode))
+                {
+                    throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
+                }
+
+                var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.EmailSubDomain == facultyCode && f.UniversityId == matchedUniversity.Id);
+                if (faculty == null)
+                {
+                    throw new NotFoundException(_localizer["Auth_FacultyNotFound"].Value);
+                }
+
+                var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+                if (department == null)
+                    throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
+
+                if (department.FacultyId != faculty.Id)
+                {
+                    throw new BadRequestException(_localizer["Auth_DepartmentFacultyMismatch"].Value);
+                }
+
+                finalDepartmentId = request.DepartmentId;
             }
-            else if (emailLower.EndsWith(".edu.tr") || emailLower.Contains("@beun.edu.tr"))
+            else if (teacherUni != null)
             {
                 assignedRole = UserRole.Teacher;
+                matchedUniversity = teacherUni;
+
+                finalDepartmentId = null;
             }
-            */
+            else
+            {
+                throw new BadRequestException(_localizer["Auth_InvalidEmailDomain"].Value);
+            }
 
-            // Öğrenci olduğu için sınıf zorunlu, unvan null yapılıyor
-            if (!request.Grade.HasValue)
-                throw new BadRequestException(_localizer["Auth_StudentGradeReq"].Value);
-
-            request.Title = null;
-
-            /* 
-            // Öğretmen/Hoca mantığı açıldığında aktif edilecek kısım:
             if (assignedRole == UserRole.Student)
             {
                 if (!request.Grade.HasValue)
@@ -266,26 +304,24 @@ namespace UniVibe.Application.Services
 
                 request.Title = null;
             }
-            if (assignedRole == UserRole.Teacher)
+            else if (assignedRole == UserRole.Teacher)
             {
                 if (string.IsNullOrWhiteSpace(request.Title))
                     throw new BadRequestException(_localizer["Auth_TeacherTitleReq"].Value);
 
                 request.Grade = null;
             }
-            */
 
             var newUser = new User
             {
-                Username = request.Username,
+                Username = request.Username.ToLowerInvariant(),
                 Email = pendingUser.Email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
                 Title = request.Title,
-                DepartmentId = request.DepartmentId,
-                Grade = request.Grade,
+                DepartmentId = finalDepartmentId,
                 Role = assignedRole,
                 IsActive = true,
                 ProfilePictureUrl = $"https://ui-avatars.com/api/?name={request.FirstName}+{request.LastName}&background=random&color=fff",
@@ -308,6 +344,9 @@ namespace UniVibe.Application.Services
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
                 throw new UnauthorizedException(_localizer["Auth_SessionExpired"].Value);
+
+            if (!user.IsActive || user.IsDeleted)
+                throw new UnauthorizedException(_localizer["Auth_Suspended"].Value);
 
             var newAccessToken = _tokenService.GenerateToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
@@ -345,7 +384,7 @@ namespace UniVibe.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
                 }
             }
 
@@ -364,20 +403,37 @@ namespace UniVibe.Application.Services
                 throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
             }
 
-            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-            user.PasswordResetToken = null;
-            user.ResetTokenExpires = null;
-
             if (user.IsDeleted)
             {
+                if (!user.DeletedAt.HasValue || (DateTime.UtcNow - user.DeletedAt.Value).TotalDays >= 15)
+                {
+                    throw new BadRequestException(_localizer["Auth_DeletedTooLong"].Value);
+                }
+
                 user.IsDeleted = false;
                 user.IsActive = true;
                 user.DeletedAt = null;
             }
 
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            user.PasswordResetToken = null;
+            user.ResetTokenExpires = null;
+
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Auth_PasswordResetSuccessful"].Value;
+        }
+        public async Task<string> GetVerificationRedirectUrlAsync(string token)
+        {
+            var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == token && !u.IsUsed);
+
+            if (pendingUser == null || pendingUser.ExpiryDate < DateTime.UtcNow)
+            {
+                throw new BadRequestException(_localizer["Auth_InvalidOrExpiredToken"].Value);
+            }
+
+            string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
+            return $"{expoBaseUrl}/--/register-complete?token={Uri.EscapeDataString(token)}";
         }
     }
 }

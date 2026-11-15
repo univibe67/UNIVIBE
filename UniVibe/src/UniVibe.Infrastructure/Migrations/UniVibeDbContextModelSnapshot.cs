@@ -90,6 +90,9 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsReminderSent")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -207,6 +210,10 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("EmailSubDomain")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -319,13 +326,13 @@ namespace UniVibe.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("EmailDomain")
+                    b.Property<string>("AcademicEmailDomain")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -337,6 +344,11 @@ namespace UniVibe.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<string>("StudentEmailDomain")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -358,10 +370,13 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("DepartmentId")
+                    b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -373,6 +388,9 @@ namespace UniVibe.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("Gender")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("Grade")
                         .HasColumnType("integer");
@@ -439,10 +457,13 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex("Email");
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("Username")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("Users");
                 });
@@ -523,8 +544,7 @@ namespace UniVibe.Infrastructure.Migrations
                     b.HasOne("UniVibe.Domain.Entities.Department", "Department")
                         .WithMany("Users")
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Department");
                 });

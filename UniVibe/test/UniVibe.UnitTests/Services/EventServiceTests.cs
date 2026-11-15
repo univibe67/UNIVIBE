@@ -2,6 +2,7 @@
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging; 
 using Moq;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
@@ -23,13 +24,16 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
+        private readonly Mock<IEmailService> _emailServiceMock; 
+        private readonly Mock<ILogger<EventService>> _loggerMock; 
 
-        // Validator'lar için InlineValidator kullanarak NullReferenceException'ı engelliyoruz
         private readonly IValidator<CreateEventRequest> _createValidator;
         private readonly IValidator<GetAllEventsRequest> _getAllValidator;
         private readonly IValidator<CancelEventRequest> _cancelValidator;
 
         private readonly EventService _eventService;
+        private readonly Mock<IEventCancellationJob> _eventCancellationJob;
+
 
         public EventServiceTests()
         {
@@ -40,10 +44,13 @@ namespace UniVibe.UnitTests.Services
             _mapperMock = new Mock<IMapper>();
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
+            _emailServiceMock = new Mock<IEmailService>();
+            _loggerMock = new Mock<ILogger<EventService>>(); 
 
             _createValidator = new InlineValidator<CreateEventRequest>();
             _getAllValidator = new InlineValidator<GetAllEventsRequest>();
             _cancelValidator = new InlineValidator<CancelEventRequest>();
+            _eventCancellationJob = new Mock<IEventCancellationJob>();
 
             _eventService = new EventService(
                 _eventRepoMock.Object,
@@ -55,13 +62,14 @@ namespace UniVibe.UnitTests.Services
                 _createValidator,
                 _getAllValidator,
                 _userRepoMock.Object,
-                _cancelValidator
-            );
+                _cancelValidator,
+                _emailServiceMock.Object,
+                _loggerMock.Object,
+                _eventCancellationJob.Object
+                );
         }
 
-        // ==========================================
-        // 1. TESTS FOR JoinEventAsync
-        // ==========================================
+
         [Fact]
         public async Task JoinEventAsync_WhenEventNotFound_ShouldThrowNotFoundException()
         {
@@ -89,7 +97,7 @@ namespace UniVibe.UnitTests.Services
             var unapprovedEvent = new Event
             {
                 Id = eventId,
-                Status = EventStatus.Pending, // Onaylanmamış
+                Status = EventStatus.Pending,
                 IsDeleted = false
             };
 
@@ -116,7 +124,7 @@ namespace UniVibe.UnitTests.Services
                 Id = eventId,
                 Status = EventStatus.Approved,
                 EventDate = DateTime.UtcNow.AddDays(1),
-                UserId = userId, // Etkinliği oluşturan kişi ile katılan aynı
+                UserId = userId,
                 IsDeleted = false
             };
 
@@ -132,9 +140,6 @@ namespace UniVibe.UnitTests.Services
                 .WithMessage("Kendi etkinliğinize katılamazsınız.");
         }
 
-        // ==========================================
-        // 2. TESTS FOR CancelEventAsync
-        // ==========================================
         [Fact]
         public async Task CancelEventAsync_WhenUnauthorizedUser_ShouldThrowForbiddenException()
         {
@@ -163,9 +168,6 @@ namespace UniVibe.UnitTests.Services
                 .WithMessage("Bu etkinliği iptal etmeye yetkiniz yok.");
         }
 
-        // ==========================================
-        // 3. TESTS FOR LeaveEventAsync
-        // ==========================================
         [Fact]
         public async Task LeaveEventAsync_WhenNotJoined_ShouldThrowNotFoundException()
         {
@@ -182,7 +184,6 @@ namespace UniVibe.UnitTests.Services
             _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
                 .ReturnsAsync(validEvent);
 
-            // Kullanıcı katılım kaydı yok (null dönüyor)
             _eventRepoMock.Setup(r => r.GetAttendeeAsync(eventId, userId))
                 .ReturnsAsync((EventAttendee?)null);
 
@@ -194,18 +195,15 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<NotFoundException>()
                 .WithMessage("Bu etkinliğe katılmamışsınız.");
         }
+
         [Fact]
         public async Task GetEventStatisticsAsync_ShouldReturnCorrectStatistics()
         {
-            // Arrange
-            // Repository CountAsync metodunun döneceği değerleri simüle ediyoruz
             _eventRepoMock.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
-                .ReturnsAsync(5); // Örnek olarak her biri için 5 dönsün
+                .ReturnsAsync(5);
 
-            // Act
             var result = await _eventService.GetEventStatisticsAsync();
 
-            // Assert
             result.Should().NotBeNull();
             result.TotalCreatedEvents.Should().Be(5);
             result.ActiveEvents.Should().Be(5);

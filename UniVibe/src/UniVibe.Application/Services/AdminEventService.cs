@@ -1,10 +1,12 @@
 using AutoMapper;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
+using UniVibe.Domain.Entities;
 using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
@@ -12,58 +14,54 @@ namespace UniVibe.Application.Services
     public sealed class AdminEventService : IAdminEventService
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IEmailService _emailService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly ILogger<AdminEventService> _logger;
 
-        public AdminEventService(IEventRepository eventRepository, IUnitOfWork unitOfWork, IMapper mapper, IStringLocalizer<SharedResources> localizer)
+        public AdminEventService(
+            IEventRepository eventRepository,
+            IUserRepository userRepository,
+            IEmailService emailService,
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            IStringLocalizer<SharedResources> localizer,
+            ILogger<AdminEventService> logger)
         {
             _eventRepository = eventRepository;
+            _userRepository = userRepository;
+            _emailService = emailService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizer = localizer;
+            _logger = logger;
         }
 
         public async Task<List<EventListResponse>> GetPendingEventsAsync()
         {
             var pendingEvents = await _eventRepository.GetEventsWithUsersByStatusAsync(EventStatus.Pending);
-
             var response = _mapper.Map<List<EventListResponse>>(pendingEvents);
-
             response.MapListWithLocalization(pendingEvents, _localizer);
-
             return response;
         }
 
         public async Task<List<EventListResponse>> GetAllEventsAsync()
         {
             var allEvents = await _eventRepository.GetEventsWithUsersByStatusAsync();
-
             var response = _mapper.Map<List<EventListResponse>>(allEvents);
-
             response.MapListWithLocalization(allEvents, _localizer);
-
             return response;
         }
 
         public async Task<string> ApproveEventAsync(Guid eventId)
         {
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            var evnt = await GetEventOrThrowAsync(eventId);
 
-            if (evnt == null)
-                throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
-
-            if (evnt.Status == EventStatus.Cancelled)
-                throw new BadRequestException("İptal edilmiş bir etkinlik onaylanamaz.");
-
-            if (evnt.EventDate <= DateTime.UtcNow)
-                throw new BadRequestException("Tarihi geçmiş bir etkinlik onaylanamaz.");
-
-            if (evnt.Status != EventStatus.Pending)
-                throw new BadRequestException("Yalnızca beklemede olan etkinlikler onaylanabilir.");
+            ValidateEventForApproval(evnt);
 
             evnt.Status = EventStatus.Approved;
-
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Approved"].Value;
@@ -74,15 +72,32 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
-
-            if (evnt == null)
+            var evnt = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+            if (evnt == null || evnt.IsDeleted)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
+
+            ValidateEventForRejection(evnt);
 
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
 
             await _unitOfWork.SaveChangesAsync();
+
+            if (evnt.User != null && !string.IsNullOrEmpty(evnt.User.Email))
+            {
+                try
+                {
+                    string subject = _localizer["EventRejectedEmailSubject"].Value;
+                    string template = _localizer["EventRejectedEmailBody"].Value;
+                    string mailBody = string.Format(template, evnt.User.FirstName, evnt.Title, reason);
+
+                    await _emailService.SendEmailAsync(evnt.User.Email, subject, mailBody);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Etkinlik ret e-postası gönderilemedi. EventId: {EventId}, UserId: {UserId}", eventId, evnt.UserId);
+                }
+            }
 
             return _localizer["Res_Event_Rejected"].Value;
         }
@@ -90,27 +105,70 @@ namespace UniVibe.Application.Services
         public async Task<EventDetailResponse> GetEventDetailsByIdAsync(Guid eventId)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
-
             if (eventEntity == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
-            var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
+            return MapAndEnrichAdminEventDetail(eventEntity);
+        }
+
+        #region Private Helper Methods
+
+        private async Task<Event> GetEventOrThrowAsync(Guid eventId)
+        {
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            if (evnt == null)
+                throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
+            return evnt;
+        }
+
+        private void ValidateEventForApproval(Event evnt)
+        {
+            if (evnt.Status == EventStatus.Cancelled)
+                throw new BadRequestException(_localizer["Admin_EventCannotApproveCancelled"].Value);
+
+            if (evnt.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException(_localizer["Admin_EventCannotApprovePast"].Value);
+
+            if (evnt.Status != EventStatus.Pending)
+                throw new BadRequestException(_localizer["Admin_EventMustBePendingToApprove"].Value);
+        }
+
+        private void ValidateEventForRejection(Event evnt)
+        {
+            if (evnt.Status == EventStatus.Cancelled)
+                throw new BadRequestException(_localizer["Admin_EventCannotRejectCancelled"].Value);
+
+            if (evnt.Status == EventStatus.Rejected)
+                throw new BadRequestException(_localizer["Admin_EventAlreadyRejected"].Value);
+
+            if (evnt.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException(_localizer["Admin_EventCannotRejectPast"].Value);
+
+            if (evnt.Status != EventStatus.Pending && evnt.Status != EventStatus.Approved)
+                throw new BadRequestException(_localizer["Admin_EventMustBePendingOrApprovedToReject"].Value);
+        }
+
+        private EventDetailResponse MapAndEnrichAdminEventDetail(Event eventEntity)
+        {
+            var response = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
             {
-                eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
-                eventDetailResponse.Department = eventEntity.User.Department?.Name;
-                eventDetailResponse.Grade = eventEntity.User.Grade;
+                response.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                response.Department = eventEntity.User.Department?.Name;
+                response.Grade = eventEntity.User.Grade;
             }
 
-            eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
+            response.MapWithLocalization(eventEntity, _localizer);
 
-            eventDetailResponse.RejectionReason = eventEntity.RejectionReason;
-            eventDetailResponse.CancellationReason = eventEntity.CancellationReason;
-            eventDetailResponse.IsDeleted = eventEntity.IsDeleted;
-            eventDetailResponse.IsCreator = false;
+            response.RejectionReason = eventEntity.RejectionReason;
+            response.CancellationReason = eventEntity.CancellationReason;
+            response.IsDeleted = eventEntity.IsDeleted;
+            response.IsCreator = false;
 
-            return eventDetailResponse;
+            return response;
         }
+
+        #endregion
     }
-}
+}

@@ -1,13 +1,18 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 
-public class CancelEventRequestValidator : AbstractValidator<CancelEventRequest>
+namespace UniVibe.Application.Validators.Event
 {
-    public CancelEventRequestValidator()
+    public class CancelEventRequestValidator : AbstractValidator<CancelEventRequest>
     {
-        RuleFor(x => x.Reason)
-            .NotEmpty().WithMessage("İptal nedeni boş olamaz.")
-            .MinimumLength(10).WithMessage("İptal nedeni en az 10 karakter olmalıdır.")
-            .MaximumLength(250).WithMessage("İptal nedeni en fazla 250 karakter olabilir.");
+        public CancelEventRequestValidator(IStringLocalizer<SharedResources> localizer)
+        {
+            RuleFor(x => x.Reason)
+                .NotEmpty().WithMessage(localizer["Val_ReasonNotEmpty"].Value)
+                .MinimumLength(10).WithMessage(localizer["Val_ReasonMinLength"].Value)
+                .MaximumLength(250).WithMessage(localizer["Val_ReasonMaxLength"].Value);
+        }
     }
 }

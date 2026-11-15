@@ -8,6 +8,7 @@ using System.Text.Encodings.Web;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Auth.Requests;
 using UniVibe.Application.DTOs.Auth.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -47,6 +48,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("tokens/verification")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> VerifyToken([FromQuery] string token)
         {
             var isValid = await _authService.VerifyTokenAsync(token);
@@ -58,6 +60,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("register/completion")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
             var result = await _authService.CompleteRegistrationAsync(request);
@@ -72,19 +75,31 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("verification/redirect")]
-        public IActionResult VerifyRedirect([FromQuery] string token)
+        public async Task<IActionResult> VerifyRedirect([FromQuery] string token)
         {
-            string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
-            string linkToOpen = $"{expoBaseUrl}/--/register-complete?token={Uri.EscapeDataString(token)}";
+            try
+            {
+                string linkToOpen = await _authService.GetVerificationRedirectUrlAsync(token);
 
-            string title = _localization["Auth_RedirectTitle"].Value ?? "UniVibe'a Yönlendiriliyorsunuz";
-            string message = _localization["Auth_RedirectMessage"].Value ?? "E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.";
-            string buttonText = _localization["Auth_RedirectButton"].Value ?? "UniVibe Uygulamasını Aç";
-            string currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                string title = _localization["Auth_RedirectTitle"].Value ?? "UniVibe'a Yönlendiriliyorsunuz";
+                string message = _localization["Auth_RedirectMessage"].Value ?? "E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.";
+                string buttonText = _localization["Auth_RedirectButton"].Value ?? "UniVibe Uygulamasını Aç";
+                string currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
-            string htmlContent = GenerateRedirectHtml(linkToOpen, title, message, buttonText, currentLang);
+                string htmlContent = GenerateRedirectHtml(linkToOpen, title, message, buttonText, currentLang);
 
-            return Content(htmlContent, "text/html", Encoding.UTF8);
+                return Content(htmlContent, "text/html", Encoding.UTF8);
+            }
+            catch (BadRequestException ex)
+            {
+                string currentLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                string errorHtml = GenerateErrorHtml(
+                    _localization["Auth_TokenInvalidOrExpiredTitle"].Value ?? "Doğrulama Bağlantısı Geçersiz",
+                    ex.Message,
+                    currentLang
+                );
+                return Content(errorHtml, "text/html", Encoding.UTF8);
+            }
         }
 
         [HttpPost("password/forgot")]
@@ -102,6 +117,7 @@ namespace UniVibe.API.Controllers
             var message = await _authService.ResetPasswordAsync(request);
             return Ok(ApiResponse<string>.Success(message));
         }
+
         private string GenerateRedirectHtml(string link, string title, string message, string buttonText, string lang)
         {
             string safeLink = JavaScriptEncoder.Default.Encode(link);
@@ -131,6 +147,32 @@ namespace UniVibe.API.Controllers
             <script>
                 window.location.href = '{safeLink}';
             </script>
+        </body>
+        </html>";
+        }
+
+        private string GenerateErrorHtml(string title, string message, string lang)
+        {
+            return $@"
+        <!DOCTYPE html>
+        <html lang='{lang}'>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>{WebUtility.HtmlEncode(title)}</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #F3F4F6; color: #1F2937; }}
+                .card {{ background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; max-width: 400px; }}
+                h1 {{ color: #EF4444; margin-bottom: 10px; }}
+                p {{ color: #6B7280; margin-bottom: 20px; line-height: 1.5; }}
+            </style>
+        </head>
+        <body>
+            <div class='card'>
+                <h1>UniVibe</h1>
+                <h3 style='color: #1F2937; margin-top:0;'>{WebUtility.HtmlEncode(title)}</h3>
+                <p>{WebUtility.HtmlEncode(message)}</p>
+            </div>
         </body>
         </html>";
         }

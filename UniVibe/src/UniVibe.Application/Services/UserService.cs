@@ -22,6 +22,7 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IValidator<UpdateUserProfileRequest> _updateProfileValidator;
+        private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ILogger<UserService> _logger;
@@ -36,7 +37,8 @@ namespace UniVibe.Application.Services
             IEmailService emailService,
             IPasswordHasher passwordHasher,
             IEventRepository eventRepository,
-            ILogger<UserService> logger)
+            ILogger<UserService> logger,
+            IValidator<ChangePasswordRequest> changePasswordValidator)
         {
             _userRepository = userRepository;
             _imageService = imageService;
@@ -48,6 +50,7 @@ namespace UniVibe.Application.Services
             _passwordHasher = passwordHasher;
             _eventRepository = eventRepository;
             _logger = logger;
+            _changePasswordValidator = changePasswordValidator;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
@@ -81,26 +84,32 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
-            if (!string.IsNullOrWhiteSpace(updateDto.Username) && updateDto.Username != user.Username)
+            if (!string.IsNullOrWhiteSpace(updateDto.Username))
             {
-                if (user.LastUsernameUpdatedAt.HasValue)
+                var normalizedNewUsername = updateDto.Username.ToLowerInvariant();
+
+                if (normalizedNewUsername != user.Username)
                 {
-                    var daysSinceLastUpdate = (DateTime.UtcNow - user.LastUsernameUpdatedAt.Value).TotalDays;
-                    if (daysSinceLastUpdate < 30)
+                    if (user.LastUsernameUpdatedAt.HasValue)
                     {
-                        var remainingDays = 30 - (int)daysSinceLastUpdate;
-                        throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        var daysSinceLastUpdate = (DateTime.UtcNow - user.LastUsernameUpdatedAt.Value).TotalDays;
+                        if (daysSinceLastUpdate < 30)
+                        {
+                            var remainingDays = 30 - (int)daysSinceLastUpdate;
+                            throw new BadRequestException(_localizer["User_UsernameWaitTime", remainingDays].Value);
+                        }
                     }
+
+                    var isUsernameTaken = await _userRepository.AnyAsync(u =>
+                        u.Id != userId &&
+                        u.Username == normalizedNewUsername);
+
+                    if (isUsernameTaken)
+                        throw new ConflictException(_localizer["User_UsernameTaken"].Value);
+
+                    user.Username = normalizedNewUsername;
+                    user.LastUsernameUpdatedAt = DateTime.UtcNow;
                 }
-                var isUsernameTaken = await _userRepository.AnyAsync(u =>
-                    u.Id != userId &&
-                    u.Username.ToLower() == updateDto.Username.ToLower());
-
-                if (isUsernameTaken)
-                    throw new ConflictException(_localizer["User_UsernameTaken"].Value);
-
-                user.Username = updateDto.Username;
-                user.LastUsernameUpdatedAt = DateTime.UtcNow;
             }
 
             user.Bio = updateDto.Bio;
@@ -134,23 +143,26 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
+            await _changePasswordValidator.ValidateAndThrowCustomAsync(request);
+
             var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             var isPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
             if (!isPasswordValid)
-                throw new BadRequestException("Mevcut şifreniz hatalı.");
+                throw new BadRequestException(_localizer["Auth_CurrentPasswordIncorrect"].Value);
 
-            if (request.NewPassword.Length < 8)
-                throw new BadRequestException(_localizer["Val_PassMinLength"].Value);
+            var isSameAsOld = _passwordHasher.Verify(request.NewPassword, user.PasswordHash);
+            if (isSameAsOld)
+                throw new BadRequestException(_localizer["Auth_NewPasswordSameAsOld"].Value);
 
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
-            return "Şifreniz başarıyla değiştirildi.";
+            return _localizer["Res_PasswordChangedSuccessfully"].Value;
         }
 
         public async Task<string> DeleteAccountAsync(Guid userId)
@@ -167,14 +179,18 @@ namespace UniVibe.Application.Services
                 !e.IsDeleted &&
                 (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
 
-            foreach (var eventt in userActiveEvents)
+            string cancellationReason = _localizer["Event_OrganizerDeletedReason"].Value;
+            foreach (var ev in userActiveEvents)
             {
-                eventt.Status = EventStatus.Cancelled;
-                eventt.CancellationReason = "Organizatör hesabı silindiği için etkinlik iptal edildi.";
+                ev.Status = EventStatus.Cancelled;
+                ev.CancellationReason = cancellationReason;
             }
+
+            await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsActive = false;
             user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
 
@@ -192,7 +208,8 @@ namespace UniVibe.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Kullanıcı hesabı silindi ancak silinme bilgilendirme emaili gönderilemedi. Email: {Email}", user.Email);
+                    string logTemplate = _localizer["Log_AccountDeletionEmailFailed"].Value;
+                    _logger.LogError(ex, logTemplate, user.Email);
                 }
             }
 

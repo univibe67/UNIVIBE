@@ -1,4 +1,5 @@
-﻿using UniVibe.Domain.Enums;
+﻿using System.Reflection;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Domain.Entities
 {
@@ -12,6 +13,8 @@ namespace UniVibe.Domain.Entities
         public string LastName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public GradeLevel? Grade { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public Gender? Gender { get; set; }
         public string? ProfilePictureUrl { get; set; }
         public string? ProfilePicturePublicId { get; set; }
         public string? Bio { get; set; }
@@ -24,7 +27,7 @@ namespace UniVibe.Domain.Entities
         public DateTime? DeletedAt { get; set; }
         public UserRole Role { get; set; } = UserRole.Student;
 
-        public Guid DepartmentId { get; set; }
+        public Guid? DepartmentId { get; set; }
         public Department Department { get; set; } = null!;
         public ICollection<Event> Events { get; set; } = new List<Event>();
         public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();

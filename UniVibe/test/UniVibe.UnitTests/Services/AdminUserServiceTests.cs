@@ -44,31 +44,32 @@ namespace UniVibe.UnitTests.Services
         // 1. TESTS FOR GetAllUsersAsync
         // ==========================================
         [Fact]
-        public async Task GetAllUsersAsync_ShouldReturnListOfUserListResponses()
+        public async Task GetAllUsersAsync_ShouldReturnPaginatedUsers_WhenUsersExist()
         {
             // Arrange
             var users = new List<User>
-            {
-                new User { Id = Guid.NewGuid(), FirstName = "Mertcan", Email = "mertcan@test.com" }
-            };
+                {
+                 new User { Id = Guid.NewGuid(), FirstName = "Mertcan", Email = "mertcan@test.com" }
+                };
             var expectedResponse = new List<UserListResponse>
-            {
-                new UserListResponse { FirstName = "Mertcan", Email = "mertcan@test.com" }
-            };
+                {
+               new UserListResponse { FirstName = "Mertcan", Email = "mertcan@test.com" }
+                };
 
-            _userRepoMock.Setup(r => r.GetAllIncludingDeletedAsync())
-                .ReturnsAsync(users);
+            _userRepoMock.Setup(r => r.GetPagedUsersIncludingDeletedAsync(1, 10))
+                .ReturnsAsync((users, users.Count));
 
             _mapperMock.Setup(m => m.Map<List<UserListResponse>>(users))
                 .Returns(expectedResponse);
 
-            // Act
-            var result = await _adminUserService.GetAllUsersAsync();
+            var result = await _adminUserService.GetAllUsersAsync(1, 10);
 
-            // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(1);
-            result[0].FirstName.Should().Be("Mertcan");
+            result.Items.Should().HaveCount(1);
+            result.Items[0].FirstName.Should().Be("Mertcan");
+            result.TotalCount.Should().Be(1);
+            result.PageNumber.Should().Be(1);
+            result.PageSize.Should().Be(10);
         }
 
         // ==========================================
@@ -77,11 +78,12 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task ChangeUserRoleAsync_WhenAdminTriesToChangeOwnRole_ShouldThrowBadRequestException()
         {
-            // Arrange
             var adminId = Guid.NewGuid();
             var newRole = UserRole.Admin;
 
-            // Act & Assert
+            _localizerMock.Setup(l => l["Admin_CannotChangeOwnRole"])
+                .Returns(new LocalizedString("Admin_CannotChangeOwnRole", "Kendi rolünüzü değiştiremezsiniz."));
+
             Func<Task> act = async () => await _adminUserService.ChangeUserRoleAsync(adminId, newRole, adminId);
 
             await act.Should().ThrowAsync<BadRequestException>()
@@ -138,10 +140,12 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task SuspendUserAsync_WhenAdminTriesToSuspendSelf_ShouldThrowBadRequestException()
         {
-            // Arrange
             var adminId = Guid.NewGuid();
 
-            // Act & Assert
+            _localizerMock.Setup(l => l["Admin_CannotSuspendOwnAccount"])
+                .Returns(new LocalizedString("Admin_CannotSuspendOwnAccount", "Kendi hesabınızı askıya alamazsınız."));
+
+
             Func<Task> act = async () => await _adminUserService.SuspendUserAsync(adminId, adminId);
 
             await act.Should().ThrowAsync<BadRequestException>()
@@ -205,10 +209,11 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task DeleteUserAsync_WhenAdminTriesToDeleteSelf_ShouldThrowBadRequestException()
         {
-            // Arrange
             var adminId = Guid.NewGuid();
 
-            // Act & Assert
+            _localizerMock.Setup(l => l["Admin_CannotDeleteOwnAccount"])
+                .Returns(new LocalizedString("Admin_CannotDeleteOwnAccount", "Kendi hesabınızı silemezsiniz."));
+
             Func<Task> act = async () => await _adminUserService.DeleteUserAsync(adminId, adminId);
 
             await act.Should().ThrowAsync<BadRequestException>()
@@ -218,15 +223,14 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task DeleteUserAsync_WhenUserExists_ShouldMarkAsDeletedAndCancelEvents()
         {
-            // Arrange
             var adminId = Guid.NewGuid();
             var targetUserId = Guid.NewGuid();
             var user = new User { Id = targetUserId, IsActive = true, IsDeleted = false };
 
             var activeEvents = new List<Event>
-            {
-                new Event { Id = Guid.NewGuid(), UserId = targetUserId, Status = EventStatus.Approved, EventDate = DateTime.UtcNow.AddDays(1) }
-            };
+                {
+                    new Event { Id = Guid.NewGuid(), UserId = targetUserId, Status = EventStatus.Approved, EventDate = DateTime.UtcNow.AddDays(1) }
+                };
 
             _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
                 .ReturnsAsync(user);
@@ -237,10 +241,11 @@ namespace UniVibe.UnitTests.Services
             _localizerMock.Setup(l => l["Res_User_Deleted"])
                 .Returns(new LocalizedString("Res_User_Deleted", "Kullanıcı silindi."));
 
-            // Act
+            _localizerMock.Setup(l => l["Event_OrganizerAdminDeletedReason"])
+                .Returns(new LocalizedString("Event_OrganizerAdminDeletedReason", "Organizatör hesabı yönetici tarafından silindiği için etkinlik iptal edildi."));
+
             var result = await _adminUserService.DeleteUserAsync(targetUserId, adminId);
 
-            // Assert
             result.Should().Be("Kullanıcı silindi.");
             user.IsDeleted.Should().BeTrue();
             user.IsActive.Should().BeFalse();

@@ -18,12 +18,11 @@ namespace UniVibe.Application.Common
 
         public static List<EventListResponse> MapListWithLocalization(this List<EventListResponse> responses, List<Event> entities, IStringLocalizer<SharedResources> localizer)
         {
-            for (int i = 0; i < responses.Count; i++)
-            {
-                var original = entities[i];
-                var item = responses[i];
+            var entityDict = entities.ToDictionary(e => e.Id);
 
-                if (original.Category != null)
+            foreach (var item in responses)
+            {
+                if (entityDict.TryGetValue(item.Id, out var original) && original.Category != null)
                 {
                     item.CategoryId = original.Category.Id;
                     item.CategoryName = localizer[original.Category.Name].Value;
@@ -31,14 +30,14 @@ namespace UniVibe.Application.Common
             }
             return responses;
         }
+
         public static List<EventDetailResponse> MapListWithLocalization(this List<EventDetailResponse> responses, List<Event> entities, IStringLocalizer<SharedResources> localizer)
         {
-            for (int i = 0; i < responses.Count; i++)
-            {
-                var original = entities[i];
-                var response = responses[i];
+            var entityDict = entities.ToDictionary(e => e.Id);
 
-                if (original.Category != null)
+            foreach (var response in responses)
+            {
+                if (entityDict.TryGetValue(response.Id, out var original) && original.Category != null)
                 {
                     response.CategoryId = original.Category.Id;
                     response.CategoryName = localizer[original.Category.Name].Value;
@@ -46,6 +45,5 @@ namespace UniVibe.Application.Common
             }
             return responses;
         }
-
     }
 }

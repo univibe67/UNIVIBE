@@ -17,6 +17,7 @@ namespace UniVibe.Domain.Entities
         public string? ImagePublicId { get; set; }
         public string? RejectionReason { get; set; }
         public string? CancellationReason { get; set; }
+        public bool IsReminderSent { get; set; } = false;
         public EventStatus Status { get; set; } = EventStatus.Pending;
 
         public Guid UserId { get; set; }

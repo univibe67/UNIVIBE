@@ -27,6 +27,7 @@ namespace UniVibe.Application.Services
         private readonly IValidator<CreateEventRequest> _createEventValidator;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
         private readonly IValidator<CancelEventRequest> _cancelEventValidator;
+        private readonly IEventCancellationJob _eventCancellationJob;
 
         public EventService(
             IEventRepository eventRepository,
@@ -40,7 +41,8 @@ namespace UniVibe.Application.Services
             IUserRepository userRepository,
             IValidator<CancelEventRequest> cancelEventValidator,
             IEmailService emailService,
-            ILogger<EventService> logger)
+            ILogger<EventService> logger,
+            IEventCancellationJob eventCancellationJob)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -54,6 +56,7 @@ namespace UniVibe.Application.Services
             _cancelEventValidator = cancelEventValidator;
             _emailService = emailService;
             _logger = logger;
+            _eventCancellationJob = eventCancellationJob;
         }
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -91,28 +94,6 @@ namespace UniVibe.Application.Services
             await _eventRepository.AddAsync(newEvent);
             await _unitOfWork.SaveChangesAsync();
 
-            try
-            {
-                var organizer = await _userRepository.GetUserWithDetailsByIdAsync(userId);
-                if (organizer != null && !string.IsNullOrEmpty(organizer.Email))
-                {
-                    var turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
-                    var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(newEvent.EventDate, turkeyTimeZone);
-                    var formattedDate = localEventTime.ToString("dd.MM.yyyy");
-                    var formattedTime = localEventTime.ToString("HH:mm");
-
-                    string subject = _localizer["EventCreatedEmailSubject"].Value;
-                    string template = _localizer["EventCreatedEmailBody"].Value;
-                    string mailBody = string.Format(template, organizer.FirstName, newEvent.Title, formattedDate, formattedTime);
-
-                    await _emailService.SendEmailAsync(organizer.Email, subject, mailBody);
-                }
-            }
-            catch (Exception ex)
-            {
-                string logTemplate = _localizer["Log_EventCreateEmailFailed"].Value;
-                _logger.LogError(ex, logTemplate, newEvent.Id, userId);
-            }
 
             return _localizer["Res_Event_Created"].Value;
         }
@@ -137,10 +118,11 @@ namespace UniVibe.Application.Services
 
             var joinedEventIdSet = joinedEventIds.ToHashSet();
 
+            var itemDict = items.ToDictionary(i => i.Id);
+
             foreach (var response in eventDetailResponses)
             {
-                var original = items.FirstOrDefault(i => i.Id == response.Id);
-                if (original != null)
+                if (itemDict.TryGetValue(response.Id, out var original))
                 {
                     response.IsCreator = (original.UserId == currentUserId);
                     response.IsJoined = joinedEventIdSet.Contains(original.Id);
@@ -166,7 +148,7 @@ namespace UniVibe.Application.Services
             {
                 Id = c.Id,
                 Name = _localizer[c.Name].Value
-                                               
+
             }).ToList();
 
             return response;
@@ -179,21 +161,21 @@ namespace UniVibe.Application.Services
             if (eventEntity == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
-            var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
+            var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
             {
-                EventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
-                EventDetailResponse.Department = eventEntity.User.Department?.Name;
-                EventDetailResponse.Grade = eventEntity.User.Grade;
+                eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                eventDetailResponse.Department = eventEntity.User.Department?.Name;
+                eventDetailResponse.Grade = eventEntity.User.Grade;
             }
 
-            EventDetailResponse.MapWithLocalization(eventEntity, _localizer);
+            eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
-            EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
-            EventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
+            eventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
+            eventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
 
-            return EventDetailResponse;
+            return eventDetailResponse;
         }
 
         public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)
@@ -296,27 +278,6 @@ namespace UniVibe.Application.Services
             await _eventRepository.AddAttendeeAsync(attendee);
             await _unitOfWork.SaveChangesAsync();
 
-            if (userWithDept != null && !string.IsNullOrEmpty(userWithDept.Email))
-            {
-                try
-                {
-                    var turkeyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
-                    var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(eventEntity.EventDate, turkeyTimeZone);
-                    var formattedDate = localEventTime.ToString("dd.MM.yyyy");
-                    var formattedTime = localEventTime.ToString("HH:mm");
-
-                    string subject = _localizer["EventJoinedEmailSubject"].Value;
-                    string template = _localizer["EventJoinedEmailBody"].Value;
-
-                    string mailBody = string.Format(template, userWithDept.FirstName, eventEntity.Title, formattedDate, formattedTime);
-
-                    await _emailService.SendEmailAsync(userWithDept.Email, subject, mailBody);
-                }
-                catch (Exception ex)
-                {
-                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
-                }
-            }
 
             return _localizer["Res_Event_Joined"].Value;
         }
@@ -360,26 +321,19 @@ namespace UniVibe.Application.Services
 
                     await _emailService.SendEmailAsync(organizer.Email, organizerSubject, organizerBody);
                 }
-
-                var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
-                if (participants != null && participants.Any())
-                {
-                    foreach (var participant in participants)
-                    {
-                        if (!string.IsNullOrEmpty(participant.Email))
-                        {
-                            string participantSubject = _localizer["EventCancelledParticipantSubject"].Value;
-                            string participantTemplate = _localizer["EventCancelledParticipantBody"].Value;
-                            string participantBody = string.Format(participantTemplate, participant.FirstName, existingEvent.Title, request.Reason);
-
-                            await _emailService.SendEmailAsync(participant.Email, participantSubject, participantBody);
-                        }
-                    }
-                }
             }
             catch (Exception ex)
             {
-                throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
+                _logger.LogError(ex, "Organizatör iptal maili gönderilemedi. EventId: {EventId}", eventId);
+            }
+
+            try
+            {
+                _eventCancellationJob.Enqueue(eventId, request.Reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Katılımcı iptal maili işi kuyruğa eklenemedi. EventId: {EventId}", eventId);
             }
 
             return _localizer["Res_Event_Cancelled"].Value;
@@ -399,6 +353,7 @@ namespace UniVibe.Application.Services
 
             return _mapper.Map<List<ParticipantResponse>>(participants);
         }
+
         public async Task<EventStatisticsResponse> GetEventStatisticsAsync()
         {
             var totalCreatedCount = await _eventRepository.CountAsync(e => !e.IsDeleted);
@@ -419,6 +374,7 @@ namespace UniVibe.Application.Services
                 PendingEvents = pendingCount
             };
         }
+
         public async Task<string> LeaveEventAsync(Guid eventId, Guid userId)
         {
             var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
@@ -432,29 +388,11 @@ namespace UniVibe.Application.Services
             if (attendee == null)
                 throw new NotFoundException(_localizer["Event_NotJoined"].Value);
 
-            var user = await _userRepository.GetUserWithDetailsByIdAsync(userId);
-
             _eventRepository.RemoveAttendee(attendee);
             await _unitOfWork.SaveChangesAsync();
 
-            if (user != null && !string.IsNullOrEmpty(user.Email))
-            {
-                try
-                {
-                    string subject = _localizer["EventLeftEmailSubject"].Value;
-                    string template = _localizer["EventLeftEmailBody"].Value;
-
-                    string mailBody = string.Format(template, user.FirstName, eventEntity.Title);
-
-                    await _emailService.SendEmailAsync(user.Email, subject, mailBody);
-                }
-                catch (Exception ex)
-                {
-                    throw new BadRequestException(_localizer["Auth_EmailSendFailed", ex.Message].Value);
-                }
-            }
 
             return _localizer["Res_Event_LeftSuccessfully"].Value;
         }
     }
-}
+}

@@ -17,7 +17,12 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public AdminUserService(IUserRepository userRepository, IUnitOfWork unitOfWork, IMapper mapper, IStringLocalizer<SharedResources> localizer, IEventRepository eventRepository)
+        public AdminUserService(
+            IUserRepository userRepository,
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            IStringLocalizer<SharedResources> localizer,
+            IEventRepository eventRepository)
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
@@ -26,17 +31,29 @@ namespace UniVibe.Application.Services
             _eventRepository = eventRepository;
         }
 
-        public async Task<List<UserListResponse>> GetAllUsersAsync()
+        public async Task<PaginatedResult<UserListResponse>> GetAllUsersAsync(int pageNumber, int pageSize)
         {
-            var users = await _userRepository.GetAllIncludingDeletedAsync();
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
 
-            return _mapper.Map<List<UserListResponse>>(users);
+            var (items, totalCount) = await _userRepository.GetPagedUsersIncludingDeletedAsync(pageNumber, pageSize);
+
+            var userResponses = _mapper.Map<List<UserListResponse>>(items);
+
+            return new PaginatedResult<UserListResponse>
+            {
+                Items = userResponses,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<string> ChangeUserRoleAsync(Guid userId, UserRole newRole, Guid currentAdminId)
         {
             if (currentAdminId == userId)
-                throw new BadRequestException("Kendi rolünüzü değiştiremezsiniz.");
+                throw new BadRequestException(_localizer["Admin_CannotChangeOwnRole"].Value);
 
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
@@ -53,7 +70,7 @@ namespace UniVibe.Application.Services
         public async Task<string> SuspendUserAsync(Guid userId, Guid currentAdminId)
         {
             if (currentAdminId == userId)
-                throw new BadRequestException("Kendi hesabınızı askıya alamazsınız.");
+                throw new BadRequestException(_localizer["Admin_CannotSuspendOwnAccount"].Value);
 
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
@@ -87,7 +104,7 @@ namespace UniVibe.Application.Services
         public async Task<string> DeleteUserAsync(Guid userId, Guid currentAdminId)
         {
             if (currentAdminId == userId)
-                throw new BadRequestException("Kendi hesabınızı silemezsiniz.");
+                throw new BadRequestException(_localizer["Admin_CannotDeleteOwnAccount"].Value);
 
             var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
 
@@ -100,11 +117,15 @@ namespace UniVibe.Application.Services
                 e.Status != EventStatus.Rejected &&
                 e.EventDate >= DateTime.UtcNow);
 
+            string cancellationReason = _localizer["Event_OrganizerAdminDeletedReason"].Value;
+
             foreach (var ev in userActiveEvents)
             {
                 ev.Status = EventStatus.Cancelled;
-                ev.CancellationReason = "Organizatör hesabı yönetici tarafından silindiği için etkinlik iptal edildi.";
+                ev.CancellationReason = cancellationReason;
             }
+
+            await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
