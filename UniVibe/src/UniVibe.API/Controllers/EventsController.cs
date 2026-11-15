@@ -36,7 +36,6 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        // 📌 1. Sabit rotalar ({id} içermeyenler) üst sırada tutuluyor
         [HttpGet("active/me")]
         public async Task<IActionResult> GetMyActiveEvent()
         {
@@ -55,7 +54,6 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(joinedEvents));
         }
 
-        // 📌 Statistics rotası dinamik {id} karışıklığını önlemek için yukarıya alındı ve Guid constraint eklendi
         [HttpGet("statistics")]
         public async Task<IActionResult> GetEventStatistics()
         {
