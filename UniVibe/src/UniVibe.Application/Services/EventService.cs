@@ -27,6 +27,7 @@ namespace UniVibe.Application.Services
         private readonly IValidator<CreateEventRequest> _createEventValidator;
         private readonly IValidator<GetAllEventsRequest> _getAllEventsValidator;
         private readonly IValidator<CancelEventRequest> _cancelEventValidator;
+        private readonly IEventCancellationJob _eventCancellationJob;
 
         public EventService(
             IEventRepository eventRepository,
@@ -40,7 +41,8 @@ namespace UniVibe.Application.Services
             IUserRepository userRepository,
             IValidator<CancelEventRequest> cancelEventValidator,
             IEmailService emailService,
-            ILogger<EventService> logger)
+            ILogger<EventService> logger,
+            IEventCancellationJob eventCancellationJob)
         {
             _eventRepository = eventRepository;
             _categoryRepository = categoryRepository;
@@ -54,6 +56,7 @@ namespace UniVibe.Application.Services
             _cancelEventValidator = cancelEventValidator;
             _emailService = emailService;
             _logger = logger;
+            _eventCancellationJob = eventCancellationJob;
         }
 
         public async Task<string> CreateEventAsync(CreateEventRequest request, Guid userId)
@@ -115,10 +118,11 @@ namespace UniVibe.Application.Services
 
             var joinedEventIdSet = joinedEventIds.ToHashSet();
 
+            var itemDict = items.ToDictionary(i => i.Id);
+
             foreach (var response in eventDetailResponses)
             {
-                var original = items.FirstOrDefault(i => i.Id == response.Id);
-                if (original != null)
+                if (itemDict.TryGetValue(response.Id, out var original))
                 {
                     response.IsCreator = (original.UserId == currentUserId);
                     response.IsJoined = joinedEventIdSet.Contains(original.Id);
@@ -317,26 +321,19 @@ namespace UniVibe.Application.Services
 
                     await _emailService.SendEmailAsync(organizer.Email, organizerSubject, organizerBody);
                 }
-
-                var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
-                if (participants != null && participants.Any())
-                {
-                    foreach (var participant in participants)
-                    {
-                        if (!string.IsNullOrEmpty(participant.Email))
-                        {
-                            string participantSubject = _localizer["EventCancelledParticipantSubject"].Value;
-                            string participantTemplate = _localizer["EventCancelledParticipantBody"].Value;
-                            string participantBody = string.Format(participantTemplate, participant.FirstName, existingEvent.Title, request.Reason);
-
-                            await _emailService.SendEmailAsync(participant.Email, participantSubject, participantBody);
-                        }
-                    }
-                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Etkinlik iptal e-postaları gönderilirken hata oluştu. EventId: {EventId}", eventId);
+                _logger.LogError(ex, "Organizatör iptal maili gönderilemedi. EventId: {EventId}", eventId);
+            }
+
+            try
+            {
+                _eventCancellationJob.Enqueue(eventId, request.Reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Katılımcı iptal maili işi kuyruğa eklenemedi. EventId: {EventId}", eventId);
             }
 
             return _localizer["Res_Event_Cancelled"].Value;

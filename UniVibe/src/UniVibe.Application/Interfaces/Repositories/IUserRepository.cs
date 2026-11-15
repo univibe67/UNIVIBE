@@ -10,5 +10,6 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<User?> GetByIdIncludingDeletedAsync(Guid id);
         Task<User?> GetByEmailIncludingDeletedAsync(string email);
         Task<bool> IsUsernameTakenAsync(string username);
+        Task<(List<User> Items, int TotalCount)> GetPagedUsersIncludingDeletedAsync(int pageNumber, int pageSize);
     }
 }

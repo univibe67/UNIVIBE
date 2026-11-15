@@ -12,6 +12,7 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<List<Feedback>> GetAllFeedbacksWithUserAsync()
         {
             return await _context.Set<Feedback>()
+                .AsNoTracking()
                 .Include(f => f.User)
                 .OrderByDescending(f => f.CreatedAt)
                 .ToListAsync();
@@ -20,12 +21,13 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<Feedback?> GetFeedbackWithUserByIdAsync(Guid id)
         {
             return await _context.Set<Feedback>()
+                .AsNoTracking()
                 .Include(f => f.User)
                 .FirstOrDefaultAsync(f => f.Id == id);
         }
         public async Task<int> GetTodayFeedbackCountByUserIdAsync(Guid userId)
         {
-            var todayUtc = DateTime.UtcNow.Date; // Bugünün başlangıç saati (UTC)
+            var todayUtc = DateTime.UtcNow.Date; 
 
             return await _context.Set<Feedback>()
                 .CountAsync(f => f.UserId == userId && f.CreatedAt >= todayUtc && !f.IsDeleted);

@@ -88,8 +88,12 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 entity.Property(u => u.LastName).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);
                 entity.Property(u => u.Username).HasMaxLength(20).IsRequired();
-                entity.HasIndex(u => u.Username).IsUnique();
-                entity.HasIndex(u => u.Email).IsUnique();
+                entity.HasIndex(u => u.Username)
+                      .IsUnique()
+                       .HasFilter(@"""IsDeleted"" = false");
+                entity.HasIndex(u => u.Email)
+                    .IsUnique()
+                    .HasFilter(@"""IsDeleted"" = false");
 
                 entity.HasOne(u => u.Department)
                       .WithMany(d => d.Users)

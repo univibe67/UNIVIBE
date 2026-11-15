@@ -48,6 +48,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("tokens/verification")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> VerifyToken([FromQuery] string token)
         {
             var isValid = await _authService.VerifyTokenAsync(token);
@@ -59,6 +60,7 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost("register/completion")]
+        [EnableRateLimiting("StrictAuthLimit")]
         public async Task<IActionResult> CompleteRegistration([FromBody] RegisterCompleteRequest request)
         {
             var result = await _authService.CompleteRegistrationAsync(request);
@@ -148,6 +150,7 @@ namespace UniVibe.API.Controllers
         </body>
         </html>";
         }
+
         private string GenerateErrorHtml(string title, string message, string lang)
         {
             return $@"

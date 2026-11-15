@@ -31,11 +31,23 @@ namespace UniVibe.Application.Services
             _eventRepository = eventRepository;
         }
 
-        public async Task<List<UserListResponse>> GetAllUsersAsync()
+        public async Task<PaginatedResult<UserListResponse>> GetAllUsersAsync(int pageNumber, int pageSize)
         {
-            var users = await _userRepository.GetAllIncludingDeletedAsync();
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
 
-            return _mapper.Map<List<UserListResponse>>(users);
+            var (items, totalCount) = await _userRepository.GetPagedUsersIncludingDeletedAsync(pageNumber, pageSize);
+
+            var userResponses = _mapper.Map<List<UserListResponse>>(items);
+
+            return new PaginatedResult<UserListResponse>
+            {
+                Items = userResponses,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<string> ChangeUserRoleAsync(Guid userId, UserRole newRole, Guid currentAdminId)

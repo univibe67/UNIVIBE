@@ -36,6 +36,12 @@ namespace UniVibe.Application.Middlewares
 
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
+            if (context.Response.HasStarted)
+            {
+                _logger.LogWarning("Yanıt zaten gönderilmeye başlandığı için ExceptionHandlingMiddleware araya giremedi.");
+                return Task.CompletedTask;
+            }
+
             context.Response.ContentType = "application/json";
 
             int statusCode;
@@ -86,4 +92,3 @@ namespace UniVibe.Application.Middlewares
         }
     }
 }
-

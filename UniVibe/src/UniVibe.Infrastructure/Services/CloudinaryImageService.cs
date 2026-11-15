@@ -38,11 +38,15 @@ namespace UniVibe.Infrastructure.Services
 
             using var stream = file.OpenReadStream();
 
+            var transformation = folderName.Contains("Users", StringComparison.OrdinalIgnoreCase)
+                ? new Transformation().Height(500).Width(500).Crop("fill").Gravity("face")
+                : new Transformation().Width(1200).Crop("limit");
+
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
                 Folder = $"UniVibe/{folderName}",
-                Transformation = new Transformation().Height(500).Width(500).Crop("fill")
+                Transformation = transformation
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);

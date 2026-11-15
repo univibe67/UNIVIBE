@@ -32,6 +32,8 @@ namespace UniVibe.UnitTests.Services
         private readonly IValidator<CancelEventRequest> _cancelValidator;
 
         private readonly EventService _eventService;
+        private readonly Mock<IEventCancellationJob> _eventCancellationJob;
+
 
         public EventServiceTests()
         {
@@ -48,6 +50,7 @@ namespace UniVibe.UnitTests.Services
             _createValidator = new InlineValidator<CreateEventRequest>();
             _getAllValidator = new InlineValidator<GetAllEventsRequest>();
             _cancelValidator = new InlineValidator<CancelEventRequest>();
+            _eventCancellationJob = new Mock<IEventCancellationJob>();
 
             _eventService = new EventService(
                 _eventRepoMock.Object,
@@ -60,9 +63,10 @@ namespace UniVibe.UnitTests.Services
                 _getAllValidator,
                 _userRepoMock.Object,
                 _cancelValidator,
-                _emailServiceMock.Object, 
-                _loggerMock.Object        
-            );
+                _emailServiceMock.Object,
+                _loggerMock.Object,
+                _eventCancellationJob.Object
+                );
         }
 
 
