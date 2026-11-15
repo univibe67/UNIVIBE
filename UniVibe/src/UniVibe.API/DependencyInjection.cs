@@ -68,7 +68,11 @@ namespace UniVibe.API
                     context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                     context.HttpContext.Response.ContentType = "application/json";
 
-                    await context.HttpContext.Response.WriteAsync($"{{\"success\":false,\"message\":\"{message}\"}}");
+                    var responseObj = ApiResponse<object>.Fail(message);
+
+                    var jsonResponse = System.Text.Json.JsonSerializer.Serialize(responseObj);
+
+                    await context.HttpContext.Response.WriteAsync(jsonResponse);
                 };
             });
 

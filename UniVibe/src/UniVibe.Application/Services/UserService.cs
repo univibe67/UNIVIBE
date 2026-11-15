@@ -174,14 +174,17 @@ namespace UniVibe.Application.Services
                 (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
 
             string cancellationReason = _localizer["Event_OrganizerDeletedReason"].Value;
-            foreach (var eventt in userActiveEvents)
+            foreach (var ev in userActiveEvents)
             {
-                eventt.Status = EventStatus.Cancelled;
-                eventt.CancellationReason = cancellationReason;
+                ev.Status = EventStatus.Cancelled;
+                ev.CancellationReason = cancellationReason;
             }
+
+            await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsActive = false;
             user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
             user.RefreshToken = null;
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
 

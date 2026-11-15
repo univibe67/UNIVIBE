@@ -36,15 +36,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpPatch("{id}/cancel")]
-        public async Task<IActionResult> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
-        {
-            var userId = User.GetUserId();
-            var message = await _eventService.CancelEventAsync(id, userId, request);
-
-            return Ok(ApiResponse<string>.Success(message));
-        }
-
+        // 📌 1. Sabit rotalar ({id} içermeyenler) üst sırada tutuluyor
         [HttpGet("active/me")]
         public async Task<IActionResult> GetMyActiveEvent()
         {
@@ -63,7 +55,24 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(joinedEvents));
         }
 
-        [HttpPost("{id}/attendees")]
+        // 📌 Statistics rotası dinamik {id} karışıklığını önlemek için yukarıya alındı ve Guid constraint eklendi
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetEventStatistics()
+        {
+            var statistics = await _eventService.GetEventStatisticsAsync();
+            return Ok(ApiResponse<EventStatisticsResponse>.Success(statistics));
+        }
+
+        [HttpPatch("{id:guid}/cancel")]
+        public async Task<IActionResult> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
+        {
+            var userId = User.GetUserId();
+            var message = await _eventService.CancelEventAsync(id, userId, request);
+
+            return Ok(ApiResponse<string>.Success(message));
+        }
+
+        [HttpPost("{id:guid}/attendees")]
         public async Task<IActionResult> JoinEvent(Guid id)
         {
             var userId = User.GetUserId();
@@ -72,7 +81,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetEventById(Guid id)
         {
             var currentUserId = User.GetUserId();
@@ -81,7 +90,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<EventDetailResponse>.Success(eventData));
         }
 
-        [HttpGet("{id}/participants")]
+        [HttpGet("{id:guid}/participants")]
         public async Task<IActionResult> GetEventParticipants(Guid id)
         {
             var participants = await _eventService.GetEventParticipantsAsync(id);
@@ -89,14 +98,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<List<ParticipantResponse>>.Success(participants));
         }
 
-        [HttpGet("statistics")]
-        public async Task<IActionResult> GetEventStatistics()
-        {
-            var statistics = await _eventService.GetEventStatisticsAsync();
-            return Ok(ApiResponse<EventStatisticsResponse>.Success(statistics));
-        }
-
-        [HttpDelete("{id}/attendees/me")]
+        [HttpDelete("{id:guid}/attendees/me")]
         public async Task<IActionResult> LeaveEvent(Guid id)
         {
             var userId = User.GetUserId();

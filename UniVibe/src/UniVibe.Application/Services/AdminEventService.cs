@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Exceptions;
@@ -13,20 +14,29 @@ namespace UniVibe.Application.Services
     public sealed class AdminEventService : IAdminEventService
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IEmailService _emailService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly ILogger<AdminEventService> _logger;
 
         public AdminEventService(
             IEventRepository eventRepository,
+            IUserRepository userRepository,
+            IEmailService emailService,
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            ILogger<AdminEventService> logger)
         {
             _eventRepository = eventRepository;
+            _userRepository = userRepository;
+            _emailService = emailService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizer = localizer;
+            _logger = logger;
         }
 
         public async Task<List<EventListResponse>> GetPendingEventsAsync()
@@ -62,12 +72,32 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
-            var evnt = await GetEventOrThrowAsync(eventId);
+            var evnt = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+            if (evnt == null || evnt.IsDeleted)
+                throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
+
+            ValidateEventForRejection(evnt);
 
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
 
             await _unitOfWork.SaveChangesAsync();
+
+            if (evnt.User != null && !string.IsNullOrEmpty(evnt.User.Email))
+            {
+                try
+                {
+                    string subject = _localizer["EventRejectedEmailSubject"].Value;
+                    string template = _localizer["EventRejectedEmailBody"].Value;
+                    string mailBody = string.Format(template, evnt.User.FirstName, evnt.Title, reason);
+
+                    await _emailService.SendEmailAsync(evnt.User.Email, subject, mailBody);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Etkinlik ret e-postası gönderilemedi. EventId: {EventId}, UserId: {UserId}", eventId, evnt.UserId);
+                }
+            }
 
             return _localizer["Res_Event_Rejected"].Value;
         }
@@ -101,6 +131,21 @@ namespace UniVibe.Application.Services
 
             if (evnt.Status != EventStatus.Pending)
                 throw new BadRequestException(_localizer["Admin_EventMustBePendingToApprove"].Value);
+        }
+
+        private void ValidateEventForRejection(Event evnt)
+        {
+            if (evnt.Status == EventStatus.Cancelled)
+                throw new BadRequestException(_localizer["Admin_EventCannotRejectCancelled"].Value);
+
+            if (evnt.Status == EventStatus.Rejected)
+                throw new BadRequestException(_localizer["Admin_EventAlreadyRejected"].Value);
+
+            if (evnt.EventDate <= DateTime.UtcNow)
+                throw new BadRequestException(_localizer["Admin_EventCannotRejectPast"].Value);
+
+            if (evnt.Status != EventStatus.Pending && evnt.Status != EventStatus.Approved)
+                throw new BadRequestException(_localizer["Admin_EventMustBePendingOrApprovedToReject"].Value);
         }
 
         private EventDetailResponse MapAndEnrichAdminEventDetail(Event eventEntity)

@@ -25,6 +25,7 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<EventAttendee?> GetAttendeeAsync(Guid eventId, Guid userId);
         Task<int> CountAsync(Expression<Func<Event, bool>> predicate);
         void RemoveAttendee(EventAttendee attendee);
+        Task RemoveAttendeesByUserIdAsync(Guid userId);
 
     }
 }

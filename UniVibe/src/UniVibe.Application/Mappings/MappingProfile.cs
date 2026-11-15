@@ -12,25 +12,24 @@ namespace UniVibe.Application.Mappings
     {
         public MappingProfile()
         {
-            // University Mappings
             CreateMap<University, UniversityLookupResponse>();
             CreateMap<Faculty, FacultyLookupResponse>();
             CreateMap<Department, DepartmentLookupResponse>();
 
-            // Event Mappings
             CreateMap<CreateEventRequest, Event>();
             CreateMap<EventCategory, EventCategoryResponse>();
 
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
-                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count))
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0))
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.User != null && src.User.Department != null ? src.User.Department.Name : null))
                 .ForMember(dest => dest.Grade, opt => opt.MapFrom(src => src.User != null ? src.User.Grade : null));
-            // User Mappings
+
             CreateMap<User, UserProfileResponse>()
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null))
-                .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department != null && src.Department.Faculty != null ? src.Department.Faculty.Name : null));
+                .ForMember(dest => dest.Faculty, opt => opt.MapFrom(src => src.Department != null && src.Department.Faculty != null ? src.Department.Faculty.Name : null))
+                .ForMember(dest => dest.University, opt => opt.MapFrom(src => src.Department != null && src.Department.Faculty != null && src.Department.Faculty.University != null ? src.Department.Faculty.University.Name : null));
 
             CreateMap<User, PublicUserProfileResponse>()
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null))
@@ -38,12 +37,13 @@ namespace UniVibe.Application.Mappings
 
             CreateMap<User, ParticipantResponse>();
 
-            // Admin & List Mappings
-            CreateMap<User, UserListResponse>();
+            CreateMap<User, UserListResponse>()
+                .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department != null ? src.Department.Name : null))
+                .ForMember(dest => dest.FacultyName, opt => opt.MapFrom(src => src.Department != null && src.Department.Faculty != null ? src.Department.Faculty.Name : null));
 
             CreateMap<Event, EventListResponse>()
-                .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
-                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees.Count));
+                .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0));
 
             CreateMap<Feedback, FeedbackResponseDto>()
                 .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"));

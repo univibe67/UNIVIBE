@@ -5,7 +5,7 @@ using UniVibe.Application.DTOs.User.Requests;
 
 namespace UniVibe.Application.Validators.User
 {
-    public class UpdateUserProfileRequestValidator : AbstractValidator<UpdateUserProfileRequest>
+    public sealed class UpdateUserProfileRequestValidator : AbstractValidator<UpdateUserProfileRequest>
     {
         public UpdateUserProfileRequestValidator(IStringLocalizer<SharedResources> localizer)
         {

@@ -5,7 +5,7 @@ using UniVibe.Application.DTOs.Feedback.Request;
 
 namespace UniVibe.Application.Validators.Feedback;
 
-public class CreateFeedbackDtoValidator : AbstractValidator<CreateFeedbackDto>
+public sealed class CreateFeedbackDtoValidator : AbstractValidator<CreateFeedbackDto>
 {
     public CreateFeedbackDtoValidator(IStringLocalizer<SharedResources> localizer)
     {

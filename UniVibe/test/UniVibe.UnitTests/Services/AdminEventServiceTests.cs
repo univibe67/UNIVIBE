@@ -2,10 +2,12 @@
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Moq;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Exceptions;
+using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Application.Services;
 using UniVibe.Domain.Entities;
@@ -16,24 +18,33 @@ namespace UniVibe.UnitTests.Services
     public class AdminEventServiceTests
     {
         private readonly Mock<IEventRepository> _eventRepoMock;
+        private readonly Mock<IUserRepository> _userRepoMock;        
+        private readonly Mock<IEmailService> _emailServiceMock;       
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
+        private readonly Mock<ILogger<AdminEventService>> _loggerMock; 
 
         private readonly AdminEventService _adminEventService;
 
         public AdminEventServiceTests()
         {
             _eventRepoMock = new Mock<IEventRepository>();
+            _userRepoMock = new Mock<IUserRepository>();          
+            _emailServiceMock = new Mock<IEmailService>();       
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _mapperMock = new Mock<IMapper>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
+            _loggerMock = new Mock<ILogger<AdminEventService>>();
 
             _adminEventService = new AdminEventService(
                 _eventRepoMock.Object,
+                _userRepoMock.Object,
+                _emailServiceMock.Object,
                 _unitOfWorkMock.Object,
                 _mapperMock.Object,
-                _localizerMock.Object
+                _localizerMock.Object,
+                _loggerMock.Object
             );
         }
 
@@ -86,7 +97,7 @@ namespace UniVibe.UnitTests.Services
                 new EventListResponse { Title = "Event 2" }
             };
 
-            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync())
+            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync(It.IsAny<EventStatus?>()))
                 .ReturnsAsync(allEvents);
 
             _mapperMock.Setup(m => m.Map<List<EventListResponse>>(allEvents))

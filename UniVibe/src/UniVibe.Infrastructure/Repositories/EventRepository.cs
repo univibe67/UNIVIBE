@@ -26,15 +26,15 @@ namespace UniVibe.Infrastructure.Repositories
                     .ThenInclude(u => u.Department)
                 .AsQueryable();
 
-            if (onlyActive)
+            if (status.HasValue)
+            {
+                query = query.Where(e => e.Status == status.Value);
+            }
+            else if (onlyActive)
             {
                 query = query.Where(e => e.IsActive &&
                                          e.EventDate >= DateTime.UtcNow &&
                                          e.Status == EventStatus.Approved);
-            }
-            else if (status.HasValue)
-            {
-                query = query.Where(e => e.Status == status.Value);
             }
 
             if (categoryId.HasValue && categoryId != Guid.Empty)
@@ -170,6 +170,17 @@ namespace UniVibe.Infrastructure.Repositories
         public void RemoveAttendee(EventAttendee attendee)
         {
             _context.EventAttendees.Remove(attendee);
+        }
+        public async Task RemoveAttendeesByUserIdAsync(Guid userId)
+        {
+            var attendees = await _context.EventAttendees
+                .Where(ea => ea.UserId == userId)
+                .ToListAsync();
+
+            if (attendees.Any())
+            {
+                _context.EventAttendees.RemoveRange(attendees);
+            }
         }
     }
 }

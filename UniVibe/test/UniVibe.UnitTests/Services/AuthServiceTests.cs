@@ -20,6 +20,7 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IUserRepository> _userRepoMock;
         private readonly Mock<IDepartmentRepository> _departmentRepoMock;
         private readonly Mock<IFacultyRepository> _facultyRepositoryMock;
+        private readonly Mock<IUniversityRepository> _universityRepositoryMock; // 📌 1. Mock alanı eklendi
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IPasswordHasher> _passwordHasherMock;
         private readonly Mock<ITokenService> _tokenServiceMock;
@@ -39,6 +40,7 @@ namespace UniVibe.UnitTests.Services
             _userRepoMock = new Mock<IUserRepository>();
             _departmentRepoMock = new Mock<IDepartmentRepository>();
             _facultyRepositoryMock = new Mock<IFacultyRepository>();
+            _universityRepositoryMock = new Mock<IUniversityRepository>(); // 📌 2. Mock initialize edildi
             _emailServiceMock = new Mock<IEmailService>();
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _tokenServiceMock = new Mock<ITokenService>();
@@ -49,7 +51,6 @@ namespace UniVibe.UnitTests.Services
             _registerInitValidator = new InlineValidator<RegisterInitRequest>();
             _registerCompleteValidator = new InlineValidator<RegisterCompleteRequest>();
 
-            // 📌 AuthService sınıfındaki gerçek constructor sırasıyla birebir eşleştirildi:
             _authService = new AuthService(
                 _pendingUserRepoMock.Object,        // 1. IPendingUserRepository
                 _emailServiceMock.Object,           // 2. IEmailService
@@ -63,7 +64,8 @@ namespace UniVibe.UnitTests.Services
                 _registerInitValidator,             // 10. IValidator<RegisterInitRequest>
                 _registerCompleteValidator,         // 11. IValidator<RegisterCompleteRequest>
                 _httpContextAccessorMock.Object,    // 12. IHttpContextAccessor
-                _facultyRepositoryMock.Object       // 13. IFacultyRepository
+                _facultyRepositoryMock.Object,      // 13. IFacultyRepository
+                _universityRepositoryMock.Object    // 14. IUniversityRepository (YENİ)
             );
         }
 

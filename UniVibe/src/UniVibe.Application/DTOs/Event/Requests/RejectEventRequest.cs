@@ -1,4 +1,4 @@
-﻿namespace UniVibe.Application.DTOs.Auth.Requests
+﻿namespace UniVibe.Application.DTOs.Event.Requests
 {
     public sealed class RejectEventRequest
     {

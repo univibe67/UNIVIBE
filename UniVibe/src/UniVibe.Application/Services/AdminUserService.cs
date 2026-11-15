@@ -113,6 +113,8 @@ namespace UniVibe.Application.Services
                 ev.CancellationReason = cancellationReason;
             }
 
+            await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
+
             user.IsDeleted = true;
             user.DeletedAt = DateTime.UtcNow;
             user.IsActive = false;
