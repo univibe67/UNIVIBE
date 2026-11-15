@@ -486,4 +486,7 @@
   <data name="Val_ReasonNotEmpty" xml:space="preserve">
     <value>İptal nedeni boş olamaz.</value>
   </data>
+  <data name="Error_InternalServer" xml:space="preserve">
+    <value>Bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.</value>
+  </data>
 </root>
