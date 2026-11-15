@@ -2,6 +2,62 @@ import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { ItemModel, ModalType } from '../types/auth.types';
 
+export function parseLookupArray(res: unknown): ItemModel[] {
+  if (!res) return [];
+
+  let rawList: unknown = res;
+
+  // Unwrap any nested data: response.data, response.data.data, items, etc.
+  while (rawList && typeof rawList === 'object' && !Array.isArray(rawList)) {
+    const obj = rawList as Record<string, unknown>;
+    if (Array.isArray(obj.data)) {
+      rawList = obj.data;
+    } else if (Array.isArray(obj.items)) {
+      rawList = obj.items;
+    } else if (Array.isArray(obj.$values)) {
+      rawList = obj.$values;
+    } else if (obj.data && typeof obj.data === 'object') {
+      rawList = obj.data;
+    } else {
+      break;
+    }
+  }
+
+  if (!Array.isArray(rawList)) return [];
+
+  return rawList
+    .map((item: unknown): ItemModel | null => {
+      if (!item || typeof item !== 'object') return null;
+      const rec = item as Record<string, unknown>;
+      const id =
+        rec.id ??
+        rec.Id ??
+        rec.universityId ??
+        rec.UniversityId ??
+        rec.facultyId ??
+        rec.FacultyId ??
+        rec.departmentId ??
+        rec.DepartmentId ??
+        rec.value ??
+        rec.Value;
+      const name =
+        rec.name ??
+        rec.Name ??
+        rec.title ??
+        rec.Title ??
+        rec.label ??
+        rec.Label ??
+        '';
+
+      if (id === undefined || id === null) return null;
+      return {
+        id: id as string | number,
+        name: String(name),
+      };
+    })
+    .filter((item): item is ItemModel => item !== null && item.name.trim().length > 0);
+}
+
 export function useRegistrationData(t: (key: string) => string) {
   const GRADES: ItemModel[] = [
     { id: 0, name: t("Grade_Prep") },
@@ -27,29 +83,61 @@ export function useRegistrationData(t: (key: string) => string) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     api.get("/universities")
-      .then((res: any) => setUniversities(res.data || res))
-      .catch(() => setUniversities([]));
+      .then((res: unknown) => {
+        if (isMounted) {
+          setUniversities(parseLookupArray(res));
+        }
+      })
+      .catch(() => {
+        if (isMounted) setUniversities([]);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (selectedUni) {
+    let isMounted = true;
+    if (selectedUni && selectedUni.id) {
+      setFaculties([]);
       api.get(`/universities/${selectedUni.id}/faculties`)
-        .then((res: any) => setFaculties(res.data || res))
-        .catch(() => setFaculties([]));
+        .then((res: unknown) => {
+          if (isMounted) {
+            setFaculties(parseLookupArray(res));
+          }
+        })
+        .catch(() => {
+          if (isMounted) setFaculties([]);
+        });
     } else {
       setFaculties([]);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [selectedUni]);
 
   useEffect(() => {
-    if (selectedFac) {
+    let isMounted = true;
+    if (selectedFac && selectedFac.id) {
+      setDepartments([]);
       api.get(`/universities/faculties/${selectedFac.id}/departments`)
-        .then((res: any) => setDepartments(res.data || res))
-        .catch(() => setDepartments([]));
+        .then((res: unknown) => {
+          if (isMounted) {
+            setDepartments(parseLookupArray(res));
+          }
+        })
+        .catch(() => {
+          if (isMounted) setDepartments([]);
+        });
     } else {
       setDepartments([]);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [selectedFac]);
 
   const getModalData = (): ItemModel[] => {
@@ -63,17 +151,19 @@ export function useRegistrationData(t: (key: string) => string) {
   };
 
   const handleSelectModalItem = (item: ItemModel) => {
-    if (modalType === 'grade') setGrade(item);
-    else if (modalType === 'uni') { 
+    if (modalType === 'grade') {
+      setGrade(item);
+    } else if (modalType === 'uni') { 
       setSelectedUni(item); 
       setSelectedFac(null); 
-      setSelectedDep(null); 
-    }
-    else if (modalType === 'fac') { 
+      setSelectedDep(null);
+      setFaculties([]);
+      setDepartments([]);
+    } else if (modalType === 'fac') { 
       setSelectedFac(item); 
-      setSelectedDep(null); 
-    }
-    else if (modalType === 'dep') {
+      setSelectedDep(null);
+      setDepartments([]);
+    } else if (modalType === 'dep') {
       setSelectedDep(item);
     }
     setIsModalOpen(false);
@@ -90,6 +180,10 @@ export function useRegistrationData(t: (key: string) => string) {
     grade,
     modalType,
     isModalOpen,
+    setSelectedUni,
+    setSelectedFac,
+    setSelectedDep,
+    setGrade,
     setModalType,
     setIsModalOpen,
     getModalData,

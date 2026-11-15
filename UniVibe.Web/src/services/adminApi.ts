@@ -18,15 +18,26 @@ export interface AdminEvent {
   id: string;
   title: string;
   description?: string;
+  categoryId?: string;
   categoryName?: string;
   eventDate: string;
   location?: string;
   status: string | number;
   organizerName?: string;
+  creatorName?: string;
+  imageUrl?: string | null;
+  department?: string | null;
+  grade?: number | null;
+  isCreator?: boolean;
+  isJoined?: boolean;
   isDeleted?: boolean;
   participantCount?: number;
-  rejectionReason?: string;
-  cancellationReason?: string;
+  rejectionReason?: string | null;
+  cancellationReason?: string | null;
+  minGrade?: number | null;
+  maxGrade?: number | null;
+  targetFaculty?: string | null;
+  targetDepartment?: string | null;
 }
 
 export interface AdminFeedback {
@@ -70,6 +81,6 @@ export const adminApi = {
     request(api.patch(`/admin/events/${id}/rejection`, { reason })),
   getFeedbacks: () => request<AdminFeedback[]>(api.get("/feedbacks")),
   resolveFeedback: (id: string) =>
-    request(api.patch(`/feedbacks/${id}/resolution`)),
+    request(api.patch(`/feedbacks/${id}/resolution`, {})),
   getStatistics: () => request<EventStatistics>(api.get("/events/statistics")),
 };

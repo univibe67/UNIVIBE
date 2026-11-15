@@ -66,7 +66,7 @@ export default function RegisterComplete() {
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firstName || !lastName || !username || !password || !phoneNumber) {
+    if (!firstName || !lastName || !username || !password || !phoneNumber || !selectedDep) {
       setErrorMessage(t('RegComplete_ErrorValidation') || "Lütfen tüm zorunlu alanları doldurun.");
       return;
     }
@@ -83,6 +83,9 @@ export default function RegisterComplete() {
         lastName,
         phoneNumber: phoneNumber.trim(),
         departmentId: selectedDep?.id,
+        DepartmentId: selectedDep?.id,
+        universityId: selectedUni?.id,
+        facultyId: selectedFac?.id,
         grade: grade?.id,
         title: title.trim() || null,
       }) as any;

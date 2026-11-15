@@ -55,13 +55,31 @@ api.interceptors.response.use(
     const isLoginRequest = originalRequest?.url?.toLowerCase().includes("/auth/login");
 
     if (error.response?.status === 401 && !isLoginRequest && !originalRequest._retry) {
+      const skipRedirect =
+        Boolean(originalRequest?.headers?.['X-Skip-Auth-Redirect']) ||
+        Boolean(originalRequest?.headers?.['x-skip-auth-redirect']);
+
+      if (skipRedirect) {
+        const userMessage = getErrorMessage(error);
+        const enrichedError: UserFacingError =
+          error instanceof Error ? error : new Error(userMessage);
+        enrichedError.userMessage = userMessage;
+        enrichedError.message = userMessage;
+        return Promise.reject(enrichedError);
+      }
+
       originalRequest._retry = true;
       try {
         const refreshToken = tokenService.getRefreshToken();
         const expiredToken = tokenService.getAccessToken();
 
         if (!refreshToken) {
-          throw new Error("Refresh token bulunamadı, yeniden giriş gerekli.");
+          const userMessage = getErrorMessage(error);
+          const enrichedError: UserFacingError =
+            error instanceof Error ? error : new Error(userMessage);
+          enrichedError.userMessage = userMessage;
+          enrichedError.message = userMessage;
+          return Promise.reject(enrichedError);
         }
 
         const refreshResponse = await axios.post(
