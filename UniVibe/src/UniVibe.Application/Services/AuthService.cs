@@ -191,7 +191,7 @@ namespace UniVibe.Application.Services
                 }
                 else
                 {
-                    linkForEmail = $"{apiBaseUrl}/api/Auth/verify-redirect?token={token}&redirectUrl={Uri.EscapeDataString(targetUrl)}";
+                    linkForEmail = $"{apiBaseUrl}/api/auth/verification/redirect?token={token}&redirectUrl={Uri.EscapeDataString(targetUrl)}";
                 }
 
                 string subject = _localizer["Auth_RegisterEmailSubject"].Value;
