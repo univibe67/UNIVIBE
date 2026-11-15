@@ -1,6 +1,8 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
+import adminTr from "./locales/tr.json";
+import adminEn from "./locales/en.json";
 
 i18n
   .use(LanguageDetector)
@@ -9,6 +11,7 @@ i18n
     resources: {
       tr: {
         translation: {
+          ...adminTr,
           Login_SelectType: "Giriş tipini seçin",
           Login_Student: "Öğrenci",
           Login_Admin: "Admin",
@@ -30,6 +33,7 @@ i18n
           Login_Loading: "Kontrol ediliyor...",
           Login_Error_NoToken:
             "Sunucudan token alınamadı, e-posta veya şifre hatalı.",
+          Login_Error_NoRole: "Sunucudan geçerli kullanıcı rolü alınamadı.",
           Login_Error_Default: "Giriş işlemi sırasında bir hata oluştu.",
           Login_Error_Unauthorized_Start: "Yetkisiz giriş! Bu hesap bir ",
           Login_Error_Unauthorized_End: " hesabı değil.",
@@ -150,6 +154,7 @@ i18n
           RegComplete_ContactInfo: "İletişim detayları",
           RegComplete_PasswordPlaceholder: "En az 8 karakter",
           RegComplete_Role: "Rol",
+          RegComplete_RoleFromEmail: "E-posta alan adına göre belirlenir",
           RegComplete_Desc: "Seni kampüs topluluğuna tanıtalım.",
           RegComplete_FirstName: "Ad",
           RegComplete_FirstNamePlaceholder: "Adın",
@@ -160,6 +165,8 @@ i18n
           RegComplete_ErrorValidation:
             "Lütfen tüm zorunlu alanları eksiksiz doldurun.",
           RegComplete_Phone: "Telefon Numarası",
+          RegComplete_AcademicTitle: "Akademik Unvan (Hocalar için)",
+          RegComplete_AcademicTitlePlaceholder: "Örn. Dr. Öğr. Üyesi",
           RegComplete_EduInfo: "Eğitim Bilgileri",
           RegComplete_SelectUni: "Üniversite Seç",
           RegComplete_SelectFac: "Fakülte Seç",
@@ -307,6 +314,8 @@ i18n
           Student_CreateError: "Etkinlik oluşturulamadı.",
           Student_SelectCategoryError: "Lütfen bir kategori seçiniz.",
           Student_Profile: "Profilim",
+          Student_ViewProfilePhoto: "Profil fotoğrafını görüntüle",
+          Student_ChangeProfilePhoto: "Profil fotoğrafını değiştir",
           Student_AcademicInfo: "Akademik Bilgiler",
           Student_University: "Üniversite",
           Student_Faculty: "Fakülte",
@@ -387,6 +396,7 @@ i18n
       },
       en: {
         translation: {
+          ...adminEn,
           Nav_Home: "Home",
           Nav_Events: "Events",
           Nav_Profile: "Profile",
@@ -474,6 +484,8 @@ i18n
           Student_PlaceholderLocation: "Ex: Engineering Faculty Amphitheater-1",
           Student_PlaceholderDesc: "Provide detailed info about the event...",
           Student_Profile: "My Profile",
+          Student_ViewProfilePhoto: "View profile photo",
+          Student_ChangeProfilePhoto: "Change profile photo",
           Student_AcademicInfo: "Academic Information",
           Student_University: "University",
           Student_Faculty: "Faculty",
@@ -523,6 +535,7 @@ i18n
           Forgot_ErrorMessage: "An error occurred, please try again.",
           Login_Error_NoToken:
             "Could not get token, email or password incorrect.",
+          Login_Error_NoRole: "A valid user role could not be received from the server.",
           Login_Error_Default: "An error occurred during login.",
           Login_Error_Unauthorized_Start: "Unauthorized login! This is not a ",
           Login_Error_Unauthorized_End: " account.",
@@ -618,8 +631,11 @@ i18n
           RegComplete_Back: "Back",
           RegComplete_BasicInfo: "Basic information",
           RegComplete_ContactInfo: "Contact details",
+          RegComplete_AcademicTitle: "Academic title (for teachers)",
+          RegComplete_AcademicTitlePlaceholder: "e.g. Associate Professor",
           RegComplete_PasswordPlaceholder: "At least 8 characters",
           RegComplete_Role: "Role",
+          RegComplete_RoleFromEmail: "Determined by email domain",
           RegComplete_Desc: "Introduce yourself to the campus community.",
           RegComplete_FirstName: "First Name",
           RegComplete_FirstNamePlaceholder: "Your name",

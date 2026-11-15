@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Plus, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function StudentLayout() {
@@ -8,7 +8,7 @@ export default function StudentLayout() {
 
   const navItems = [
     { path: '/student/home', icon: Home, label: t('Nav_Home') },
-    { path: '/student/events', icon: Calendar, label: t('Nav_Events') },
+    { path: '/student/events', icon: Plus, label: t('Nav_Events'), isAddButton: true },
     { path: '/student/profile', icon: User, label: t('Nav_Profile') },
   ];
 
@@ -27,16 +27,21 @@ export default function StudentLayout() {
             // but we'll use exact path matching or base path matching
             const isActive = location.pathname === item.path ||
               (item.path === '/student/home' && location.pathname === '/student');
+            const isAddButton = item.isAddButton;
             
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+                  isAddButton ? 'bottom-nav-add' : ''
+                } ${
+                  isAddButton && isActive ? 'active' : ''
+                } ${
                   isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'
                 }`}
               >
-                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={isAddButton ? 24 : 24} strokeWidth={isActive ? 2.5 : 2} />
                 <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
                   {item.label}
                 </span>

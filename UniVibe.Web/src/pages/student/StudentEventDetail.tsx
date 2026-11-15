@@ -14,6 +14,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
+import { formatCategoryName } from "../../utils/categoryLabel";
 
 interface EventItem {
   id: string;
@@ -69,10 +71,7 @@ export default function StudentEventDetail() {
         setError("Etkinlik bulunamadı.");
       }
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          "Etkinlik detayları yüklenirken bir sorun oluştu."
-      );
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -92,15 +91,7 @@ export default function StudentEventDetail() {
       );
       fetchEventDetail();
     } catch (err: any) {
-      const errorKey = typeof err === "string" ? err : "";
-      showNotification(
-        "error",
-        errorKey
-          ? t(errorKey, { defaultValue: errorKey })
-          : err?.response?.data?.message ||
-            t("Student_JoinError") ||
-            "Katılım sırasında bir hata oluştu."
-      );
+      showNotification("error", getErrorMessage(err) || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.");
     }
   };
 
@@ -125,11 +116,7 @@ export default function StudentEventDetail() {
         navigate("/student/home");
       }, 700);
     } catch (err: any) {
-      setCancelError(
-        err?.response?.data?.message ||
-          t("Student_CancelError") ||
-          "İptal işlemi başarısız oldu."
-      );
+      setCancelError(getErrorMessage(err) || t("Student_CancelError") || "İptal işlemi başarısız oldu.");
     } finally {
       setIsCancelling(false);
     }
@@ -298,7 +285,7 @@ export default function StudentEventDetail() {
                       {t("Student_CategoryLabel")}
                     </span>
                     <span className="text-sm font-semibold text-gray-800">
-                      {event.categoryName || t("Student_GeneralCategory")}
+                      {formatCategoryName(event.categoryName, t)}
                     </span>
                   </div>
                 </div>

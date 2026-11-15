@@ -1,5 +1,6 @@
 import { Calendar, MapPin, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatCategoryName } from "../utils/categoryLabel";
 
 interface EventItem {
   id: string;
@@ -41,7 +42,7 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
           </div>
         )}
         <span className="absolute top-4 right-4 rounded-full bg-white/90 px-3.5 py-1.5 text-xs font-black text-blue-700 shadow-md">
-          {event.categoryName || t("Student_GeneralCategory")}
+          {formatCategoryName(event.categoryName, t)}
         </span>
       </div>
 

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { tokenService } from '../../services/tokenService';
+import { getErrorMessage } from '../../services/errorMessage';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 
 import { useRegistrationData } from '../../hooks/useRegistrationData';
@@ -24,6 +25,7 @@ export default function RegisterComplete() {
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [title, setTitle] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -64,7 +66,7 @@ export default function RegisterComplete() {
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firstName || !lastName || !username || !password || !phoneNumber || !selectedDep || grade === null) {
+    if (!firstName || !lastName || !username || !password || !phoneNumber) {
       setErrorMessage(t('RegComplete_ErrorValidation') || "Lütfen tüm zorunlu alanları doldurun.");
       return;
     }
@@ -80,8 +82,9 @@ export default function RegisterComplete() {
         firstName,
         lastName,
         phoneNumber: phoneNumber.trim(),
-        departmentId: selectedDep.id,
-        grade: grade.id
+        departmentId: selectedDep?.id,
+        grade: grade?.id,
+        title: title.trim() || null,
       }) as any;
 
       const accessToken = response.token || response.data?.token;
@@ -89,27 +92,12 @@ export default function RegisterComplete() {
 
       if (accessToken) {
         tokenService.saveTokens(accessToken, refreshToken);
-        navigate('/student');
-      } else {
         navigate('/');
+      } else {
+        navigate('/login');
       }
     } catch (err: any) {
-      let rawMessage = "Kayıt tamamlama başarısız.";
-
-      if (typeof err === "string") {
-        rawMessage = err;
-      } else if (err.response?.data) {
-        const data = err.response.data;
-        if (typeof data === "string") rawMessage = data;
-        else if (data?.message) rawMessage = typeof data.message === "string" ? data.message : data.message.join(" • ");
-        else if (data?.errors) rawMessage = Array.isArray(data.errors) ? data.errors.join(" • ") : Object.values(data.errors).flat().join(" • ");
-      } else if (typeof err.message === "string") {
-        rawMessage = err.message;
-      }
-
-      if (rawMessage === "Kayıt tamamlama başarısız." && typeof err === "object") {
-        rawMessage = String(err);
-      }
+      const rawMessage = getErrorMessage(err);
 
       const finalMessage = rawMessage
         .split(' • ')
@@ -136,7 +124,7 @@ export default function RegisterComplete() {
         title={t('RegComplete_InvalidLinkTitle')}
         errorMessage={tokenErrorMessage}
         buttonText={t('RegComplete_BackToLogin')}
-        onBackToLogin={() => navigate('/')}
+        onBackToLogin={() => navigate('/login')}
       />
     );
   }
@@ -204,7 +192,7 @@ export default function RegisterComplete() {
             <div className="reg-field">
               <label>{t('RegComplete_Role')}</label>
               <div className="reg-select-display">
-                <span>{t('Role_Student')}</span>
+                <span>{t('RegComplete_RoleFromEmail')}</span>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             </div>
@@ -222,6 +210,10 @@ export default function RegisterComplete() {
             <div className="reg-field">
               <label>{t('RegComplete_Phone')}</label>
               <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="555..." />
+            </div>
+            <div className="reg-field">
+              <label>{t('RegComplete_AcademicTitle')}</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('RegComplete_AcademicTitlePlaceholder')} />
             </div>
           </div>
 

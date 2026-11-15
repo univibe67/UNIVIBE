@@ -1,8 +1,10 @@
 import axios from "axios";
 import { tokenService } from "./tokenService";
 import i18n from "../i18n";
+import { getErrorMessage } from "./errorMessage";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+type UserFacingError = Error & { userMessage?: string };
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -16,7 +18,7 @@ api.interceptors.request.use(
     const token = tokenService.getAccessToken();
     const isLoginRequest = config.url?.toLowerCase().includes("/auth/login");
     if (config.headers) {
-      const currentLang = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+      const currentLang = i18n.language.startsWith("en") ? "en-US" : "tr-TR";
       config.headers['Accept-Language'] = currentLang;
       if (token && !isLoginRequest) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -38,11 +40,10 @@ api.interceptors.response.use(
       "isSuccessful" in apiResponse
     ) {
       if (apiResponse.isSuccessful === false) {
-        const errorMsg =
-          apiResponse.message ||
-          (apiResponse.errors && apiResponse.errors.join("\n")) ||
-          "İşlem başarısız oldu.";
-        return Promise.reject(errorMsg);
+        const error = new Error(
+          getErrorMessage({ response: { data: apiResponse } }),
+        );
+        return Promise.reject(error);
       }
       return apiResponse.data !== null ? apiResponse.data : apiResponse;
     }
@@ -77,36 +78,18 @@ api.interceptors.response.use(
 
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-      } catch {
+      } catch (refreshError) {
         tokenService.clearTokens();
         window.location.href = "/";
-        return Promise.reject(
-          "Oturum süresi doldu, lütfen tekrar giriş yapın.",
-        );
+          return Promise.reject(new Error(getErrorMessage(refreshError)));
       }
     }
 
-    if (error.response && error.response.data) {
-      const errorBody = error.response.data;
-      if (
-        errorBody.errors &&
-        typeof errorBody.errors === "object" &&
-        !Array.isArray(errorBody.errors)
-      ) {
-        const errorMessages = Object.values(errorBody.errors).flat().join("\n");
-        return Promise.reject(errorMessages);
-      }
-      if (errorBody.errors && Array.isArray(errorBody.errors)) {
-        return Promise.reject(errorBody.errors.join("\n"));
-      }
-      if (typeof errorBody === "string" && errorBody.trim() !== "") {
-        return Promise.reject(errorBody);
-      }
-      if (errorBody.message) {
-        return Promise.reject(errorBody.message);
-      }
-    }
-
-    return Promise.reject(error.message || "Sunucu ile bağlantı kurulamadı.");
+      const userMessage = getErrorMessage(error);
+      const enrichedError: UserFacingError =
+        error instanceof Error ? error : new Error(userMessage);
+      enrichedError.userMessage = userMessage;
+      enrichedError.message = userMessage;
+      return Promise.reject(enrichedError);
   },
 );
