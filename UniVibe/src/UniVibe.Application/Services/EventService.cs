@@ -157,21 +157,21 @@ namespace UniVibe.Application.Services
             if (eventEntity == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
-            var EventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
+            var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
             if (eventEntity.User != null)
             {
-                EventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
-                EventDetailResponse.Department = eventEntity.User.Department?.Name;
-                EventDetailResponse.Grade = eventEntity.User.Grade;
+                eventDetailResponse.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                eventDetailResponse.Department = eventEntity.User.Department?.Name;
+                eventDetailResponse.Grade = eventEntity.User.Grade;
             }
 
-            EventDetailResponse.MapWithLocalization(eventEntity, _localizer);
+            eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
-            EventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
-            EventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
+            eventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
+            eventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
 
-            return EventDetailResponse;
+            return eventDetailResponse;
         }
 
         public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)

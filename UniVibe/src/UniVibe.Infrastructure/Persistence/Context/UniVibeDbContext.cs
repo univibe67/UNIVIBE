@@ -19,7 +19,6 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<EventAttendee> EventAttendees { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
 
-
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var entries = ChangeTracker.Entries<BaseEntity>();
@@ -29,7 +28,6 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.Entity.IsActive = true;
                         break;
 
                     case EntityState.Modified:
@@ -91,7 +89,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);
                 entity.Property(u => u.Username).HasMaxLength(20).IsRequired();
                 entity.HasIndex(u => u.Username).IsUnique();
-                entity.HasIndex(u => u.Email);
+                entity.HasIndex(u => u.Email).IsUnique();
 
                 entity.HasOne(u => u.Department)
                       .WithMany(d => d.Users)
@@ -132,6 +130,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
                       .HasForeignKey(ea => ea.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+
             modelBuilder.Entity<Feedback>(entity =>
             {
                 entity.Property(f => f.Subject).HasMaxLength(100).IsRequired();

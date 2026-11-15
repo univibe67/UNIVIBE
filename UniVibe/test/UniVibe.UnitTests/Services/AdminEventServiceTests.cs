@@ -97,7 +97,7 @@ namespace UniVibe.UnitTests.Services
                 new EventListResponse { Title = "Event 2" }
             };
 
-            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync())
+            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync(It.IsAny<EventStatus?>()))
                 .ReturnsAsync(allEvents);
 
             _mapperMock.Setup(m => m.Map<List<EventListResponse>>(allEvents))

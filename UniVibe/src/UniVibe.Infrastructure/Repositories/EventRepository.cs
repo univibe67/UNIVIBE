@@ -171,5 +171,16 @@ namespace UniVibe.Infrastructure.Repositories
         {
             _context.EventAttendees.Remove(attendee);
         }
+        public async Task RemoveAttendeesByUserIdAsync(Guid userId)
+        {
+            var attendees = await _context.EventAttendees
+                .Where(ea => ea.UserId == userId)
+                .ToListAsync();
+
+            if (attendees.Any())
+            {
+                _context.EventAttendees.RemoveRange(attendees);
+            }
+        }
     }
 }

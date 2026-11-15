@@ -3,13 +3,16 @@ using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 
-public class CancelEventRequestValidator : AbstractValidator<CancelEventRequest>
+namespace UniVibe.Application.Validators.Event
 {
-    public CancelEventRequestValidator(IStringLocalizer<SharedResources> localizer)
+    public class CancelEventRequestValidator : AbstractValidator<CancelEventRequest>
     {
-        RuleFor(x => x.Reason)
-            .NotEmpty().WithMessage(localizer["Val_ReasonNotEmpty"].Value)
-            .MinimumLength(10).WithMessage(localizer["Val_ReasonMinLength"].Value)
-            .MaximumLength(250).WithMessage(localizer["Val_ReasonMaxLength"].Value);
+        public CancelEventRequestValidator(IStringLocalizer<SharedResources> localizer)
+        {
+            RuleFor(x => x.Reason)
+                .NotEmpty().WithMessage(localizer["Val_ReasonNotEmpty"].Value)
+                .MinimumLength(10).WithMessage(localizer["Val_ReasonMinLength"].Value)
+                .MaximumLength(250).WithMessage(localizer["Val_ReasonMaxLength"].Value);
+        }
     }
 }
