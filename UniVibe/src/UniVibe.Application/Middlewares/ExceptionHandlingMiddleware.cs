@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
@@ -11,11 +12,13 @@ namespace UniVibe.Application.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IStringLocalizer<SharedResources> localizer)
         {
             _next = next;
             _logger = logger;
+            _localizer = localizer;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -31,7 +34,7 @@ namespace UniVibe.Application.Middlewares
             }
         }
 
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
 
@@ -69,7 +72,7 @@ namespace UniVibe.Application.Middlewares
 
                 default:
                     statusCode = (int)HttpStatusCode.InternalServerError;
-                    userMessage = "Bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.";
+                    userMessage = _localizer["Error_InternalServer"];
                     break;
             }
 
