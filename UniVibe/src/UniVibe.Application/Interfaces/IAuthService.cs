@@ -7,6 +7,7 @@ namespace UniVibe.Application.Interfaces
     {
         Task<string> InitiateRegistrationAsync(RegisterInitRequest request);
         Task<bool> VerifyTokenAsync(string token);
+        Task<string> GetVerificationRedirectUrlAsync(string token);
         Task<LoginResponse> CompleteRegistrationAsync(RegisterCompleteRequest request);
         Task<LoginResponse> LoginAsync(LoginRequest request);
         Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request);

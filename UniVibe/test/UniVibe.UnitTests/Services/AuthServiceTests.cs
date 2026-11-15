@@ -19,11 +19,11 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IPendingUserRepository> _pendingUserRepoMock;
         private readonly Mock<IUserRepository> _userRepoMock;
         private readonly Mock<IDepartmentRepository> _departmentRepoMock;
+        private readonly Mock<IFacultyRepository> _facultyRepositoryMock;
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IPasswordHasher> _passwordHasherMock;
         private readonly Mock<ITokenService> _tokenServiceMock;
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
-        private readonly Mock<IFacultyRepository> _facultyRepositoryMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
         private readonly Mock<IConfiguration> _configurationMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
@@ -38,31 +38,32 @@ namespace UniVibe.UnitTests.Services
             _pendingUserRepoMock = new Mock<IPendingUserRepository>();
             _userRepoMock = new Mock<IUserRepository>();
             _departmentRepoMock = new Mock<IDepartmentRepository>();
+            _facultyRepositoryMock = new Mock<IFacultyRepository>();
             _emailServiceMock = new Mock<IEmailService>();
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _tokenServiceMock = new Mock<ITokenService>();
             _unitOfWorkMock = new Mock<IUnitOfWork>();
-            _facultyRepositoryMock = new Mock<IFacultyRepository>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
             _configurationMock = new Mock<IConfiguration>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-
             _registerInitValidator = new InlineValidator<RegisterInitRequest>();
             _registerCompleteValidator = new InlineValidator<RegisterCompleteRequest>();
 
+            // 📌 AuthService sınıfındaki gerçek constructor sırasıyla birebir eşleştirildi:
             _authService = new AuthService(
-                _pendingUserRepoMock.Object,
-                _emailServiceMock.Object,
-                _userRepoMock.Object,
-                _passwordHasherMock.Object,
-                _tokenServiceMock.Object,
-                _departmentRepoMock.Object,
-                _unitOfWorkMock.Object,
-                _localizerMock.Object,
-                _configurationMock.Object,
-                _registerInitValidator,
-                _registerCompleteValidator,
-                _httpContextAccessorMock.Object
+                _pendingUserRepoMock.Object,        // 1. IPendingUserRepository
+                _emailServiceMock.Object,           // 2. IEmailService
+                _userRepoMock.Object,               // 3. IUserRepository
+                _passwordHasherMock.Object,         // 4. IPasswordHasher
+                _tokenServiceMock.Object,           // 5. ITokenService
+                _departmentRepoMock.Object,         // 6. IDepartmentRepository
+                _unitOfWorkMock.Object,             // 7. IUnitOfWork
+                _localizerMock.Object,              // 8. IStringLocalizer<SharedResources>
+                _configurationMock.Object,          // 9. IConfiguration
+                _registerInitValidator,             // 10. IValidator<RegisterInitRequest>
+                _registerCompleteValidator,         // 11. IValidator<RegisterCompleteRequest>
+                _httpContextAccessorMock.Object,    // 12. IHttpContextAccessor
+                _facultyRepositoryMock.Object       // 13. IFacultyRepository
             );
         }
 
@@ -93,7 +94,7 @@ namespace UniVibe.UnitTests.Services
                 .ReturnsAsync(user);
 
             _passwordHasherMock.Setup(p => p.Verify(request.Password, user.PasswordHash))
-                .Returns(false); 
+                .Returns(false);
 
             _localizerMock.Setup(l => l["Auth_InvalidCredentials"])
                 .Returns(new LocalizedString("Auth_InvalidCredentials", "Geçersiz kimlik bilgileri."));
@@ -103,6 +104,7 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<UnauthorizedException>()
                 .WithMessage("Geçersiz kimlik bilgileri.");
         }
+
         [Fact]
         public async Task VerifyTokenAsync_WhenTokenInvalidOrExpired_ShouldReturnFalse()
         {
@@ -123,7 +125,7 @@ namespace UniVibe.UnitTests.Services
             {
                 Token = token,
                 IsUsed = false,
-                ExpiryDate = DateTime.UtcNow.AddMinutes(10) 
+                ExpiryDate = DateTime.UtcNow.AddMinutes(10)
             };
 
             _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>()))
@@ -133,6 +135,7 @@ namespace UniVibe.UnitTests.Services
 
             result.Should().BeTrue();
         }
+
         [Fact]
         public async Task ResetPasswordAsync_WhenTokenIsEmpty_ShouldThrowUnauthorizedException()
         {
@@ -146,7 +149,6 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<UnauthorizedException>()
                 .WithMessage("Geçersiz veya süresi dolmuş token.");
         }
-
 
         private void _pendingUserRepositoryMockSetupForNullToken(string token)
         {
