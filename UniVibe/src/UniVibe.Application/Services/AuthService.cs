@@ -146,8 +146,6 @@ namespace UniVibe.Application.Services
                 _pendingUserRepository.Delete(existingPending);
             }
 
-            // ... kodun kalanı aynen devam eder ...
-
             var token = Guid.NewGuid().ToString();
             var pendingUser = new PendingUser
             {
