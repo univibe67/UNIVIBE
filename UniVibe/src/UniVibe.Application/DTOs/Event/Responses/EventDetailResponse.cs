@@ -19,6 +19,7 @@ namespace UniVibe.Application.DTOs.Event.Responses
         public bool IsJoined { get; set; }
         public string? RejectionReason { get; set; }
         public bool IsDeleted { get; set; }
+        public EventStatus Status { get; set; }
         public string? CancellationReason { get; set; }
         public int ParticipantCount { get; set; }
         public GradeLevel? MinGrade { get; set; }
