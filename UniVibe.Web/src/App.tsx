@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminRouteGuard from './components/AdminRouteGuard';
 import StudentHome from './pages/student/StudentHome';
 import StudentEvents from './pages/student/StudentEvents';
 import StudentEventDetail from './pages/student/StudentEventDetail';
@@ -27,9 +26,9 @@ function App() {
         <Route path="/register" element={<RegisterInitiate />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         
-        <Route element={<AdminRouteGuard />}>
+        <Route element={<ProtectedRoute allowedRoles={["Admin"]} redirectPath="/admin/login" />}>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="events" element={<AdminDashboard />} />
             <Route path="users" element={<AdminDashboard />} />
@@ -42,13 +41,15 @@ function App() {
             <Route index element={<StudentHome />} />
           </Route>
           <Route path="/student" element={<StudentLayout />}>
-            <Route index element={<Navigate to="home" replace />} />
+            <Route index element={<Navigate to="/student/home" replace />} />
             <Route path="home" element={<StudentHome />} />
             <Route path="events" element={<StudentEvents />} />
             <Route path="events/:id" element={<StudentEventDetail />} />
             <Route path="profile" element={<StudentProfile />} />
           </Route>
         </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -12,14 +12,14 @@ import {
   Loader2,
   CheckCircle,
   LockKeyhole,
-  ShieldCheck,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
 import { getErrorMessage } from "../../services/errorMessage";
-import { normalizeRole } from "../../utils/userRole";
+import { parseLookupArray } from "../../hooks/useRegistrationData";
 
 function LanguageSelector() {
   const { i18n } = useTranslation();
@@ -53,6 +53,7 @@ function LanguageSelector() {
 }
 
 interface UserProfile {
+  id?: string;
   firstName: string;
   lastName: string;
   username: string;
@@ -60,12 +61,115 @@ interface UserProfile {
   phoneNumber?: string;
   bio?: string;
   socialMediaLink?: string;
+  university?: string;
   universityName?: string;
+  universityId?: string;
+  faculty?: string;
   facultyName?: string;
+  facultyId?: string;
+  department?: string;
   departmentName?: string;
+  departmentId?: string;
   profilePictureUrl?: string;
   role?: string | number;
   title?: string;
+  grade?: number;
+}
+
+function extractStringField(obj: any, keys: string[]): string {
+  if (!obj || typeof obj !== "object") return "";
+  for (const key of keys) {
+    const val = obj[key];
+    if (typeof val === "string" && val.trim().length > 0) {
+      return val.trim();
+    }
+    if (val && typeof val === "object") {
+      const nested = val.name || val.Name || val.title || val.Title;
+      if (typeof nested === "string" && nested.trim().length > 0) {
+        return nested.trim();
+      }
+    }
+  }
+  return "";
+}
+
+const isGuid = (val?: string | null): boolean =>
+  typeof val === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+
+async function resolveLookupNames(
+  profileData: any,
+  currentDept: string,
+  currentUniv: string,
+  currentFac: string
+): Promise<{ deptName: string; univName: string; facName: string }> {
+  // If human-readable strings already exist and are not GUIDs, return immediately
+  if (
+    currentDept &&
+    !isGuid(currentDept) &&
+    currentUniv &&
+    !isGuid(currentUniv)
+  ) {
+    return { deptName: currentDept, univName: currentUniv, facName: currentFac };
+  }
+
+  const deptId = isGuid(currentDept)
+    ? currentDept
+    : profileData.departmentId || profileData.DepartmentId;
+  const univId = isGuid(currentUniv)
+    ? currentUniv
+    : profileData.universityId || profileData.UniversityId;
+
+  let resolvedUniv = currentUniv && !isGuid(currentUniv) ? currentUniv : "";
+  let resolvedFac = currentFac && !isGuid(currentFac) ? currentFac : "";
+  let resolvedDept = currentDept && !isGuid(currentDept) ? currentDept : "";
+
+  try {
+    const uniRes: any = await api.get("/universities");
+    const unis = parseLookupArray(uniRes);
+
+    if (univId && !resolvedUniv) {
+      const matched = unis.find(
+        (u) => String(u.id).toLowerCase() === String(univId).toLowerCase()
+      );
+      if (matched) resolvedUniv = matched.name;
+    }
+
+    if (deptId && !resolvedDept) {
+      const targetUnis = resolvedUniv
+        ? unis.filter((u) => u.name === resolvedUniv)
+        : unis;
+
+      for (const u of targetUnis) {
+        try {
+          const facRes: any = await api.get(`/universities/${u.id}/faculties`);
+          const facs = parseLookupArray(facRes);
+          for (const f of facs) {
+            const depRes: any = await api.get(
+              `/universities/faculties/${f.id}/departments`
+            );
+            const deps = parseLookupArray(depRes);
+            const matchedDep = deps.find(
+              (d) => String(d.id).toLowerCase() === String(deptId).toLowerCase()
+            );
+            if (matchedDep) {
+              resolvedDept = matchedDep.name;
+              if (!resolvedFac) resolvedFac = f.name;
+              if (!resolvedUniv) resolvedUniv = u.name;
+              break;
+            }
+          }
+          if (resolvedDept) break;
+        } catch {
+          // ignore error for single lookup
+        }
+      }
+    }
+  } catch {
+    // ignore error and return whatever was found
+  }
+
+  return { deptName: resolvedDept, univName: resolvedUniv, facName: resolvedFac };
 }
 
 interface ProfileEvent {
@@ -83,7 +187,6 @@ interface ProfileEvent {
 
 export default function StudentProfile() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +201,15 @@ export default function StudentProfile() {
   
   // Çıkış yapma onay modalı için state
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
+
+  // Geri bildirim modalı state'leri
+  const [isFeedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({
+    subject: "",
+    message: "",
+  });
+  const [feedbackError, setFeedbackError] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   
   const [notification, setNotification] = useState<{
@@ -127,17 +239,50 @@ export default function StudentProfile() {
   const fetchProfile = async () => {
     try {
       const response: any = await api.get("/users/profile/me");
-      let data = response.data ? response.data : response;
-      if (data.data) {
+      let data = response?.data ? response.data : response;
+      if (data?.data) {
         data = data.data;
       }
 
-      setProfile(data);
-      setEditForm({
-        username: data.username || "",
-        bio: data.bio || "",
-        socialMediaLink: data.socialMediaLink || "",
-      });
+      if (data) {
+        const rawDept = extractStringField(data, [
+          "departmentName",
+          "department",
+          "DepartmentName",
+          "Department",
+        ]);
+        const rawUniv = extractStringField(data, [
+          "universityName",
+          "university",
+          "UniversityName",
+          "University",
+        ]);
+        const rawFac = extractStringField(data, [
+          "facultyName",
+          "faculty",
+          "FacultyName",
+          "Faculty",
+        ]);
+
+        const resolved = await resolveLookupNames(data, rawDept, rawUniv, rawFac);
+
+        const normalized: UserProfile = {
+          ...data,
+          department: resolved.deptName,
+          departmentName: resolved.deptName,
+          university: resolved.univName,
+          universityName: resolved.univName,
+          faculty: resolved.facName,
+          facultyName: resolved.facName,
+        };
+
+        setProfile(normalized);
+        setEditForm({
+          username: data.username || "",
+          bio: data.bio || "",
+          socialMediaLink: data.socialMediaLink || "",
+        });
+      }
     } catch (error) {
       console.error("Profil bilgileri alınamadı:", error);
     } finally {
@@ -292,6 +437,69 @@ export default function StudentProfile() {
     }
   };
 
+  const handleSubmitFeedback = async (e: FormEvent) => {
+    e.preventDefault();
+    const subject = feedbackForm.subject.trim();
+    const message = feedbackForm.message.trim();
+
+    if (subject.length < 3) {
+      setFeedbackError(
+        t("Feedback_SubjectMinLength") || "Konu en az 3 karakter olmalıdır.",
+      );
+      return;
+    }
+    if (subject.length > 100) {
+      setFeedbackError(
+        t("Val_MaxLength", {
+          PropertyName: t("Feedback_Subject") || "Konu",
+          MaxLength: 100,
+        }) || "Konu en fazla 100 karakter olmalıdır.",
+      );
+      return;
+    }
+    if (message.length < 10) {
+      setFeedbackError(
+        t("Feedback_MessageMinLength") || "Mesaj en az 10 karakter olmalıdır.",
+      );
+      return;
+    }
+    if (message.length > 1000) {
+      setFeedbackError(
+        t("Val_MaxLength", {
+          PropertyName: t("Feedback_Message") || "Mesaj",
+          MaxLength: 1000,
+        }) || "Mesaj en fazla 1000 karakter olmalıdır.",
+      );
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackError("");
+
+    try {
+      const response: any = await api.post("/feedbacks", {
+        subject,
+        message,
+      });
+
+      const successMsg =
+        (typeof response === "string" && response) ||
+        response?.data?.message ||
+        response?.message ||
+        t("Res_Feedback_Created") ||
+        "Geri bildiriminiz başarıyla iletildi.";
+
+      setFeedbackModalOpen(false);
+      setFeedbackForm({ subject: "", message: "" });
+      showNotification("success", successMsg);
+    } catch (err: any) {
+      console.error("Geri bildirim gönderilemedi:", err);
+      setFeedbackError(getErrorMessage(err));
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-500 font-medium bg-gray-50">
@@ -354,9 +562,16 @@ export default function StudentProfile() {
               <Camera size={15} />
             </button>
           </div>
-          <div className="profile-hero-eyebrow">{profile?.title || profile?.departmentName || t("Student_Department")}</div>
+          {(profile?.title || profile?.departmentName || profile?.department) && (
+            <div className="profile-hero-eyebrow">
+              {profile.title || profile.departmentName || profile.department}
+            </div>
+          )}
           <h1>{profile?.firstName} {profile?.lastName}</h1>
-          <p>@{profile?.username} · {profile?.universityName || "-"}</p>
+          <p>
+            @{profile?.username}
+            {(profile?.universityName || profile?.university) ? ` · ${profile.universityName || profile.university}` : ""}
+          </p>
           <p className="profile-bio">{profile?.bio || t("Student_NoBio")}</p>
           <button
             type="button"
@@ -428,9 +643,16 @@ export default function StudentProfile() {
           <h2>{t("Student_AccountSettings")}</h2>
           <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> {t("Student_EditProfile")} <span>›</span></button>
           <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> {t("Student_ChangePassword")} <span>›</span></button>
-          {normalizeRole(profile?.role ?? "") === "Admin" && (
-            <button type="button" onClick={() => navigate("/admin")}><ShieldCheck size={18} /> {t("Admin_NavigationOverview")} <span>›</span></button>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              setFeedbackForm({ subject: "", message: "" });
+              setFeedbackError("");
+              setFeedbackModalOpen(true);
+            }}
+          >
+            <MessageSquare size={18} /> {t("Student_FeedbackButton") || "Geri Bildirim / Sorun Bildir"} <span>›</span>
+          </button>
           <button type="button" onClick={() => setLogoutModalOpen(true)}><LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"} <span>›</span></button>
           <button type="button" className="danger" onClick={handleDeleteAccount}><Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"} <span>›</span></button>
         </section>
@@ -476,6 +698,7 @@ export default function StudentProfile() {
               </h1>
               <p className="text-sm font-medium text-gray-500 mt-0.5">
                 @{profile?.username}
+                {(profile?.universityName || profile?.university) ? ` · ${profile.universityName || profile.university}` : ""}
               </p>
             </div>
 
@@ -494,7 +717,7 @@ export default function StudentProfile() {
                       {t("Student_University") || "Üniversite"}
                     </span>
                     <span className="font-semibold text-gray-800">
-                      {profile?.universityName || "-"}
+                      {profile?.universityName || profile?.university || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -502,7 +725,7 @@ export default function StudentProfile() {
                       {t("Student_Faculty") || "Fakülte"}
                     </span>
                     <span className="font-semibold text-gray-800">
-                      {profile?.facultyName || "-"}
+                      {profile?.facultyName || profile?.faculty || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -510,7 +733,7 @@ export default function StudentProfile() {
                       {t("Student_Department") || "Bölüm"}
                     </span>
                     <span className="font-semibold text-gray-800">
-                      {profile?.departmentName || "-"}
+                      {profile?.departmentName || profile?.department || "-"}
                     </span>
                   </div>
                 </div>
@@ -781,6 +1004,129 @@ export default function StudentProfile() {
                 <button type="button" onClick={() => setPasswordModalOpen(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl text-sm">{t("Auth_Cancel")}</button>
                 <button type="submit" disabled={isChangingPassword} className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
                   {isChangingPassword ? t("Student_Saving") : t("Student_Save")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Geri Bildirim / Sorun Bildir Modalı */}
+      {isFeedbackModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setFeedbackModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <MessageSquare size={20} strokeWidth={2.2} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 leading-snug">
+                  {t("Feedback_ModalTitle") || "Geri Bildirim / Sorun Bildir"}
+                </h2>
+                <p className="text-xs text-gray-500 font-medium">
+                  {t("Feedback_ModalDescription") ||
+                    "Sorun, öneri veya taleplerinizi bize iletebilirsiniz."}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-700 leading-relaxed">
+              ℹ️ {t("Feedback_DailyLimitNotice") || "Günde en fazla 2 geri bildirim gönderebilirsiniz."}
+            </div>
+
+            <form onSubmit={handleSubmitFeedback} className="space-y-4">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    {t("Feedback_Subject") || "Konu"} <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {feedbackForm.subject.length}/100
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  maxLength={100}
+                  value={feedbackForm.subject}
+                  onChange={(e) =>
+                    setFeedbackForm({ ...feedbackForm, subject: e.target.value })
+                  }
+                  placeholder={
+                    t("Feedback_SubjectPlaceholder") ||
+                    "Örn: Etkinlikler listelenirken hata alıyorum"
+                  }
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    {t("Feedback_Message") || "Mesajınız / Açıklama"} <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    {feedbackForm.message.length}/1000
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  required
+                  minLength={10}
+                  maxLength={1000}
+                  value={feedbackForm.message}
+                  onChange={(e) =>
+                    setFeedbackForm({ ...feedbackForm, message: e.target.value })
+                  }
+                  placeholder={
+                    t("Feedback_MessagePlaceholder") ||
+                    "Sorun veya önerinizi detaylı bir şekilde açıklayın (en az 10 karakter)..."
+                  }
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 resize-none transition-colors"
+                />
+              </div>
+
+              {feedbackError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-red-600" />
+                  <span>{feedbackError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFeedbackModalOpen(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm transition-colors"
+                >
+                  {t("Auth_Cancel") || "İptal"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingFeedback}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {isSubmittingFeedback ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>{t("Feedback_Sending") || "Gönderiliyor..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      <span>{t("Feedback_Send") || "Gönder"}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

@@ -24,7 +24,6 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<User?> GetUserWithDetailsByIdAsync(Guid userId)
         {
             return await _context.Users
-                .AsNoTracking()
                 .Include(u => u.Department)
                     .ThenInclude(d => d.Faculty)
                         .ThenInclude(f => f.University)
@@ -46,7 +45,6 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<User?> GetByIdIncludingDeletedAsync(Guid id)
         {
             return await _context.Set<User>()
-                .AsNoTracking() 
                 .Include(u => u.Department)
                     .ThenInclude(d => d.Faculty)
                         .ThenInclude(f => f.University)
@@ -59,7 +57,6 @@ namespace UniVibe.Infrastructure.Repositories
             var normalizedEmail = email.ToLowerInvariant();
 
             return await _context.Set<User>()
-                .AsNoTracking()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
         }
