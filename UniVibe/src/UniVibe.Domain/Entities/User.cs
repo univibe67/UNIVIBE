@@ -31,5 +31,6 @@ namespace UniVibe.Domain.Entities
         public Department Department { get; set; } = null!;
         public ICollection<Event> Events { get; set; } = new List<Event>();
         public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
+        public ICollection<EventMessage> EventMessages { get; set; } = new List<EventMessage>();
     }
 }

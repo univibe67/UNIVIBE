@@ -13,6 +13,7 @@ namespace UniVibe.Application
         {
             // Standart servislerimiz
             services.AddScoped<IEventService, EventService>();
+            services.AddScoped<IEventMessageService, EventMessageService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUniversityService, UniversityService>();

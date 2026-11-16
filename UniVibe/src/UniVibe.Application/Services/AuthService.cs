@@ -420,9 +420,10 @@ namespace UniVibe.Application.Services
                     }
                 }
             }
-
             return new RegistrationDetailsResponse(
+                matchedUniversity.Id,
                 matchedUniversity.Name,
+                facultyId,
                 facultyName
             );
         }
