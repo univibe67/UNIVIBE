@@ -184,7 +184,7 @@ namespace UniVibe.Application.Services
                 var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5000";
                 string linkForEmail;
 
-                if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !targetUrl.Contains("localhost"))
+                if (targetUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     linkForEmail = $"{targetUrl}?token={token}";
                 }
@@ -239,81 +239,17 @@ namespace UniVibe.Application.Services
             if (isUsernameTaken)
                 throw new ConflictException(_localizer["Auth_UsernameTaken"].Value);
 
-            var email = pendingUser.Email.ToLowerInvariant();
-            var parts = email.Split('@');
-            if (parts.Length != 2)
-                throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
+            var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+            if (department == null)
+                throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
 
-            var emailDomain = parts[1];
-
-            UserRole assignedRole;
-            University? matchedUniversity = null;
-            string facultyCode = string.Empty;
-            Guid? finalDepartmentId = null;
-
-            var universities = await _universityRepository.GetAllAsync();
-
-            var studentUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.StudentEmailDomain) && emailDomain.EndsWith(u.StudentEmailDomain, StringComparison.OrdinalIgnoreCase));
-            var teacherUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.AcademicEmailDomain) && emailDomain.EndsWith(u.AcademicEmailDomain, StringComparison.OrdinalIgnoreCase));
-
-            if (studentUni != null)
+            if (request.Grade.HasValue)
             {
-                assignedRole = UserRole.Student;
-                matchedUniversity = studentUni;
-
-                var domainParts = emailDomain.Split('.');
-                if (domainParts.Length >= 3)
-                {
-                    facultyCode = domainParts[0];
-                }
-
-                if (string.IsNullOrEmpty(facultyCode))
-                {
-                    throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
-                }
-
-                var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.EmailSubDomain == facultyCode && f.UniversityId == matchedUniversity.Id);
-                if (faculty == null)
-                {
-                    throw new NotFoundException(_localizer["Auth_FacultyNotFound"].Value);
-                }
-
-                var department = await _departmentRepository.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
-                if (department == null)
-                    throw new NotFoundException(_localizer["Auth_DepartmentNotFound"].Value);
-
-                if (department.FacultyId != faculty.Id)
-                {
-                    throw new BadRequestException(_localizer["Auth_DepartmentFacultyMismatch"].Value);
-                }
-
-                finalDepartmentId = request.DepartmentId;
-            }
-            else if (teacherUni != null)
-            {
-                assignedRole = UserRole.Teacher;
-                matchedUniversity = teacherUni;
-
-                finalDepartmentId = null;
-            }
-            else
-            {
-                throw new BadRequestException(_localizer["Auth_InvalidEmailDomain"].Value);
-            }
-
-            if (assignedRole == UserRole.Student)
-            {
-                if (!request.Grade.HasValue)
-                    throw new BadRequestException(_localizer["Auth_StudentGradeReq"].Value);
-
                 request.Title = null;
             }
-            else if (assignedRole == UserRole.Teacher)
+            else if (string.IsNullOrWhiteSpace(request.Title))
             {
-                if (string.IsNullOrWhiteSpace(request.Title))
-                    throw new BadRequestException(_localizer["Auth_TeacherTitleReq"].Value);
-
-                request.Grade = null;
+                throw new BadRequestException(_localizer["Auth_TeacherTitleReq"].Value);
             }
 
             var newUser = new User
@@ -325,8 +261,8 @@ namespace UniVibe.Application.Services
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
                 Title = request.Title,
-                DepartmentId = finalDepartmentId,
-                Role = assignedRole,
+                DepartmentId = request.DepartmentId,
+                Role = request.Grade.HasValue ? UserRole.Student : UserRole.Teacher,
                 IsActive = true,
                 ProfilePictureUrl = $"https://ui-avatars.com/api/?name={request.FirstName}+{request.LastName}&background=random&color=fff",
 

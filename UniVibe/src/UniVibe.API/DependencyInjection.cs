@@ -33,7 +33,7 @@ namespace UniVibe.API
 
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 5,
+                        PermitLimit = 8,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -46,7 +46,7 @@ namespace UniVibe.API
 
                     return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 3,
+                        PermitLimit = 8,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
