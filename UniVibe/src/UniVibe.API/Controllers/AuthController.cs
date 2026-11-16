@@ -119,7 +119,7 @@ namespace UniVibe.API.Controllers
             return Ok(ApiResponse<string>.Success(message));
         }
 
-        [HttpGet("registration-details")]
+        [HttpGet("registration/details")]
         public async Task<IActionResult> GetRegistrationDetails([FromQuery] string token)
         {
             var result = await _authService.GetRegistrationDetailsByTokenAsync(token);
