@@ -29,6 +29,7 @@ namespace UniVibe.Domain.Entities
         public EventCategory Category { get; set; } = default!;
 
         public ICollection<EventAttendee> Attendees { get; set; } = new List<EventAttendee>();
+        public ICollection<EventMessage> Messages { get; set; } = new List<EventMessage>();
     }
 
 }

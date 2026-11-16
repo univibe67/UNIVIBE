@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UniVibe.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.DTOs.Message.Requests;
+using UniVibe.Application.DTOs.Message.Responses;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -13,10 +17,14 @@ namespace UniVibe.API.Controllers
     public sealed class EventsController : ControllerBase
     {
         private readonly IEventService _eventService;
+        private readonly IEventMessageService _eventMessageService;
+        private readonly IHubContext<EventChatHub> _hubContext;
 
-        public EventsController(IEventService eventService)
+        public EventsController(IEventService eventService, IEventMessageService eventMessageService, IHubContext<EventChatHub> hubContext)
         {
             _eventService = eventService;
+            _eventMessageService = eventMessageService;
+            _hubContext = hubContext;
         }
 
         [HttpGet]
@@ -103,6 +111,29 @@ namespace UniVibe.API.Controllers
             var message = await _eventService.LeaveEventAsync(id, userId);
 
             return Ok(ApiResponse<string>.Success(message));
+        }
+
+        [HttpGet("{id:guid}/messages")]
+        public async Task<IActionResult> GetEventMessages(
+            Guid id,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var userId = User.GetUserId();
+            var messages = await _eventMessageService.GetMessagesAsync(id, userId, pageNumber, pageSize);
+
+            return Ok(ApiResponse<List<EventMessageResponse>>.Success(messages));
+        }
+        [HttpPost("{id:guid}/messages")]
+        public async Task<IActionResult> SendEventMessage(Guid id, [FromBody] SendMessageRequest request)
+        {
+            var userId = User.GetUserId();
+            var createdMessage = await _eventMessageService.SendMessageAsync(id, userId, request);
+
+            await _hubContext.Clients.Group(id.ToString())
+                .SendAsync("ReceiveMessage", createdMessage);
+
+            return Ok(ApiResponse<EventMessageResponse>.Success(createdMessage));
         }
     }
 }

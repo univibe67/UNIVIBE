@@ -18,6 +18,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<University> Universities { get; set; }
         public DbSet<EventAttendee> EventAttendees { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
+        public DbSet<EventMessage> EventMessages { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -52,6 +53,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
             modelBuilder.Entity<Faculty>().HasQueryFilter(f => !f.IsDeleted);
             modelBuilder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
             modelBuilder.Entity<Feedback>().HasQueryFilter(f => !f.IsDeleted);
+            modelBuilder.Entity<EventMessage>().HasQueryFilter(em => !em.IsDeleted);
 
             modelBuilder.Entity<Faculty>()
             .HasOne(f => f.University)
@@ -144,6 +146,23 @@ namespace UniVibe.Infrastructure.Persistence.Context
                       .WithMany(u => u.Feedbacks)
                       .HasForeignKey(f => f.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<EventMessage>(entity =>
+            {
+                entity.Property(em => em.Content).HasMaxLength(1000).IsRequired();
+
+                entity.HasIndex(em => em.EventId);
+                entity.HasIndex(em => em.CreatedAt);
+
+                entity.HasOne(em => em.Event)
+                      .WithMany(e => e.Messages)
+                      .HasForeignKey(em => em.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(em => em.User)
+                      .WithMany(u => u.EventMessages)
+                      .HasForeignKey(em => em.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

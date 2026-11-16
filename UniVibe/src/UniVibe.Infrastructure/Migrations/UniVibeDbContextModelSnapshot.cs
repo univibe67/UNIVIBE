@@ -201,6 +201,49 @@ namespace UniVibe.Infrastructure.Migrations
                     b.ToTable("EventCategories");
                 });
 
+            modelBuilder.Entity("UniVibe.Domain.Entities.EventMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEdited")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EventMessages");
+                });
+
             modelBuilder.Entity("UniVibe.Domain.Entities.Faculty", b =>
                 {
                     b.Property<Guid>("Id")
@@ -517,6 +560,25 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("UniVibe.Domain.Entities.EventMessage", b =>
+                {
+                    b.HasOne("UniVibe.Domain.Entities.Event", "Event")
+                        .WithMany("Messages")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniVibe.Domain.Entities.User", "User")
+                        .WithMany("EventMessages")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("UniVibe.Domain.Entities.Faculty", b =>
                 {
                     b.HasOne("UniVibe.Domain.Entities.University", "University")
@@ -557,6 +619,8 @@ namespace UniVibe.Infrastructure.Migrations
             modelBuilder.Entity("UniVibe.Domain.Entities.Event", b =>
                 {
                     b.Navigation("Attendees");
+
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("UniVibe.Domain.Entities.EventCategory", b =>
@@ -576,6 +640,8 @@ namespace UniVibe.Infrastructure.Migrations
 
             modelBuilder.Entity("UniVibe.Domain.Entities.User", b =>
                 {
+                    b.Navigation("EventMessages");
+
                     b.Navigation("Events");
 
                     b.Navigation("Feedbacks");
