@@ -120,7 +120,6 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("registration-details")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetRegistrationDetails([FromQuery] string token)
         {
             var result = await _authService.GetRegistrationDetailsByTokenAsync(token);
