@@ -21,7 +21,6 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<Feedback?> GetFeedbackWithUserByIdAsync(Guid id)
         {
             return await _context.Set<Feedback>()
-                .AsNoTracking()
                 .Include(f => f.User)
                 .FirstOrDefaultAsync(f => f.Id == id);
         }

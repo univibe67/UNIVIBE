@@ -78,7 +78,6 @@ namespace UniVibe.Infrastructure.Repositories
         public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId)
         {
             return await _context.Events
-                .AsNoTracking()
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
                 .Include(e => e.Category)
