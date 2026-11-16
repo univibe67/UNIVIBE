@@ -377,5 +377,54 @@ namespace UniVibe.Application.Services
             string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
             return $"{expoBaseUrl}/--/register-complete?token={Uri.EscapeDataString(token)}";
         }
+        public async Task<RegistrationDetailsResponse> GetRegistrationDetailsByTokenAsync(string token)
+        {
+            var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == token && !u.IsUsed);
+            if (pendingUser == null || pendingUser.ExpiryDate < DateTime.UtcNow)
+            {
+                throw new BadRequestException(_localizer["Auth_InvalidOrExpiredToken"].Value);
+            }
+
+            var email = pendingUser.Email.ToLowerInvariant();
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+                throw new BadRequestException(_localizer["Auth_InvalidEmailFormat"].Value);
+
+            var emailDomain = parts[1];
+            var universities = await _universityRepository.GetAllAsync();
+
+            var studentUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.StudentEmailDomain) && emailDomain.EndsWith(u.StudentEmailDomain, StringComparison.OrdinalIgnoreCase));
+            var teacherUni = universities.FirstOrDefault(u => !string.IsNullOrEmpty(u.AcademicEmailDomain) && emailDomain.EndsWith(u.AcademicEmailDomain, StringComparison.OrdinalIgnoreCase));
+
+            University? matchedUniversity = studentUni ?? teacherUni;
+            if (matchedUniversity == null)
+            {
+                throw new BadRequestException(_localizer["Auth_InvalidEmailDomain"].Value);
+            }
+
+            string facultyName = string.Empty;
+            Guid facultyId = Guid.Empty;
+
+            if (studentUni != null)
+            {
+                var domainParts = emailDomain.Split('.');
+                string facultyCode = domainParts.Length >= 3 ? domainParts[0] : string.Empty;
+
+                if (!string.IsNullOrEmpty(facultyCode))
+                {
+                    var faculty = await _facultyRepository.FirstOrDefaultAsync(f => f.EmailSubDomain == facultyCode && f.UniversityId == matchedUniversity.Id);
+                    if (faculty != null)
+                    {
+                        facultyId = faculty.Id;
+                        facultyName = faculty.Name;
+                    }
+                }
+            }
+
+            return new RegistrationDetailsResponse(
+                matchedUniversity.Name,
+                facultyName
+            );
+        }
     }
 }

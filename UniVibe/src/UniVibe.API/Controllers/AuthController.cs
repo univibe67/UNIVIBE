@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using System.Globalization;
@@ -116,6 +117,14 @@ namespace UniVibe.API.Controllers
         {
             var message = await _authService.ResetPasswordAsync(request);
             return Ok(ApiResponse<string>.Success(message));
+        }
+
+        [HttpGet("registration-details")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetRegistrationDetails([FromQuery] string token)
+        {
+            var result = await _authService.GetRegistrationDetailsByTokenAsync(token);
+            return Ok(ApiResponse<RegistrationDetailsResponse>.Success(result));
         }
 
         private string GenerateRedirectHtml(string link, string title, string message, string buttonText, string lang)
