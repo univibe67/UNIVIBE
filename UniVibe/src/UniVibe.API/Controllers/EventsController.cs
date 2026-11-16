@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UniVibe.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
@@ -16,11 +18,13 @@ namespace UniVibe.API.Controllers
     {
         private readonly IEventService _eventService;
         private readonly IEventMessageService _eventMessageService;
+        private readonly IHubContext<EventChatHub> _hubContext;
 
-        public EventsController(IEventService eventService, IEventMessageService eventMessageService)
+        public EventsController(IEventService eventService, IEventMessageService eventMessageService, IHubContext<EventChatHub> hubContext)
         {
             _eventService = eventService;
             _eventMessageService = eventMessageService;
+            _hubContext = hubContext;
         }
 
         [HttpGet]
@@ -125,6 +129,9 @@ namespace UniVibe.API.Controllers
         {
             var userId = User.GetUserId();
             var createdMessage = await _eventMessageService.SendMessageAsync(id, userId, request);
+
+            await _hubContext.Clients.Group(id.ToString())
+                .SendAsync("ReceiveMessage", createdMessage);
 
             return Ok(ApiResponse<EventMessageResponse>.Success(createdMessage));
         }

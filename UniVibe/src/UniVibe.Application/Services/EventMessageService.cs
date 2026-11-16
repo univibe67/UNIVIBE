@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentValidation;
 using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Message.Requests;
@@ -17,25 +18,26 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
-
+        private readonly IValidator<SendMessageRequest> _sendMessageValidator;
         public EventMessageService(
             IEventMessageRepository eventMessageRepository,
             IEventRepository eventRepository,
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IStringLocalizer<SharedResources> localizer)
+            IStringLocalizer<SharedResources> localizer,
+            IValidator<SendMessageRequest> sendMessageValidator)
         {
             _eventMessageRepository = eventMessageRepository;
             _eventRepository = eventRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizer = localizer;
+            _sendMessageValidator = sendMessageValidator;
         }
 
         public async Task<EventMessageResponse> SendMessageAsync(Guid eventId, Guid userId, SendMessageRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Content))
-                throw new BadRequestException(_localizer["Event_MessageEmpty"].Value);
+            await _sendMessageValidator.ValidateAndThrowCustomAsync(request);
 
             var eventEntity = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
             if (eventEntity == null)
@@ -47,6 +49,17 @@ namespace UniVibe.Application.Services
             if (!isCreator && !isAttendee)
             {
                 throw new ForbiddenException(_localizer["Event_ChatAccessDenied"].Value);
+            }
+
+            var lastMessage = await _eventMessageRepository.GetLastMessageByEventIdAsync(eventId, userId);
+
+            if (lastMessage != null)
+            {
+                var timePassed = DateTime.UtcNow - lastMessage.CreatedAt;
+                if (timePassed.TotalSeconds < 30)
+                {
+                    throw new BadRequestException(_localizer["Event_RateLimit_TooFast"]?.Value ?? "Çok hızlı mesaj gönderiyorsunuz. Lütfen biraz bekleyin.");
+                }
             }
 
             var message = new EventMessage
