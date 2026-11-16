@@ -20,7 +20,6 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddWebAPIServices(builder.Configuration);
 
-builder.Services.AddSignalR();
 
 builder.Services.AddHealthChecks();
 

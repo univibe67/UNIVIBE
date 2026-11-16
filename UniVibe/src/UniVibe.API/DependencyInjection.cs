@@ -16,6 +16,7 @@ namespace UniVibe.API
         public static IServiceCollection AddWebAPIServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddControllers();
+            services.AddSignalR();
             services.AddHttpContextAccessor();
 
             services.Configure<ForwardedHeadersOptions>(options =>

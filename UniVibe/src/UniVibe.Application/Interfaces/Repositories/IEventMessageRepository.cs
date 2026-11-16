@@ -6,5 +6,6 @@ namespace UniVibe.Application.Interfaces.Repositories
     {
         Task<List<EventMessage>> GetMessagesByEventIdAsync(Guid eventId, int pageNumber, int pageSize);
         Task<EventMessage?> GetByIdWithUserAsync(Guid id);
+        Task<EventMessage?> GetLastMessageByEventIdAsync(Guid eventId, Guid userId);
     }
 }
