@@ -2,6 +2,7 @@
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.DTOs.Feedback.Response;
+using UniVibe.Application.DTOs.Message.Responses;
 using UniVibe.Application.DTOs.University.Responses;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Domain.Entities;
@@ -17,7 +18,12 @@ namespace UniVibe.Application.Mappings
             CreateMap<Department, DepartmentLookupResponse>();
 
             CreateMap<CreateEventRequest, Event>();
-            CreateMap<EventCategory, EventCategoryResponse>();
+
+
+            CreateMap<EventMessage, EventMessageResponse>()
+                .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"))
+                .ForMember(dest => dest.SenderProfileImage, opt => opt.MapFrom(src => src.User != null ? src.User.ProfilePictureUrl : null));
+
 
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))

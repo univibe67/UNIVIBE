@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using UniVibe.API;
+using UniVibe.API.Hubs;
 using UniVibe.Application;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Middlewares;
@@ -18,6 +19,9 @@ builder.Host.UseSerilog();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddWebAPIServices(builder.Configuration);
+
+builder.Services.AddSignalR();
+
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -35,14 +39,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseRequestLocalization();
 app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
-
 app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -59,5 +62,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+app.MapHub<EventChatHub>("/hubs/event-chat");
 
 app.Run();
