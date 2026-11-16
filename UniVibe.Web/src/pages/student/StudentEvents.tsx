@@ -6,10 +6,21 @@ import {
   PlusCircle,
   XCircle,
   AlertTriangle,
+  MessageCircle,
+  X,
+  LogOut,
+  Loader2,
+  MapPin,
+  User,
+  Tag,
+  CheckCircle2,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { getErrorMessage } from "../../services/errorMessage";
 import EventCard from "../../components/EventCard";
+import EventCommentsChat from "../../components/EventCommentsChat";
+import { isEventInFuture } from "../../utils/eventFilter";
+import { formatCategoryName } from "../../utils/categoryLabel";
 
 interface EventItem {
   id: string;
@@ -19,6 +30,8 @@ interface EventItem {
   location?: string;
   creatorName?: string;
   organizerName?: string;
+  creatorId?: string;
+  userId?: string;
   eventDate: string;
   status: string | number;
   categoryName?: string;
@@ -60,6 +73,55 @@ export default function StudentEvents() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
 
+  // Detail Modal states
+  const [selectedEventDetail, setSelectedEventDetail] = useState<EventItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [isLeavingEvent, setIsLeavingEvent] = useState(false);
+
+  // Comments Modal states
+  const [selectedCommentsEvent, setSelectedCommentsEvent] = useState<EventItem | null>(null);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+
+  const handleOpenDetail = async (eventItem: EventItem) => {
+    setDetailLoading(true);
+    setSelectedEventDetail(eventItem);
+    setIsDetailModalOpen(true);
+    try {
+      const response: any = await api.get(`/events/${eventItem.id}`);
+      const fetchedData = response?.data?.data || response?.data || response;
+      if (fetchedData && fetchedData.id) {
+        setSelectedEventDetail({
+          ...fetchedData,
+          isJoined: eventItem.isJoined !== undefined ? eventItem.isJoined : fetchedData.isJoined,
+          isCreator: eventItem.isCreator !== undefined ? eventItem.isCreator : fetchedData.isCreator,
+        });
+      }
+    } catch (error) {
+      console.error("Detay yüklenemedi:", error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleOpenComments = async (eventItem: EventItem) => {
+    setSelectedCommentsEvent(eventItem);
+    setIsCommentsModalOpen(true);
+    try {
+      const response: any = await api.get(`/events/${eventItem.id}`);
+      const actualData = response?.data?.data || response?.data || response;
+      if (actualData) {
+        setSelectedCommentsEvent({
+          ...actualData,
+          isJoined: actualData.isJoined !== undefined ? actualData.isJoined : eventItem.isJoined,
+          isCreator: actualData.isCreator !== undefined ? actualData.isCreator : eventItem.isCreator,
+        });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const showNotification = (type: "success" | "error", text: string) => {
@@ -69,38 +131,61 @@ export default function StudentEvents() {
     }, 5000);
   };
 
+  const handleLeaveEvent = async (eventId: string) => {
+    setIsLeavingEvent(true);
+    try {
+      await api.delete(`/events/${eventId}/attendees/me`);
+      showNotification("success", t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız.");
+      setJoinedEvents((prev) => prev.filter((e) => e.id !== eventId));
+      setIsDetailModalOpen(false);
+      setSelectedEventDetail(null);
+      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: false } : prev));
+      await fetchData();
+    } catch (err: any) {
+      showNotification("error", getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu.");
+    } finally {
+      setIsLeavingEvent(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const activeRes = await api.get("/events/active/me");
-      const activeData = activeRes.data?.data || activeRes.data || activeRes;
-      if (activeData && activeData.id) {
-        setActiveEvent(activeData);
+      const [activeResult, joinedResult, catResult] = await Promise.allSettled([
+        api.get("/events/active/me"),
+        api.get("/events/joined/me"),
+        api.get("/event-categories"),
+      ]);
+
+      if (activeResult.status === "fulfilled") {
+        const activeRes = activeResult.value;
+        const activeData = activeRes.data?.data || activeRes.data || activeRes;
+        if (activeData && activeData.id) {
+          setActiveEvent(activeData);
+        } else {
+          setActiveEvent(null);
+        }
       } else {
         setActiveEvent(null);
       }
-    } catch {
-      setActiveEvent(null);
-    }
 
-    try {
-      const joinedRes = await api.get("/events/joined/me");
-      const joinedData = joinedRes.data?.data || joinedRes.data || joinedRes;
-      setJoinedEvents(Array.isArray(joinedData) ? joinedData : []);
-    } catch {
-      setJoinedEvents([]);
-    }
+      if (joinedResult.status === "fulfilled") {
+        const joinedRes = joinedResult.value;
+        const joinedData = joinedRes.data?.data || joinedRes.data || joinedRes;
+        setJoinedEvents(Array.isArray(joinedData) ? joinedData : []);
+      } else {
+        setJoinedEvents([]);
+      }
 
-    try {
-      const catResponse = await api.get("/event-categories");
-      const rawData = catResponse.data || catResponse;
-      const catData = (rawData as any)?.data || (rawData as any)?.items || rawData;
-      setCategories(Array.isArray(catData) ? catData : []);
-    } catch (catError) {
-      console.error("Kategoriler yüklenirken hata oluştu:", catError);
+      if (catResult.status === "fulfilled") {
+        const catResponse = catResult.value;
+        const rawData = catResponse.data || catResponse;
+        const catData = (rawData as any)?.data || (rawData as any)?.items || rawData;
+        setCategories(Array.isArray(catData) ? catData : []);
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -244,8 +329,9 @@ export default function StudentEvents() {
               {activeEvent ? (
                 <div className="student-event-panel">
                   <EventCard
-                    event={activeEvent}
-                    onViewDetail={() => navigate(`/student/events/${activeEvent.id}`)}
+                    event={{ ...activeEvent, isCreator: true }}
+                    onViewDetail={() => handleOpenDetail({ ...activeEvent, isCreator: true })}
+                    onOpenComments={() => handleOpenComments({ ...activeEvent, isCreator: true })}
                   />
                   <div className="mt-4 flex justify-end">
                     <button
@@ -274,13 +360,14 @@ export default function StudentEvents() {
                 <Calendar className="text-indigo-500" size={20} />
                 {t("Student_JoinedEvents")}
               </h2>
-              {joinedEvents.length > 0 ? (
+              {(joinedEvents?.length ?? 0) > 0 ? (
                 <div className="student-events-list">
                   {joinedEvents.map((event) => (
                     <EventCard
                       key={event.id}
-                      event={event}
-                      onViewDetail={() => navigate(`/student/events/${event.id}`)}
+                      event={{ ...event, isJoined: true }}
+                      onViewDetail={() => handleOpenDetail({ ...event, isJoined: true })}
+                      onOpenComments={() => handleOpenComments({ ...event, isJoined: true })}
                     />
                   ))}
                 </div>
@@ -458,6 +545,157 @@ export default function StudentEvents() {
               >
                 {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Etkinlik Detay Modalı */}
+      {isDetailModalOpen && selectedEventDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative border border-gray-100">
+            <button
+              onClick={() => {
+                setIsDetailModalOpen(false);
+                setSelectedEventDetail(null);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-md hover:bg-gray-100 text-gray-700 transition-colors z-10 shadow-sm"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={20} />
+            </button>
+
+            {detailLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <Loader2 size={32} className="animate-spin text-blue-600 mb-2" />
+                <span className="text-xs font-semibold">{t("Admin_LoadingDetails")}</span>
+              </div>
+            ) : (
+              <>
+                <div className="relative h-48 -mx-6 -mt-6 mb-6">
+                  {selectedEventDetail.imageUrl ? (
+                    <img src={selectedEventDetail.imageUrl} alt={selectedEventDetail.title} className="w-full h-full object-cover rounded-t-3xl" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
+                      <Calendar size={48} className="text-blue-300 mb-2" />
+                      <span className="text-blue-400 font-bold text-sm">{t("Student_EventPlaceholder")}</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                    <h2 className="text-2xl font-black text-white">{selectedEventDetail.title}</h2>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <Calendar size={18} className="text-blue-500" />
+                    <span className="text-sm font-semibold">
+                      {selectedEventDetail.eventDate ? new Date(selectedEventDetail.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", { dateStyle: "long", timeStyle: "short" }) : "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <MapPin size={18} className="text-red-500" />
+                    <span className="text-sm font-semibold">{selectedEventDetail.location || t("Student_NotSpecified")}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <User size={16} className="text-purple-500" />
+                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || t("Student_Unknown")}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <Tag size={16} className="text-green-500" />
+                      <span className="text-xs font-semibold truncate">{formatCategoryName(selectedEventDetail.categoryName, t)}</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                      {selectedEventDetail.description || t("Student_NoEventDescription")}
+                    </p>
+                  </div>
+                  
+                  {selectedEventDetail.isJoined && (
+                    <div className="space-y-2">
+                      <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+                        <CheckCircle2 size={18} />
+                        <span>{t("Student_JoinedBadge") || "✓ Katıldınız"}</span>
+                      </div>
+                      {isEventInFuture(selectedEventDetail.eventDate) && (
+                        <button
+                          type="button"
+                          onClick={() => handleLeaveEvent(selectedEventDetail.id)}
+                          disabled={isLeavingEvent}
+                          className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isLeavingEvent ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                            </>
+                          ) : (
+                            <>
+                              <LogOut size={14} />
+                              <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {selectedEventDetail.isCreator && (
+                    <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-bold py-3.5 rounded-xl text-sm text-center">
+                      {t("Student_CreatedByYou") || "Sizin Etkinliğiniz"}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Yorumlar & Sohbet Modalı */}
+      {isCommentsModalOpen && selectedCommentsEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col p-6 shadow-2xl relative border border-gray-100">
+            {/* Modal Kapatma Butonu */}
+            <button
+              onClick={() => {
+                setIsCommentsModalOpen(false);
+                setSelectedCommentsEvent(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Başlığı */}
+            <div className="border-b border-gray-100 pb-4 pr-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <MessageCircle size={20} strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 truncate leading-snug">
+                    {selectedCommentsEvent.title}
+                  </h2>
+                  <p className="text-xs text-gray-500 font-medium truncate">
+                    {t("Event_CommentsModalSubtitle") || "Etkinlik Yorumları & Canlı Sohbet"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sohbet Bileşeni */}
+            <div className="overflow-y-auto flex-1">
+              <EventCommentsChat
+                eventId={selectedCommentsEvent.id}
+                isJoined={selectedCommentsEvent.isJoined}
+                isCreator={selectedCommentsEvent.isCreator}
+                creatorId={(selectedCommentsEvent as any).creatorId ?? (selectedCommentsEvent as any).userId}
+                creatorName={selectedCommentsEvent.creatorName || selectedCommentsEvent.organizerName}
+                organizerName={selectedCommentsEvent.organizerName || selectedCommentsEvent.creatorName}
+                className="!mt-0 !pt-2 !border-t-0"
+              />
             </div>
           </div>
         </div>

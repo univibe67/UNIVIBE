@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { ChangeEvent } from "react";
-import { Search, MapPin, Calendar, User, Tag } from "lucide-react";
+import { Search, MapPin, Calendar, User, Tag, MessageCircle, X, CheckCircle2, LogOut, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
+import EventCommentsChat from "../../components/EventCommentsChat";
 import { getErrorMessage } from "../../services/errorMessage";
+import { tokenService } from "../../services/tokenService";
 import { formatCategoryName } from "../../utils/categoryLabel";
+import { isEventActiveAndJoinable, isEventInFuture } from "../../utils/eventFilter";
 
 interface EventItem {
   id: string;
@@ -20,6 +23,8 @@ interface EventItem {
   categoryName?: string;
   isCreator?: boolean;
   isJoined?: boolean;
+  isActive?: boolean;
+  isDeleted?: boolean;
 }
 
 interface PaginatedResponse<T> {
@@ -44,15 +49,6 @@ interface ApiResponse<T> {
   isSuccessful?: boolean;
 }
 
-interface EventStatistics {
-  totalCreatedEvents?: number;
-  activeEvents?: number;
-  pendingEvents?: number;
-  TotalCreatedEvents?: number;
-  ActiveEvents?: number;
-  PendingEvents?: number;
-}
-
 function getApiData<T>(response: unknown): T | undefined {
   if (!response || typeof response !== "object") {
     return undefined;
@@ -73,12 +69,15 @@ export default function StudentHome() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [eventCount, setEventCount] = useState(0);
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [selectedEventDetail, setSelectedEventDetail] = useState<EventItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [selectedCommentsEvent, setSelectedCommentsEvent] = useState<EventItem | null>(null);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const showNotification = (type: "success" | "error", text: string) => {
     setNotification({ type, text });
@@ -86,44 +85,31 @@ export default function StudentHome() {
   };
 
   const fetchEventsAndCategories = async () => {
+    if (tokenService.isTokenExpired(undefined, 0)) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
-      const response = await api.get<PaginatedResponse<EventItem> | ApiResponse<PaginatedResponse<EventItem>>>("/events", {
-        params: { PageNumber: 1, PageSize: 50, OnlyActive: true },
-      });
-      const actualData = getApiData<PaginatedResponse<EventItem>>(response) ?? {};
-      const items = actualData.items ?? actualData.Items ?? [];
-      setEvents(items);
+      const [eventsResult, profileResult] = await Promise.allSettled([
+        api.get<PaginatedResponse<EventItem> | ApiResponse<PaginatedResponse<EventItem>>>("/events", {
+          params: { PageNumber: 1, PageSize: 50, OnlyActive: true },
+        }),
+        api.get<UserProfile | ApiResponse<UserProfile>>("/users/profile/me"),
+      ]);
 
-      const count = [
-        actualData.totalCount,
-        actualData.TotalCount,
-        actualData.totalItems,
-        actualData.TotalItems,
-      ].find((value) => typeof value === "number");
-
-      setEventCount(typeof count === "number" ? count : items.length);
-
-      try {
-        const statistics = await api.get<EventStatistics | ApiResponse<EventStatistics>>("/events/statistics");
-        const statisticsData = getApiData<EventStatistics>(statistics);
-        const activeEventCount = statisticsData?.activeEvents ?? statisticsData?.ActiveEvents;
-        if (typeof activeEventCount === "number") {
-          setEventCount(activeEventCount);
-        }
-      } catch (statisticsError) {
-        console.error("Etkinlik istatistikleri yüklenemedi:", statisticsError);
+      if (eventsResult.status === "fulfilled") {
+        const actualData = getApiData<PaginatedResponse<EventItem>>(eventsResult.value) ?? {};
+        const items = actualData.items ?? actualData.Items ?? [];
+        setEvents(items);
+      } else {
+        console.error("Etkinlikler yüklenirken hata oluştu:", getErrorMessage(eventsResult.reason));
+        setEvents([]);
       }
-    } catch (error) {
-      console.error("Etkinlikler veya etkinlik istatistikleri yüklenirken hata oluştu:", getErrorMessage(error));
-      setEvents([]);
-      setEventCount(0);
-    }
 
-    try {
-      await api.get("/event-categories");
-    } catch (catError) {
-      console.error("Kategoriler yüklenirken hata oluştu:", catError);
+      if (profileResult.status === "fulfilled") {
+        setProfile(getApiData<UserProfile>(profileResult.value) ?? null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -131,16 +117,6 @@ export default function StudentHome() {
 
   useEffect(() => {
     fetchEventsAndCategories();
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get<UserProfile | ApiResponse<UserProfile>>("/users/profile/me");
-        setProfile(getApiData<UserProfile>(response) ?? null);
-      } catch (error) {
-        console.error("Profil bilgileri alınamadı:", error);
-      }
-    };
-
-    fetchProfile();
   }, []);
 
   const handleOpenDetail = async (eventItem: EventItem) => {
@@ -160,17 +136,74 @@ export default function StudentHome() {
     }
   };
 
+  const handleOpenComments = async (eventItem: EventItem) => {
+    setSelectedCommentsEvent(eventItem);
+    setIsCommentsModalOpen(true);
+    try {
+      const response = await api.get<EventItem | ApiResponse<EventItem>>(`/events/${eventItem.id}`);
+      const fetchedData = getApiData<EventItem>(response);
+      if (fetchedData) {
+        setSelectedCommentsEvent({
+          ...fetchedData,
+          isJoined: fetchedData.isJoined !== undefined ? fetchedData.isJoined : eventItem.isJoined,
+          isCreator: fetchedData.isCreator !== undefined ? fetchedData.isCreator : eventItem.isCreator,
+        });
+      }
+    } catch (error) {
+      console.error("Yorum modalı için etkinlik bilgisi yüklenemedi:", error);
+    }
+  };
+
   const handleJoinEvent = async (eventId: string) => {
     try {
       await api.post(`/events/${eventId}/attendees`);
       showNotification("success", t("Student_JoinSuccess") || "Etkinliğe başarıyla katıldınız!");
-      fetchEventsAndCategories();
-      setIsDetailModalOpen(false);
+      setSelectedEventDetail((prev) => (prev ? { ...prev, isJoined: true } : null));
+      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: true } : prev));
+      setEvents((prev) =>
+        prev.map((e) => (e.id === eventId ? { ...e, isJoined: true } : e))
+      );
+      void fetchEventsAndCategories();
     } catch (error: any) {
+      const status = error?.response?.status || error?.status;
+      if (status === 409) {
+        setSelectedEventDetail((prev) => (prev ? { ...prev, isJoined: true } : null));
+        setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: true } : prev));
+        setEvents((prev) =>
+          prev.map((e) => (e.id === eventId ? { ...e, isJoined: true } : e))
+        );
+        showNotification("success", t("Student_AlreadyJoinedNotice") || "Bu etkinliğe zaten katılmışsınız.");
+        void fetchEventsAndCategories();
+        return;
+      }
       showNotification(
         "error",
         getErrorMessage(error) || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.",
       );
+    }
+  };
+
+  const handleLeaveEvent = async (eventId: string) => {
+    setIsLeaving(true);
+    try {
+      await api.delete(`/events/${eventId}/attendees/me`);
+      showNotification(
+        "success",
+        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız."
+      );
+      setSelectedEventDetail((prev) => (prev ? { ...prev, isJoined: false } : null));
+      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: false } : prev));
+      setEvents((prev) =>
+        prev.map((e) => (e.id === eventId ? { ...e, isJoined: false } : e))
+      );
+      await fetchEventsAndCategories();
+    } catch (error: any) {
+      showNotification(
+        "error",
+        getErrorMessage(error) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu."
+      );
+    } finally {
+      setIsLeaving(false);
     }
   };
 
@@ -183,14 +216,28 @@ export default function StudentHome() {
     { value: "Spor", label: t("Category_Sports") },
     { value: "Teknoloji", label: t("Category_Technology") },
   ];
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      !selectedCategory ||
-      event.categoryName?.toLocaleLowerCase("tr-TR") === selectedCategory.toLocaleLowerCase("tr-TR");
+  // Aktif ve katılınabilir etkinlikler:
+  // 1. Onaylanmış (Approved / aktif statüde) - taslak, bekleyen veya reddedilenler hariç
+  // 2. Gelecek tarihte/saatte olanlar - geçmiş etkinlikler hariç
+  const activeEvents = useMemo(() => {
+    return events.filter(isEventActiveAndJoinable);
+  }, [events]);
 
-    return matchesSearch && matchesCategory;
-  });
+  // Banner sayacı: aktif ve katılınabilir etkinliklerin sayısı
+  const eventCount = activeEvents?.length ?? 0;
+
+  // "Senin için etkinlikler" listesi: banner sayacıyla birebir aynı aktif/katılınabilir
+  // filtreleme mantığı temel alınarak arama terimi ve kategori filtresi uygulanır
+  const filteredEvents = useMemo(() => {
+    return (activeEvents || []).filter((event) => {
+      const matchesSearch = (event.title ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        !selectedCategory ||
+        event.categoryName?.toLocaleLowerCase("tr-TR") === selectedCategory.toLocaleLowerCase("tr-TR");
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [activeEvents, searchTerm, selectedCategory]);
   const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || "UniVibe";
   const initials = displayName === "UniVibe"
     ? "U"
@@ -253,13 +300,14 @@ export default function StudentHome() {
             <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
             <p className="text-gray-500 font-medium">{t("Student_Loading")}</p>
           </div>
-        ) : filteredEvents.length > 0 ? (
+        ) : (filteredEvents?.length ?? 0) > 0 ? (
           <div className="event-grid">
             {filteredEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
                 onViewDetail={() => handleOpenDetail(event)}
+                onOpenComments={() => handleOpenComments(event)}
               />
             ))}
           </div>
@@ -277,7 +325,7 @@ export default function StudentHome() {
       {/* Etkinlik Detay Modalı */}
       {isDetailModalOpen && selectedEventDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl relative border border-gray-100">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl relative border border-gray-100">
             <button
               onClick={() => setIsDetailModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
@@ -340,8 +388,31 @@ export default function StudentHome() {
                     </button>
                   )}
                   {selectedEventDetail.isJoined && (
-                    <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3.5 rounded-xl text-sm text-center">
-                      ✓ Katıldınız
+                    <div className="space-y-2">
+                      <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+                        <CheckCircle2 size={18} />
+                        <span>{t("Student_JoinedBadge") || "✓ Katıldınız"}</span>
+                      </div>
+                      {isEventInFuture(selectedEventDetail.eventDate) && (
+                        <button
+                          type="button"
+                          onClick={() => handleLeaveEvent(selectedEventDetail.id)}
+                          disabled={isLeaving}
+                          className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isLeaving ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                            </>
+                          ) : (
+                            <>
+                              <LogOut size={14} />
+                              <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
                   {selectedEventDetail.isCreator && (
@@ -352,6 +423,55 @@ export default function StudentHome() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Yorumlar & Sohbet Modalı */}
+      {isCommentsModalOpen && selectedCommentsEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col p-6 shadow-2xl relative border border-gray-100">
+            {/* Modal Kapatma Butonu */}
+            <button
+              onClick={() => {
+                setIsCommentsModalOpen(false);
+                setSelectedCommentsEvent(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Başlığı */}
+            <div className="border-b border-gray-100 pb-4 pr-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <MessageCircle size={20} strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 truncate leading-snug">
+                    {selectedCommentsEvent.title}
+                  </h2>
+                  <p className="text-xs text-gray-500 font-medium truncate">
+                    {t("Event_CommentsModalSubtitle") || "Etkinlik Yorumları & Canlı Sohbet"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sohbet Bileşeni */}
+            <div className="overflow-y-auto flex-1">
+              <EventCommentsChat
+                eventId={selectedCommentsEvent.id}
+                isJoined={selectedCommentsEvent.isJoined}
+                isCreator={selectedCommentsEvent.isCreator}
+                creatorId={(selectedCommentsEvent as any).creatorId ?? (selectedCommentsEvent as any).userId}
+                creatorName={selectedCommentsEvent.creatorName || selectedCommentsEvent.organizerName}
+                organizerName={selectedCommentsEvent.organizerName || selectedCommentsEvent.creatorName}
+                className="!mt-0 !pt-2 !border-t-0"
+              />
+            </div>
           </div>
         </div>
       )}

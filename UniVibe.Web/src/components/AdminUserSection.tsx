@@ -32,7 +32,7 @@ export default function AdminUserSection({
 
   return (
     <>
-      {users.length === 0 && !isLoading && (
+      {(users?.length ?? 0) === 0 && !isLoading && (
         <p className="text-center text-gray-500 py-10 sm:py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm sm:text-base">
           {t("Admin_NoUsers")}
         </p>

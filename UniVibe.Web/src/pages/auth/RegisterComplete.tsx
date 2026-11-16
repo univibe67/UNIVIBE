@@ -12,6 +12,7 @@ import {
   TokenErrorView,
 } from "../../components/TokenStatusViews";
 import { SelectionModal } from "../../components/SelectionModal";
+import PasswordInput from "../../components/PasswordInput";
 
 const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
 
@@ -111,17 +112,23 @@ export default function RegisterComplete() {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, setSelectedFac, setSelectedUni, t]);
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const cleanFirstName = (firstName ?? "").trim();
+    const cleanLastName = (lastName ?? "").trim();
+    const cleanUsername = (username ?? "").trim();
+    const cleanPassword = password ?? "";
+    const cleanPhone = (phoneNumber ?? "").trim();
+
     if (
-      !firstName ||
-      !lastName ||
-      !username ||
-      !password ||
-      !phoneNumber ||
+      !cleanFirstName ||
+      !cleanLastName ||
+      !cleanUsername ||
+      !cleanPassword ||
+      !cleanPhone ||
       !selectedDep
     ) {
       setErrorMessage(
@@ -137,16 +144,16 @@ export default function RegisterComplete() {
     try {
       const response = (await api.post("/Auth/register/completion", {
         token,
-        username,
-        password,
-        firstName,
-        lastName,
-        phoneNumber: phoneNumber.trim(),
+        username: cleanUsername,
+        password: cleanPassword,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        phoneNumber: cleanPhone,
         departmentId: selectedDep?.id,
         universityId: selectedUni?.id,
         facultyId: selectedFac?.id,
         grade: grade?.id,
-        title: title.trim() || null,
+        title: (title ?? "").trim() || null,
       })) as any;
 
       const accessToken = response.token || response.data?.token;
@@ -230,7 +237,7 @@ export default function RegisterComplete() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target?.value ?? "")}
                 placeholder="mehmetyilmaz"
               />
             </div>
@@ -239,7 +246,7 @@ export default function RegisterComplete() {
               <input
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => setFirstName(e.target?.value ?? "")}
                 placeholder={t("RegComplete_FirstNamePlaceholder")}
               />
             </div>
@@ -248,17 +255,18 @@ export default function RegisterComplete() {
               <input
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => setLastName(e.target?.value ?? "")}
                 placeholder={t("RegComplete_LastNamePlaceholder")}
               />
             </div>
             <div className="reg-field">
               <label>{t("RegComplete_Password")}</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target?.value ?? "")}
                 placeholder={t("RegComplete_PasswordPlaceholder")}
+                autoComplete="new-password"
+                required
               />
             </div>
           </div>
@@ -363,7 +371,8 @@ export default function RegisterComplete() {
                 maxLength={10}
                 value={phoneNumber}
                 onChange={(e) => {
-                  const numericValue = e.target.value
+                  const raw = e.target?.value ?? "";
+                  const numericValue = raw
                     .replace(/[^0-9]/g, "")
                     .slice(0, 10);
                   setPhoneNumber(numericValue);
@@ -376,7 +385,7 @@ export default function RegisterComplete() {
               <input
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => setTitle(e.target?.value ?? "")}
                 placeholder={t("RegComplete_AcademicTitlePlaceholder")}
               />
             </div>

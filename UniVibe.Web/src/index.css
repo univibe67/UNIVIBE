@@ -32,8 +32,10 @@ button { cursor: pointer; }
 .auth-subtitle { margin: 0 0 31px; color: #73818a; font-size: 14px; }
 .auth-form { display: grid; gap: 17px; }
 .auth-form label { display: grid; gap: 7px; color: #26343c; font-size: 12px; font-weight: 700; }
-.auth-form > div > input { width: 100%; height: 47px; padding: 0 14px; border: 1px solid #e3e9e5; border-radius: 14px; outline: 0; color: #17212b; background: #fff; box-shadow: 0 4px 12px #26352d0b; }
+.auth-form input:not([type="checkbox"]):not([type="radio"]) { width: 100%; height: 47px; padding: 0 14px; border: 1px solid #e3e9e5; border-radius: 14px; outline: 0; color: #17212b; background: #fff; box-shadow: 0 4px 12px #26352d0b; }
 .auth-form input:focus { border-color: #1559ac; box-shadow: 0 0 0 3px #1559ac1c; }
+.password-input-control { padding-right: 44px !important; }
+.password-input-wrapper { position: relative; width: 100%; }
 .auth-password-row { display: flex; align-items: center; justify-content: space-between; }
 .auth-options { display: flex; align-items: center; justify-content: space-between; margin-top: -1px; }
 .auth-remember { display: flex !important; align-items: center; gap: 8px; color: #66747a !important; font-size: 12px !important; font-weight: 400 !important; }
@@ -62,7 +64,7 @@ button { cursor: pointer; }
 .register-section-title { display: none !important; }
 .reg-field { display: grid; gap: 7px; }
 .reg-field > label { color: #26343c; font-size: 12px; font-weight: 700; }
-.reg-field > input { width: 100%; height: 47px; padding: 0 14px; border: 1px solid #e3e9e5; border-radius: 14px; outline: 0; color: #17212b; background: #fff; box-shadow: 0 4px 12px #26352d0b; }
+.reg-field input:not([type="checkbox"]):not([type="radio"]) { width: 100%; height: 47px; padding: 0 14px; border: 1px solid #e3e9e5; border-radius: 14px; outline: 0; color: #17212b; background: #fff; box-shadow: 0 4px 12px #26352d0b; }
 .register-form > .register-section button { min-height: 47px; padding: 0 14px; border: 1px solid #e3e9e5; border-radius: 14px; background: #fff; box-shadow: 0 4px 12px #26352d0b; }
 .reg-select-display { min-height: 47px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border: 1px solid #dfe5e2; border-radius: 12px; color: #17212b; background: #fff; font-size: 13px; }
 .register-education-section { gap: 14px; }

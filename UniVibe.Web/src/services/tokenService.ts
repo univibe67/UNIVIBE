@@ -76,17 +76,65 @@ function getRoleFromClaims(claims: TokenClaims | null): UserRole | null {
   return null;
 }
 
+let onTokensSaved: (() => void) | null = null;
+export function setTokensSavedListener(listener: () => void) {
+  onTokensSaved = listener;
+}
+
 export const tokenService = {
-  getAccessToken: () => localStorage.getItem("accessToken"),
-  getRefreshToken: () => localStorage.getItem("refreshToken"),
-  getRole: (token?: string): UserRole | null => {
-    const currentToken = token ?? localStorage.getItem("accessToken") ?? "";
+  getAccessToken: (): string | null => {
+    const t = localStorage.getItem("accessToken");
+    return t && t !== "undefined" && t !== "null" && t.trim().length > 0 ? t.trim() : null;
+  },
+  getRefreshToken: (): string | null => {
+    const r = localStorage.getItem("refreshToken");
+    return r && r !== "undefined" && r !== "null" && r.trim().length > 0 ? r.trim() : null;
+  },
+  isTokenExpired: (token?: string | null, skewSeconds = 30): boolean => {
+    const currentToken = token ?? tokenService.getAccessToken();
+    if (!currentToken || currentToken === "undefined" || currentToken === "null" || !currentToken.trim()) {
+      return true;
+    }
+    const claims = decodeToken(currentToken);
+    if (!claims || claims.exp === undefined || claims.exp === null) {
+      return true;
+    }
+    const expNum = typeof claims.exp === "number" ? claims.exp : Number(claims.exp);
+    if (!expNum || Number.isNaN(expNum)) {
+      return true;
+    }
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    return expNum <= nowInSeconds + skewSeconds;
+  },
+  hasValidSession: (): boolean => {
+    const accessToken = tokenService.getAccessToken();
+    const refreshToken = tokenService.getRefreshToken();
+    const hasValidAccess = Boolean(accessToken && !tokenService.isTokenExpired(accessToken, 0));
+    const hasValidRefresh = Boolean(refreshToken && refreshToken.trim().length > 0);
+    return hasValidAccess || hasValidRefresh;
+  },
+  getUserId: (): string | null => {
+    const token = tokenService.getAccessToken();
+    if (!token) return null;
+    const claims = decodeToken(token);
+    if (!claims) return null;
+    const id =
+      claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+      claims["nameid"] ||
+      claims["sub"] ||
+      claims["id"] ||
+      claims["UserId"] ||
+      claims["userId"];
+    return typeof id === "string" ? id : null;
+  },
+  getRole: (token?: string | null): UserRole | null => {
+    const currentToken = token ?? tokenService.getAccessToken() ?? "";
     if (currentToken) {
       const roleFromClaims = getRoleFromClaims(decodeToken(currentToken));
       if (roleFromClaims) return roleFromClaims;
     }
     const storedRole = localStorage.getItem("userRole");
-    if (storedRole) {
+    if (storedRole && storedRole !== "undefined" && storedRole !== "null") {
       const norm = normalizeRole(storedRole);
       if (norm) return norm;
     }
@@ -95,11 +143,15 @@ export const tokenService = {
 
   saveTokens: (
     accessToken: string,
-    refreshToken: string,
+    refreshToken?: string | null,
     role?: string | number,
   ) => {
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    if (accessToken && typeof accessToken === "string" && accessToken !== "undefined" && accessToken !== "null") {
+      localStorage.setItem("accessToken", accessToken.trim());
+    }
+    if (refreshToken && typeof refreshToken === "string" && refreshToken !== "undefined" && refreshToken !== "null") {
+      localStorage.setItem("refreshToken", refreshToken.trim());
+    }
     if (role !== undefined && role !== null) {
       const norm = normalizeRole(role);
       if (norm) {
@@ -110,6 +162,9 @@ export const tokenService = {
     const extracted = getRoleFromClaims(decodeToken(accessToken));
     if (extracted) {
       localStorage.setItem("userRole", extracted);
+    }
+    if (onTokensSaved) {
+      onTokensSaved();
     }
   },
 

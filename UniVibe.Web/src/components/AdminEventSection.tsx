@@ -70,6 +70,7 @@ export default function AdminEventSection({
 }: AdminEventSectionProps) {
   const { t } = useTranslation();
 
+  const [currentTime] = useState(() => Date.now());
   const [selectedEventDetail, setSelectedEventDetail] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -91,6 +92,9 @@ export default function AdminEventSection({
 
       setSelectedEventDetail({
         ...fetchedData,
+        creatorId: (fetchedData as any)?.creatorId || (fetchedData as any)?.userId || (eventItem as any)?.creatorId || (eventItem as any)?.userId,
+        creatorName: (fetchedData as any)?.creatorName || (eventItem as any)?.creatorName || (eventItem as any)?.organizerName,
+        organizerName: (fetchedData as any)?.organizerName || (eventItem as any)?.organizerName || (fetchedData as any)?.creatorName,
         isDeleted: eventItem.isDeleted ?? fetchedData.isDeleted,
         rejectionReason:
           eventItem.rejectionReason || fetchedData.rejectionReason,
@@ -129,6 +133,83 @@ export default function AdminEventSection({
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const normalizeStatus = (status?: string | number | null): number => {
+    if (status === null || status === undefined) return 1;
+    const s = String(status).toLowerCase().trim();
+    if (s === "1" || s === "pending" || s === "onay bekliyor") return 1;
+    if (s === "2" || s === "approved" || s === "onaylandi" || s === "onaylandı") return 2;
+    if (s === "3" || s === "rejected" || s === "reddedildi") return 3;
+    if (s === "4" || s === "cancelled" || s === "canceled" || s === "iptal" || s === "iptal edildi") return 4;
+    if (s === "5" || s === "completed" || s === "tamamlandi" || s === "tamamlandı") return 5;
+    const parsed = Number(status);
+    return Number.isNaN(parsed) ? 1 : parsed;
+  };
+
+  const isEventPast = (dateStr?: string | null): boolean => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return !isNaN(d.getTime()) && d.getTime() <= currentTime;
+  };
+
+  const canApproveEvent = (eventItem: { status?: string | number | null; eventDate?: string | null; isDeleted?: boolean }): boolean => {
+    if (eventItem.isDeleted) return false;
+    const st = normalizeStatus(eventItem.status);
+    if (st !== 1) return false;
+    if (isEventPast(eventItem.eventDate)) return false;
+    return true;
+  };
+
+  const canRejectEvent = (eventItem: { status?: string | number | null; eventDate?: string | null; isDeleted?: boolean }): boolean => {
+    if (eventItem.isDeleted) return false;
+    const st = normalizeStatus(eventItem.status);
+    if (st !== 1 && st !== 2) return false;
+    if (isEventPast(eventItem.eventDate)) return false;
+    return true;
+  };
+
+  const getApproveTitle = (eventItem: { status?: string | number | null; eventDate?: string | null; isDeleted?: boolean }): string => {
+    if (eventItem.isDeleted) {
+      return t("Admin_EventCannotApproveCancelled") || (localeStr.startsWith("en") ? "Cancelled events cannot be approved" : "İptal edilmiş bir etkinlik onaylanamaz.");
+    }
+    const st = normalizeStatus(eventItem.status);
+    if (isEventPast(eventItem.eventDate)) {
+      return t("Admin_EventCannotApprovePast") || (localeStr.startsWith("en") ? "Past events cannot be approved" : "Tarihi geçmiş bir etkinlik onaylanamaz.");
+    }
+    if (st === 4) {
+      return t("Admin_EventCannotApproveCancelled") || (localeStr.startsWith("en") ? "Cancelled events cannot be approved" : "İptal edilmiş bir etkinlik onaylanamaz.");
+    }
+    if (st === 2) {
+      return t("Admin_Status_Approved") ? `${t("Admin_Status_Approved")}` : (localeStr.startsWith("en") ? "Event already approved" : "Bu etkinlik zaten onaylandı.");
+    }
+    if (st === 3) {
+      return t("Admin_Status_Rejected") || (localeStr.startsWith("en") ? "Rejected events cannot be approved" : "Reddedilmiş bir etkinlik onaylanamaz.");
+    }
+    if (st === 5) {
+      return t("Admin_Status_Completed") || (localeStr.startsWith("en") ? "Completed events cannot be approved" : "Tamamlanmış bir etkinlik onaylanamaz.");
+    }
+    return t("Admin_Approve") || (localeStr.startsWith("en") ? "Approve" : "Onayla");
+  };
+
+  const getRejectTitle = (eventItem: { status?: string | number | null; eventDate?: string | null; isDeleted?: boolean }): string => {
+    if (eventItem.isDeleted) {
+      return t("Admin_EventCannotRejectCancelled") || (localeStr.startsWith("en") ? "Cancelled events cannot be rejected" : "İptal edilmiş bir etkinlik reddedilemez.");
+    }
+    const st = normalizeStatus(eventItem.status);
+    if (isEventPast(eventItem.eventDate)) {
+      return t("Admin_EventCannotRejectPast") || (localeStr.startsWith("en") ? "Past events cannot be rejected" : "Tarihi geçmiş bir etkinlik reddedilemez.");
+    }
+    if (st === 4) {
+      return t("Admin_EventCannotRejectCancelled") || (localeStr.startsWith("en") ? "Cancelled events cannot be rejected" : "İptal edilmiş bir etkinlik reddedilemez.");
+    }
+    if (st === 3) {
+      return t("Admin_EventAlreadyRejected") || (localeStr.startsWith("en") ? "Event already rejected" : "Bu etkinlik zaten reddedilmiş.");
+    }
+    if (st === 5) {
+      return t("Admin_Status_Completed") || (localeStr.startsWith("en") ? "Completed events cannot be rejected" : "Tamamlanmış bir etkinlik reddedilemez.");
+    }
+    return t("Admin_Reject") || (localeStr.startsWith("en") ? "Reject" : "Reddet");
   };
 
   return (
@@ -197,7 +278,7 @@ export default function AdminEventSection({
         </div>
       </div>
 
-      {processedEvents.length === 0 && !isLoading ? (
+      {(processedEvents?.length ?? 0) === 0 && !isLoading ? (
         <div className="text-center py-10 sm:py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
           <CalendarDays className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mb-3" />
           <p className="text-sm sm:text-base text-gray-500 font-medium">
@@ -215,8 +296,7 @@ export default function AdminEventSection({
                 event.isDeleted ||
                 event.status === 4 ||
                 statusStr === "cancelled";
-              const isPast =
-                new Date(event.eventDate).getTime() < new Date().getTime();
+              const isPast = isEventPast(event.eventDate);
 
               return (
                 <div
@@ -277,32 +357,37 @@ export default function AdminEventSection({
                       <button
                         type="button"
                         onClick={() => handleOpenDetail(event)}
-                        className="p-1.5 sm:p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                         title={t("Admin_ViewDetails")}
                       >
                         <Eye size={18} />
                       </button>
-
-                      {isPending && !isPast && !isCancelled && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleApproveEvent(event.id)}
-                            className="p-1.5 sm:p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
-                            title={t("Admin_Approve")}
-                          >
-                            <CheckCircle size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRejectModal(event.id)}
-                            className="p-1.5 sm:p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                            title={t("Admin_Reject")}
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        type="button"
+                        disabled={!canApproveEvent(event)}
+                        onClick={() => handleApproveEvent(event.id)}
+                        className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+                          canApproveEvent(event)
+                            ? "bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"
+                            : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                        }`}
+                        title={getApproveTitle(event)}
+                      >
+                        <CheckCircle size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canRejectEvent(event)}
+                        onClick={() => handleOpenRejectModal(event.id)}
+                        className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+                          canRejectEvent(event)
+                            ? "bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                            : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                        }`}
+                        title={getRejectTitle(event)}
+                      >
+                        <XCircle size={18} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -334,8 +419,7 @@ export default function AdminEventSection({
                     event.isDeleted ||
                     event.status === 4 ||
                     statusStr === "cancelled";
-                  const isPast =
-                    new Date(event.eventDate).getTime() < new Date().getTime();
+                  const isPast = isEventPast(event.eventDate);
 
                   return (
                     <tr
@@ -388,32 +472,37 @@ export default function AdminEventSection({
                         <button
                           type="button"
                           onClick={() => handleOpenDetail(event)}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                           title={t("Admin_ViewDetails")}
                         >
                           <Eye size={20} />
                         </button>
-
-                        {isPending && !isPast && !isCancelled && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleApproveEvent(event.id)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title={t("Admin_Approve")}
-                            >
-                              <CheckCircle size={20} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenRejectModal(event.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title={t("Admin_Reject")}
-                            >
-                              <XCircle size={20} />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          disabled={!canApproveEvent(event)}
+                          onClick={() => handleApproveEvent(event.id)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            canApproveEvent(event)
+                              ? "text-green-600 hover:bg-green-50 cursor-pointer"
+                              : "text-gray-400 opacity-40 cursor-not-allowed"
+                          }`}
+                          title={getApproveTitle(event)}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!canRejectEvent(event)}
+                          onClick={() => handleOpenRejectModal(event.id)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            canRejectEvent(event)
+                              ? "text-red-600 hover:bg-red-50 cursor-pointer"
+                              : "text-gray-400 opacity-40 cursor-not-allowed"
+                          }`}
+                          title={getRejectTitle(event)}
+                        >
+                          <XCircle size={20} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -427,8 +516,8 @@ export default function AdminEventSection({
               <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left w-full sm:w-auto">
                 {t("Admin_Pagination_Info", {
                   start: indexOfFirstEvent + 1,
-                  end: Math.min(indexOfLastEvent, processedEvents.length),
-                  total: processedEvents.length,
+                  end: Math.min(indexOfLastEvent, processedEvents?.length ?? 0),
+                  total: processedEvents?.length ?? 0,
                 })}
               </p>
 
@@ -466,7 +555,7 @@ export default function AdminEventSection({
 
       {isDetailModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl sm:max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setIsDetailModalOpen(false)}
@@ -612,13 +701,47 @@ export default function AdminEventSection({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-xl transition-colors"
-                >
-                  {t("Admin_Close")}
-                </button>
+                <div className="flex flex-wrap items-center justify-end gap-2 mt-4 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    disabled={!canApproveEvent(selectedEventDetail)}
+                    onClick={() => {
+                      setIsDetailModalOpen(false);
+                      handleApproveEvent(selectedEventDetail.id);
+                    }}
+                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                      canApproveEvent(selectedEventDetail)
+                        ? "bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer"
+                        : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                    }`}
+                    title={getApproveTitle(selectedEventDetail)}
+                  >
+                    <CheckCircle size={16} /> {t("Admin_Approve")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canRejectEvent(selectedEventDetail)}
+                    onClick={() => {
+                      setIsDetailModalOpen(false);
+                      handleOpenRejectModal(selectedEventDetail.id);
+                    }}
+                    className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                      canRejectEvent(selectedEventDetail)
+                        ? "bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer"
+                        : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                    }`}
+                    title={getRejectTitle(selectedEventDetail)}
+                  >
+                    <XCircle size={16} /> {t("Admin_Reject")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm rounded-xl transition-colors cursor-pointer"
+                  >
+                    {t("Admin_Close")}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="py-12 text-center text-red-500 font-medium">

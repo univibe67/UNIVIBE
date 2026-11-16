@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Eye } from "lucide-react";
+import { Calendar, MapPin, Eye, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatCategoryName } from "../utils/categoryLabel";
 
@@ -22,9 +22,10 @@ interface EventItem {
 interface EventCardProps {
   event: EventItem;
   onViewDetail: (event: EventItem) => void;
+  onOpenComments?: (event: EventItem) => void;
 }
 
-export default function EventCard({ event, onViewDetail }: EventCardProps) {
+export default function EventCard({ event, onViewDetail, onOpenComments }: EventCardProps) {
   const { t, i18n } = useTranslation();
 
   return (
@@ -73,14 +74,22 @@ export default function EventCard({ event, onViewDetail }: EventCardProps) {
           </div>
         </div>
 
-        <div>
+        <div className="space-y-2 mt-4">
           <button
             type="button"
             onClick={() => onViewDetail(event)}
-            className="event-card-action"
+            className="event-card-action !mt-0 flex items-center justify-center gap-2 hover:bg-blue-100/70 transition-colors"
           >
             <Eye size={16} />
-            <span>{t("Student_ViewDetails")}</span>
+            <span>{t("Student_ViewDetails") || "Detayları Gör"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenComments ? onOpenComments(event) : onViewDetail(event)}
+            className="event-card-action !mt-0 flex items-center justify-center gap-2 hover:bg-blue-100/70 transition-colors"
+          >
+            <MessageCircle size={16} />
+            <span>{t("Event_CommentsButton") || "Yorum ve Sohbet"}</span>
           </button>
         </div>
       </div>

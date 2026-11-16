@@ -62,24 +62,53 @@ interface PaginatedUsers {
 
 export const adminApi = {
   getUsers: async (pageNumber = 1, pageSize = 100) => {
-    const result = await request<PaginatedUsers>(api.get(
-      `/admin/users?pageNumber=${pageNumber}&pageSize=${pageSize}`,
-    ));
-    return result.items ?? [];
+    try {
+      const result = await request<PaginatedUsers>(api.get(
+        `/admin/users?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+      ));
+      const items = result?.items ?? (result as any)?.data?.items ?? (Array.isArray(result) ? result : []);
+      return Array.isArray(items) ? items : [];
+    } catch {
+      return [];
+    }
   },
   suspendUser: (id: string) => request(api.patch(`/admin/users/${id}/suspension`)),
   activateUser: (id: string) => request(api.patch(`/admin/users/${id}/activation`)),
   deleteUser: (id: string) => request(api.delete(`/admin/users/${id}`)),
   changeUserRole: (id: string, newRole: UserRole | number) =>
     request(api.patch(`/admin/users/${id}/role`, { newRole })),
-  getPendingEvents: () => request<AdminEvent[]>(api.get("/admin/events/pending")),
-  getEvents: () => request<AdminEvent[]>(api.get("/admin/events")),
+  getPendingEvents: async () => {
+    try {
+      const res: any = await api.get("/admin/events/pending");
+      const list = res?.data || res;
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  },
+  getEvents: async () => {
+    try {
+      const res: any = await api.get("/admin/events");
+      const list = res?.data || res;
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  },
   getEvent: (id: string) => request<AdminEvent>(api.get(`/admin/events/${id}`)),
   approveEvent: (id: string) =>
     request(api.patch(`/admin/events/${id}/approval`)),
   rejectEvent: (id: string, reason: string) =>
     request(api.patch(`/admin/events/${id}/rejection`, { reason })),
-  getFeedbacks: () => request<AdminFeedback[]>(api.get("/feedbacks")),
+  getFeedbacks: async () => {
+    try {
+      const res: any = await api.get("/feedbacks");
+      const list = res?.data || res;
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  },
   resolveFeedback: (id: string) =>
     request(api.patch(`/feedbacks/${id}/resolution`, {})),
   getStatistics: () => request<EventStatistics>(api.get("/events/statistics")),
