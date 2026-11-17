@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import {
   User,
@@ -14,15 +14,26 @@ import {
   LockKeyhole,
   MessageSquare,
   Send,
+  Calendar,
+  MapPin,
+  Tag,
+  CheckCircle2,
+  MessageCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import EventCard from "../../components/EventCard";
+import EventCommentsChat from "../../components/EventCommentsChat";
 import { getErrorMessage } from "../../services/errorMessage";
-import { parseLookupArray } from "../../hooks/useRegistrationData";
+import PasswordInput from "../../components/PasswordInput";
+import { isEventInFuture } from "../../utils/eventFilter";
+import { formatCategoryName } from "../../utils/categoryLabel";
 
 function LanguageSelector() {
   const { i18n } = useTranslation();
+  const currentLang = (i18n.language || "tr").toLowerCase();
+  const isEn = currentLang.startsWith("en");
+  const isTr = !isEn;
 
   return (
     <div className="absolute top-5 right-5 flex bg-white/90 backdrop-blur-md rounded-2xl p-1.5 border border-purple-100 z-20 shadow-md">
@@ -30,7 +41,7 @@ function LanguageSelector() {
         type="button"
         onClick={() => i18n.changeLanguage("tr")}
         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-          i18n.language === "tr"
+          isTr
             ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20"
             : "text-gray-600 hover:bg-gray-100"
         }`}
@@ -41,7 +52,7 @@ function LanguageSelector() {
         type="button"
         onClick={() => i18n.changeLanguage("en")}
         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-          i18n.language === "en"
+          isEn
             ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20"
             : "text-gray-600 hover:bg-gray-100"
         }`}
@@ -97,79 +108,17 @@ const isGuid = (val?: string | null): boolean =>
   typeof val === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
 
-async function resolveLookupNames(
-  profileData: any,
-  currentDept: string,
-  currentUniv: string,
-  currentFac: string
-): Promise<{ deptName: string; univName: string; facName: string }> {
-  // If human-readable strings already exist and are not GUIDs, return immediately
-  if (
-    currentDept &&
-    !isGuid(currentDept) &&
-    currentUniv &&
-    !isGuid(currentUniv)
-  ) {
-    return { deptName: currentDept, univName: currentUniv, facName: currentFac };
-  }
-
-  const deptId = isGuid(currentDept)
-    ? currentDept
-    : profileData.departmentId || profileData.DepartmentId;
-  const univId = isGuid(currentUniv)
-    ? currentUniv
-    : profileData.universityId || profileData.UniversityId;
-
-  let resolvedUniv = currentUniv && !isGuid(currentUniv) ? currentUniv : "";
-  let resolvedFac = currentFac && !isGuid(currentFac) ? currentFac : "";
-  let resolvedDept = currentDept && !isGuid(currentDept) ? currentDept : "";
-
-  try {
-    const uniRes: any = await api.get("/universities");
-    const unis = parseLookupArray(uniRes);
-
-    if (univId && !resolvedUniv) {
-      const matched = unis.find(
-        (u) => String(u.id).toLowerCase() === String(univId).toLowerCase()
-      );
-      if (matched) resolvedUniv = matched.name;
-    }
-
-    if (deptId && !resolvedDept) {
-      const targetUnis = resolvedUniv
-        ? unis.filter((u) => u.name === resolvedUniv)
-        : unis;
-
-      for (const u of targetUnis) {
-        try {
-          const facRes: any = await api.get(`/universities/${u.id}/faculties`);
-          const facs = parseLookupArray(facRes);
-          for (const f of facs) {
-            const depRes: any = await api.get(
-              `/universities/faculties/${f.id}/departments`
-            );
-            const deps = parseLookupArray(depRes);
-            const matchedDep = deps.find(
-              (d) => String(d.id).toLowerCase() === String(deptId).toLowerCase()
-            );
-            if (matchedDep) {
-              resolvedDept = matchedDep.name;
-              if (!resolvedFac) resolvedFac = f.name;
-              if (!resolvedUniv) resolvedUniv = u.name;
-              break;
-            }
-          }
-          if (resolvedDept) break;
-        } catch {
-          // ignore error for single lookup
-        }
-      }
-    }
-  } catch {
-    // ignore error and return whatever was found
-  }
-
-  return { deptName: resolvedDept, univName: resolvedUniv, facName: resolvedFac };
+function resolveLookupNames(
+  _profileData: any,
+  currentDept?: string,
+  currentUniv?: string,
+  currentFac?: string
+): { deptName: string; univName: string; facName: string } {
+  return {
+    deptName: currentDept && !isGuid(currentDept) ? currentDept : "",
+    univName: currentUniv && !isGuid(currentUniv) ? currentUniv : "",
+    facName: currentFac && !isGuid(currentFac) ? currentFac : "",
+  };
 }
 
 interface ProfileEvent {
@@ -178,11 +127,17 @@ interface ProfileEvent {
   description?: string;
   imageUrl?: string;
   location?: string;
+  creatorName?: string;
+  organizerName?: string;
+  creatorId?: string;
+  userId?: string;
   eventDate: string;
   status: string | number;
   categoryName?: string;
   isJoined?: boolean;
   isCreator?: boolean;
+  cancellationReason?: string;
+  rejectionReason?: string;
 }
 
 export default function StudentProfile() {
@@ -195,9 +150,19 @@ export default function StudentProfile() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [passwordError, setPasswordError] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Hesap silme modalı state'leri
+  const [isDeleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   
   // Çıkış yapma onay modalı için state
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -228,6 +193,97 @@ export default function StudentProfile() {
   const [joinedEvents, setJoinedEvents] = useState<ProfileEvent[]>([]);
   const [createdEvent, setCreatedEvent] = useState<ProfileEvent | null>(null);
   const [activeTab, setActiveTab] = useState<"joined" | "created">("joined");
+
+  // Detail Modal states
+  const [selectedEventDetail, setSelectedEventDetail] = useState<ProfileEvent | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [isLeavingEvent, setIsLeavingEvent] = useState(false);
+
+  // Comments Modal states
+  const [selectedCommentsEvent, setSelectedCommentsEvent] = useState<ProfileEvent | null>(null);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+
+  const handleOpenDetail = async (eventItem: ProfileEvent) => {
+    setDetailLoading(true);
+    setSelectedEventDetail(eventItem);
+    setIsDetailModalOpen(true);
+    try {
+      const response: any = await api.get(`/events/${eventItem.id}`);
+      const fetchedData = response?.data?.data || response?.data || response;
+      if (fetchedData && fetchedData.id) {
+        setSelectedEventDetail({
+          ...fetchedData,
+          isJoined: eventItem.isJoined !== undefined ? eventItem.isJoined : fetchedData.isJoined,
+          isCreator: eventItem.isCreator !== undefined ? eventItem.isCreator : fetchedData.isCreator,
+        });
+      }
+    } catch (error) {
+      console.error("Detay yüklenemedi:", error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleOpenComments = async (eventItem: ProfileEvent) => {
+    setSelectedCommentsEvent(eventItem);
+    setIsCommentsModalOpen(true);
+    try {
+      const response: any = await api.get(`/events/${eventItem.id}`);
+      const fetchedData = response?.data?.data || response?.data || response;
+      if (fetchedData && fetchedData.id) {
+        setSelectedCommentsEvent({
+          ...fetchedData,
+          isJoined: fetchedData.isJoined !== undefined ? fetchedData.isJoined : eventItem.isJoined,
+          isCreator: fetchedData.isCreator !== undefined ? fetchedData.isCreator : eventItem.isCreator,
+        });
+      }
+    } catch (error) {
+      console.error("Yorum modalı için etkinlik bilgisi yüklenemedi:", error);
+    }
+  };
+
+  const fetchProfileEvents = useCallback(async () => {
+    try {
+      const [joinedResponse, createdResponse] = await Promise.all([
+        api.get("/events/joined/me"),
+        api.get("/events/active/me"),
+      ]);
+      const joinedData: any = joinedResponse.data || joinedResponse;
+      const createdData: any = createdResponse.data || createdResponse;
+      const joined = joinedData?.data || joinedData;
+      const created = createdData?.data || createdData;
+      setJoinedEvents(Array.isArray(joined) ? joined : []);
+      setCreatedEvent(created?.id ? created : null);
+    } catch (error) {
+      console.error("Profil etkinlikleri alınamadı:", error);
+      setJoinedEvents([]);
+      setCreatedEvent(null);
+    }
+  }, []);
+
+  const handleLeaveEvent = async (eventId: string) => {
+    setIsLeavingEvent(true);
+    try {
+      await api.delete(`/events/${eventId}/attendees/me`);
+      showNotification(
+        "success",
+        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız."
+      );
+      setJoinedEvents((prev) => prev.filter((e) => e.id !== eventId));
+      setIsDetailModalOpen(false);
+      setSelectedEventDetail(null);
+      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: false } : prev));
+      await fetchProfileEvents();
+    } catch (err: any) {
+      showNotification(
+        "error",
+        getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu."
+      );
+    } finally {
+      setIsLeavingEvent(false);
+    }
+  };
 
   const showNotification = (type: "success" | "error", text: string) => {
     setNotification({ type, text });
@@ -264,7 +320,7 @@ export default function StudentProfile() {
           "Faculty",
         ]);
 
-        const resolved = await resolveLookupNames(data, rawDept, rawUniv, rawFac);
+        const resolved = resolveLookupNames(data, rawDept, rawUniv, rawFac);
 
         const normalized: UserProfile = {
           ...data,
@@ -292,27 +348,8 @@ export default function StudentProfile() {
 
   useEffect(() => {
     fetchProfile();
-    const fetchProfileEvents = async () => {
-      try {
-        const [joinedResponse, createdResponse] = await Promise.all([
-          api.get("/events/joined/me"),
-          api.get("/events/active/me"),
-        ]);
-        const joinedData: any = joinedResponse.data || joinedResponse;
-        const createdData: any = createdResponse.data || createdResponse;
-        const joined = joinedData?.data || joinedData;
-        const created = createdData?.data || createdData;
-        setJoinedEvents(Array.isArray(joined) ? joined : []);
-        setCreatedEvent(created?.id ? created : null);
-      } catch (error) {
-        console.error("Profil etkinlikleri alınamadı:", error);
-        setJoinedEvents([]);
-        setCreatedEvent(null);
-      }
-    };
-
     fetchProfileEvents();
-  }, []);
+  }, [fetchProfileEvents]);
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -348,7 +385,7 @@ export default function StudentProfile() {
       console.error("Fotoğraf yükleme hatası:", error);
       showNotification(
         "error",
-        t("Student_PhotoUploadError") || "Fotoğraf sunucuya gönderilemedi.",
+        getErrorMessage(error) || t("Student_PhotoUploadError") || "Fotoğraf sunucuya gönderilemedi.",
       );
     } finally {
       setUploading(false);
@@ -395,43 +432,90 @@ export default function StudentProfile() {
   };
 
   const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        t("Auth_DeleteAccountConfirm") ||
-          t("Auth_DeleteAccountConfirm"),
-      )
-    ) {
-      api
-        .delete("/users/account")
-        .then(() => {
-          localStorage.clear();
-          window.location.href = "/";
-        })
-        .catch((error) => {
-          showNotification(
-            "error",
-            getErrorMessage(error) || t("Student_DeleteAccountError"),
+    setDeletePassword("");
+    setDeleteError("");
+    setDeleteAccountModalOpen(true);
+  };
+
+  const handleConfirmDeleteAccount = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!deletePassword.trim()) {
+      setDeleteError(t("Val_PasswordRequired") || "Lütfen şifrenizi girin.");
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteError("");
+
+    try {
+      // Backend şifre doğrulaması: Kullanıcının e-posta veya kullanıcı adı ile şifresi kontrol edilir
+      const userIdentifier = profile?.email || profile?.username;
+      if (userIdentifier) {
+        try {
+          await api.post("/Auth/login", {
+            email: userIdentifier,
+            password: deletePassword,
+          });
+        } catch {
+          setDeleteError(
+            t("Auth_InvalidPassword") || "Girdiğiniz şifre hatalı. Lütfen kontrol edip tekrar deneyin."
           );
-        });
+          setIsDeletingAccount(false);
+          return;
+        }
+      }
+
+      // Backend hesap silme endpoint'i
+      await api.delete("/users/account");
+
+      setDeleteAccountModalOpen(false);
+      showNotification(
+        "success",
+        t("Auth_DeleteAccountSuccess") || "Hesabınız başarıyla silindi (pasife alındı)."
+      );
+
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.href = "/";
+      }, 1200);
+    } catch (error: any) {
+      setDeleteError(
+        getErrorMessage(error) ||
+          t("Student_DeleteAccountError") ||
+          "Hesap silinirken bir sorun oluştu."
+      );
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
   const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError(t("Student_PasswordMinLength"));
+    const newPass = passwordForm.newPassword ?? "";
+    const confirmPass = passwordForm.confirmPassword ?? "";
+    const currentPass = passwordForm.currentPassword ?? "";
+
+    if (newPass.length < 6) {
+      setPasswordError(t("Student_PasswordMinLength") || "Yeni şifre en az 6 karakter olmalıdır.");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      setPasswordError(t("Reset_PasswordMismatch") || "Yeni şifreler birbiriyle eşleşmiyor.");
       return;
     }
 
     setIsChangingPassword(true);
     setPasswordError("");
     try {
-      await api.post("/users/password/change", passwordForm);
-      setPasswordForm({ currentPassword: "", newPassword: "" });
+      await api.post("/users/password/change", {
+        currentPassword: currentPass,
+        newPassword: newPass,
+      });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setPasswordModalOpen(false);
-      showNotification("success", t("Student_PasswordChanged"));
+      showNotification("success", t("Student_PasswordChanged") || "Şifreniz başarıyla değiştirildi.");
     } catch (error: any) {
-      setPasswordError(getErrorMessage(error) || t("Student_PasswordChangeError"));
+      setPasswordError(getErrorMessage(error) || t("Student_PasswordChangeError") || "Şifre değiştirilemedi.");
     } finally {
       setIsChangingPassword(false);
     }
@@ -439,8 +523,8 @@ export default function StudentProfile() {
 
   const handleSubmitFeedback = async (e: FormEvent) => {
     e.preventDefault();
-    const subject = feedbackForm.subject.trim();
-    const message = feedbackForm.message.trim();
+    const subject = (feedbackForm.subject ?? "").trim();
+    const message = (feedbackForm.message ?? "").trim();
 
     if (subject.length < 3) {
       setFeedbackError(
@@ -617,7 +701,7 @@ export default function StudentProfile() {
 
         <section className="profile-tabs">
           <button type="button" className={activeTab === "joined" ? "active" : ""} onClick={() => setActiveTab("joined")}>
-            {t("Student_JoinedEvents")} <span>{joinedEvents.length}</span>
+            {t("Student_JoinedEvents")} <span>{joinedEvents?.length ?? 0}</span>
           </button>
           <button type="button" className={activeTab === "created" ? "active" : ""} onClick={() => setActiveTab("created")}>
             {t("Student_CreatedEvents")} <span>{createdEvent ? 1 : 0}</span>
@@ -625,14 +709,23 @@ export default function StudentProfile() {
         </section>
 
         <section className="profile-event-list">
-          {activeTab === "joined" && joinedEvents.length === 0 && (
+          {activeTab === "joined" && (joinedEvents?.length ?? 0) === 0 && (
             <div className="profile-empty-state">{t("Student_NoJoinedEvents")}</div>
           )}
           {activeTab === "joined" && joinedEvents.map((event) => (
-            <EventCard key={event.id} event={event} onViewDetail={() => window.location.assign(`/student/events/${event.id}`)} />
+            <EventCard
+              key={event.id}
+              event={{ ...event, isJoined: true }}
+              onViewDetail={() => handleOpenDetail({ ...event, isJoined: true })}
+              onOpenComments={() => handleOpenComments({ ...event, isJoined: true })}
+            />
           ))}
           {activeTab === "created" && createdEvent && (
-            <EventCard event={createdEvent} onViewDetail={() => window.location.assign(`/student/events/${createdEvent.id}`)} />
+            <EventCard
+              event={{ ...createdEvent, isCreator: true }}
+              onViewDetail={() => handleOpenDetail({ ...createdEvent, isCreator: true })}
+              onOpenComments={() => handleOpenComments({ ...createdEvent, isCreator: true })}
+            />
           )}
           {activeTab === "created" && !createdEvent && (
             <div className="profile-empty-state">{t("Student_NoCreatedEvents")}</div>
@@ -966,44 +1059,210 @@ export default function StudentProfile() {
         )}
 
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
             <button
               type="button"
-              onClick={() => setPasswordModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-              aria-label={t("Admin_Close")}
+              onClick={() => {
+                setPasswordModalOpen(false);
+                setPasswordError("");
+                setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+              }}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              aria-label={t("Admin_Close") || "Kapat"}
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold text-gray-900 border-b pb-3">{t("Student_ChangePassword")}</h2>
+
+            <div className="flex items-center gap-3 border-b pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <LockKeyhole size={20} strokeWidth={2.2} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 leading-snug">
+                  {t("Student_ChangePassword") || "Şifre Değiştir"}
+                </h2>
+                <p className="text-xs text-gray-500 font-medium">
+                  {t("Reset_Description") || "Hesap güvenliğiniz için şifrenizi güncelleyin."}
+                </p>
+              </div>
+            </div>
+
             <form onSubmit={handleChangePassword} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">{t("Student_CurrentPassword")}</span>
-                <input
-                  type="password"
+                <span className="text-xs font-bold text-gray-700">{t("Student_CurrentPassword") || "Mevcut şifre"}</span>
+                <PasswordInput
                   required
                   value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target?.value ?? "" }))}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
                 />
               </label>
+
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">{t("Student_NewPassword")}</span>
-                <input
-                  type="password"
+                <span className="text-xs font-bold text-gray-700">{t("Student_NewPassword") || "Yeni şifre"}</span>
+                <PasswordInput
                   required
                   minLength={6}
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target?.value ?? "" }))}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
                 />
               </label>
-              {passwordError && <p className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">{passwordError}</p>}
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setPasswordModalOpen(false)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl text-sm">{t("Auth_Cancel")}</button>
-                <button type="submit" disabled={isChangingPassword} className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
-                  {isChangingPassword ? t("Student_Saving") : t("Student_Save")}
+
+              <label className="block space-y-1">
+                <span className="text-xs font-bold text-gray-700">{t("Student_ConfirmNewPassword") || "Yeni şifre (Tekrar)"}</span>
+                <PasswordInput
+                  required
+                  minLength={6}
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target?.value ?? "" }))}
+                  placeholder={t("Student_ConfirmNewPasswordPlaceholder") || "••••••••"}
+                  autoComplete="new-password"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                />
+              </label>
+
+              {passwordError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-red-600" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasswordModalOpen(false);
+                    setPasswordError("");
+                    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                  }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm transition-colors"
+                >
+                  {t("Auth_Cancel") || "İptal"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50 transition-colors shadow-md shadow-blue-600/20 flex items-center justify-center gap-2"
+                >
+                  {isChangingPassword ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>{t("Student_Saving") || "Kaydediliyor..."}</span>
+                    </>
+                  ) : (
+                    t("Student_Save") || "Kaydet"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Özel Hesap Silme Onay Modalı */}
+      {isDeleteAccountModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteAccountModalOpen(false);
+                setDeletePassword("");
+                setDeleteError("");
+              }}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={20} />
+            </button>
+
+            <div className="text-center space-y-3 pt-2">
+              <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-sm">
+                <Trash2 size={28} strokeWidth={2.2} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {t("Auth_DeleteAccountTitle") || "Hesabını Silmek İstediğine Emin Misin?"}
+                </h2>
+                <p className="text-xs text-gray-500 font-medium mt-1">
+                  {t("Auth_DeleteAccountSubtitle") || "Bu işlem profilinizi pasife alacak ve aktif etkinliklerinizi iptal edecektir."}
+                </p>
+              </div>
+            </div>
+
+            {/* 15 Gün Bilgilendirmesi */}
+            <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 text-xs text-amber-900 space-y-1.5 leading-relaxed">
+              <div className="flex items-center gap-2 font-bold text-amber-800">
+                <AlertTriangle size={16} className="shrink-0 text-amber-600" />
+                <span>{t("Auth_DeleteAccountNoticeTitle") || "15 Günlük Kurtarma Süresi"}</span>
+              </div>
+              <p className="text-amber-700/90 text-[11.5px]">
+                {t("Auth_DeleteAccountNotice") ||
+                  "Hesabınız hemen kalıcı olarak silinmeyecek, pasife alınacaktır. 15 gün içinde tekrar giriş yapmanız halinde hesabınız tüm verileriyle yeniden aktif olacaktır. 15 gün boyunca giriş yapılmazsa hesabınız kalıcı olarak silinir."}
+              </p>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteAccount} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block">
+                  {t("Auth_DeleteAccountPasswordLabel") || "Mevcut Şifreniz"} <span className="text-red-500">*</span>
+                </label>
+                <PasswordInput
+                  value={deletePassword}
+                  onChange={(e) => {
+                    setDeletePassword(e.target?.value ?? "");
+                    if (deleteError) setDeleteError("");
+                  }}
+                  placeholder={t("Auth_DeleteAccountPasswordPlaceholder") || "Onaylamak için şifrenizi girin"}
+                  required
+                  autoComplete="current-password"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                />
+                <p className="text-[11px] text-gray-500">
+                  {t("Auth_DeleteAccountPasswordHint") || "Güvenliğiniz için lütfen mevcut şifrenizi giriniz."}
+                </p>
+              </div>
+
+              {deleteError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-red-600" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteAccountModalOpen(false);
+                    setDeletePassword("");
+                    setDeleteError("");
+                  }}
+                  disabled={isDeletingAccount}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm transition-colors"
+                >
+                  {t("Auth_Cancel") || "Vazgeç"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={!deletePassword.trim() || isDeletingAccount}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  {isDeletingAccount ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>{t("Auth_DeletingAccount") || "Siliniyor..."}</span>
+                    </>
+                  ) : (
+                    t("Auth_DeleteAccountConfirmBtn") || "Hesabımı Sil"
+                  )}
                 </button>
               </div>
             </form>
@@ -1050,7 +1309,7 @@ export default function StudentProfile() {
                     {t("Feedback_Subject") || "Konu"} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
-                    {feedbackForm.subject.length}/100
+                    {(feedbackForm.subject ?? "").length}/100
                   </span>
                 </div>
                 <input
@@ -1058,9 +1317,9 @@ export default function StudentProfile() {
                   required
                   minLength={3}
                   maxLength={100}
-                  value={feedbackForm.subject}
+                  value={feedbackForm.subject ?? ""}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, subject: e.target.value })
+                    setFeedbackForm({ ...feedbackForm, subject: e.target?.value ?? "" })
                   }
                   placeholder={
                     t("Feedback_SubjectPlaceholder") ||
@@ -1076,7 +1335,7 @@ export default function StudentProfile() {
                     {t("Feedback_Message") || "Mesajınız / Açıklama"} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
-                    {feedbackForm.message.length}/1000
+                    {(feedbackForm.message ?? "").length}/1000
                   </span>
                 </div>
                 <textarea
@@ -1084,9 +1343,9 @@ export default function StudentProfile() {
                   required
                   minLength={10}
                   maxLength={1000}
-                  value={feedbackForm.message}
+                  value={feedbackForm.message ?? ""}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, message: e.target.value })
+                    setFeedbackForm({ ...feedbackForm, message: e.target?.value ?? "" })
                   }
                   placeholder={
                     t("Feedback_MessagePlaceholder") ||
@@ -1130,6 +1389,158 @@ export default function StudentProfile() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Etkinlik Detay Modalı */}
+      {isDetailModalOpen && selectedEventDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative border border-gray-100">
+            <button
+              onClick={() => {
+                setIsDetailModalOpen(false);
+                setSelectedEventDetail(null);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-md hover:bg-gray-100 text-gray-700 transition-colors z-10 shadow-sm"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={20} />
+            </button>
+
+            {detailLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <Loader2 size={32} className="animate-spin text-blue-600 mb-2" />
+                <span className="text-xs font-semibold">{t("Admin_LoadingDetails")}</span>
+              </div>
+            ) : (
+              <>
+                <div className="relative h-48 -mx-6 -mt-6 mb-6">
+                  {selectedEventDetail.imageUrl ? (
+                    <img src={selectedEventDetail.imageUrl} alt={selectedEventDetail.title} className="w-full h-full object-cover rounded-t-3xl" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
+                      <Calendar size={48} className="text-blue-300 mb-2" />
+                      <span className="text-blue-400 font-bold text-sm">{t("Student_EventPlaceholder")}</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                    <h2 className="text-2xl font-black text-white">{selectedEventDetail.title}</h2>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <Calendar size={18} className="text-blue-500" />
+                    <span className="text-sm font-semibold">
+                      {selectedEventDetail.eventDate ? new Date(selectedEventDetail.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", { dateStyle: "long", timeStyle: "short" }) : "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <MapPin size={18} className="text-red-500" />
+                    <span className="text-sm font-semibold">{selectedEventDetail.location || t("Student_NotSpecified")}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <User size={16} className="text-purple-500" />
+                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || t("Student_Unknown")}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <Tag size={16} className="text-green-500" />
+                      <span className="text-xs font-semibold truncate">{formatCategoryName(selectedEventDetail.categoryName, t)}</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                      {selectedEventDetail.description || t("Student_NoEventDescription")}
+                    </p>
+                  </div>
+                  
+                  {selectedEventDetail.isJoined && (
+                    <div className="space-y-2">
+                      <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+                        <CheckCircle2 size={18} />
+                        <span>{t("Student_JoinedBadge") || "✓ Katıldınız"}</span>
+                      </div>
+                      {isEventInFuture(selectedEventDetail.eventDate) && (
+                        <button
+                          type="button"
+                          onClick={() => handleLeaveEvent(selectedEventDetail.id)}
+                          disabled={isLeavingEvent}
+                          className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isLeavingEvent ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                            </>
+                          ) : (
+                            <>
+                              <LogOut size={14} />
+                              <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {selectedEventDetail.isCreator && (
+                    <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-bold py-3.5 rounded-xl text-sm text-center">
+                      {t("Student_CreatedByYou") || "Sizin Etkinliğiniz"}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Yorumlar & Sohbet Modalı */}
+      {isCommentsModalOpen && selectedCommentsEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col p-6 shadow-2xl relative border border-gray-100">
+            {/* Modal Kapatma Butonu */}
+            <button
+              onClick={() => {
+                setIsCommentsModalOpen(false);
+                setSelectedCommentsEvent(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
+              aria-label={t("Admin_Close") || "Kapat"}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Başlığı */}
+            <div className="border-b border-gray-100 pb-4 pr-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <MessageCircle size={20} strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 truncate leading-snug">
+                    {selectedCommentsEvent.title}
+                  </h2>
+                  <p className="text-xs text-gray-500 font-medium truncate">
+                    {t("Event_CommentsModalSubtitle") || "Etkinlik Yorumları & Canlı Sohbet"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sohbet Bileşeni */}
+            <div className="overflow-y-auto flex-1">
+              <EventCommentsChat
+                eventId={selectedCommentsEvent.id}
+                isJoined={selectedCommentsEvent.isJoined}
+                isCreator={selectedCommentsEvent.isCreator}
+                creatorId={(selectedCommentsEvent as any).creatorId ?? (selectedCommentsEvent as any).userId}
+                creatorName={selectedCommentsEvent.creatorName || selectedCommentsEvent.organizerName}
+                organizerName={selectedCommentsEvent.organizerName || selectedCommentsEvent.creatorName}
+                className="!mt-0 !pt-2 !border-t-0"
+              />
+            </div>
           </div>
         </div>
       )}

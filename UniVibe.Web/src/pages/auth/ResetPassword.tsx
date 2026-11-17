@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import { ResetSuccessView } from '../../components/ResetSuccessView';
 import { getErrorMessage } from '../../services/errorMessage';
+import PasswordInput from '../../components/PasswordInput';
 
 export default function ResetPassword() {
   const { t } = useTranslation();
@@ -26,17 +27,20 @@ export default function ResetPassword() {
     setHasAttemptedSubmit(true);
     setErrorMessage('');
 
+    const pass = newPassword ?? '';
+    const confirmPass = confirmPassword ?? '';
+
     if (!email || !token) {
       setErrorMessage(t('Reset_InvalidLinkError') || 'Geçersiz veya eksik şifre sıfırlama bağlantısı.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (pass !== confirmPass) {
       setErrorMessage(t('Reset_PasswordMismatch') || 'Şifreler birbiriyle eşleşmiyor.');
       return;
     }
 
-    if (newPassword.length < 6) {
+    if ((pass ?? '').length < 6) {
       setErrorMessage(t('Reset_PasswordTooShort') || 'Şifreniz en az 6 karakter olmalıdır.');
       return;
     }
@@ -47,7 +51,7 @@ export default function ResetPassword() {
       await api.post('/Auth/password/reset', {
         email,
         token,
-        newPassword
+        newPassword: pass
       });
 
       setIsSuccess(true);
@@ -92,14 +96,26 @@ export default function ResetPassword() {
               <label>
                 {t('Reset_NewPasswordLabel') || 'Yeni Şifre'}
               </label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" required />
+              <PasswordInput
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target?.value ?? '')}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                required
+              />
             </div>
 
             <div>
               <label>
                 {t('Reset_ConfirmPasswordLabel') || 'Yeni Şifre (Tekrar)'}
               </label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
+              <PasswordInput
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target?.value ?? '')}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                required
+              />
             </div>
 
             <button

@@ -6,6 +6,7 @@ import { tokenService } from "../../services/tokenService";
 import { getErrorMessage } from "../../services/errorMessage";
 import { normalizeRole } from "../../utils/userRole";
 import { useTranslation } from "react-i18next";
+import PasswordInput from "../../components/PasswordInput";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ export default function AdminLogin() {
 
   useEffect(() => {
     const token = tokenService.getAccessToken();
-    if (token && tokenService.getRole(token) === "Admin") {
+    if (token && !tokenService.isTokenExpired(token) && tokenService.getRole(token) === "Admin") {
       navigate("/admin", { replace: true });
+    } else if (token && tokenService.isTokenExpired(token)) {
+      tokenService.clearTokens();
     }
   }, [navigate]);
 
@@ -26,14 +29,17 @@ export default function AdminLogin() {
     event.preventDefault();
     setError("");
 
-    if (!email || !password) {
+    const cleanEmail = (email ?? "").trim();
+    const cleanPassword = password ?? "";
+
+    if (!cleanEmail || !cleanPassword) {
       setError(t("Admin_LoginFieldsRequired"));
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = (await api.post("/Auth/login", { email, password })) as any;
+      const response = (await api.post("/Auth/login", { email: cleanEmail, password: cleanPassword })) as any;
       const token = response.token || response.data?.token;
       const refreshToken = response.refreshToken || response.data?.refreshToken;
       if (!token || !refreshToken) {
@@ -81,11 +87,18 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin} className="auth-form" noValidate>
           <div>
             <label htmlFor="admin-email">{t("Admin_LoginEmail")}</label>
-            <input id="admin-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t("Admin_EmailPlaceholder")} autoComplete="email" />
+            <input id="admin-email" type="email" value={email} onChange={(event) => setEmail(event.target?.value ?? "")} placeholder={t("Admin_EmailPlaceholder")} autoComplete="email" />
           </div>
           <div>
             <label htmlFor="admin-password">{t("Admin_LoginPassword")}</label>
-            <input id="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={t("Admin_PasswordPlaceholder")} autoComplete="current-password" />
+            <PasswordInput
+              id="admin-password"
+              value={password}
+              onChange={(event) => setPassword(event.target?.value ?? "")}
+              placeholder={t("Admin_PasswordPlaceholder")}
+              autoComplete="current-password"
+              required
+            />
           </div>
           <button type="submit" disabled={isLoading} className="auth-submit">
             {isLoading ? t("Admin_LoginChecking") : <><ShieldCheck size={17} /> {t("Admin_LoginButton")} <span aria-hidden="true">›</span></>}

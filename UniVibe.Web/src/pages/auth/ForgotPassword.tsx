@@ -15,7 +15,8 @@ export default function ForgotPassword() {
     event.preventDefault();
     setMessage({ type: "", text: "" });
 
-    if (!email) {
+    const cleanEmail = (email ?? "").trim();
+    if (!cleanEmail) {
       setMessage({
         type: "error",
         text: t("Forgot_EmailRequired") || "Lütfen e-posta adresinizi girin.",
@@ -26,7 +27,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
     try {
       const response = (await api.post("/Auth/password/forgot", {
-        email,
+        email: cleanEmail,
         resetUrl: `${window.location.origin}/reset-password`,
       })) as any;
 
@@ -81,7 +82,7 @@ export default function ForgotPassword() {
                 id="forgot-email"
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => setEmail(event.target?.value ?? "")}
                 placeholder="ad.soyad@universite.edu.tr"
               />
             </div>

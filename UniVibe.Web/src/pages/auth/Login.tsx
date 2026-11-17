@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,6 +12,7 @@ import { api } from "../../services/api";
 import { tokenService } from "../../services/tokenService";
 import { getErrorMessage } from "../../services/errorMessage";
 import { normalizeRole } from "../../utils/userRole";
+import PasswordInput from "../../components/PasswordInput";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -22,6 +23,20 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("rememberedEmail") !== null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const token = tokenService.getAccessToken();
+    if (token && !tokenService.isTokenExpired(token, 0)) {
+      const role = tokenService.getRole(token);
+      if (role === "Admin") {
+        navigate("/admin", { replace: true });
+      } else if (role) {
+        navigate("/", { replace: true });
+      }
+    } else if (token && tokenService.isTokenExpired(token, 0)) {
+      tokenService.clearTokens();
+    }
+  }, [navigate]);
 
   // Geri bildirim modalı state'leri
   const [isFeedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -38,22 +53,25 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    if (!email || !password) {
+    const cleanEmail = (email ?? "").trim();
+    const cleanPassword = password ?? "";
+
+    if (!cleanEmail || !cleanPassword) {
       setError(t("Login_Error_FieldsRequired") || "Lütfen e-posta ve şifre alanlarını doldurun.");
       return;
     }
 
     setIsLoading(true);
     if (rememberMe) {
-      localStorage.setItem("rememberedEmail", email);
+      localStorage.setItem("rememberedEmail", cleanEmail);
     } else {
       localStorage.removeItem("rememberedEmail");
     }
 
     try {
       const response = (await api.post("/Auth/login", {
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
       })) as any;
       const token = response.token || response.data?.token;
       const refreshToken = response.refreshToken || response.data?.refreshToken;
@@ -76,9 +94,9 @@ export default function Login() {
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    const contactEmail = feedbackForm.email.trim();
-    const subject = feedbackForm.subject.trim();
-    const message = feedbackForm.message.trim();
+    const contactEmail = (feedbackForm.email ?? "").trim();
+    const subject = (feedbackForm.subject ?? "").trim();
+    const message = (feedbackForm.message ?? "").trim();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!contactEmail || !emailRegex.test(contactEmail)) {
@@ -88,23 +106,23 @@ export default function Login() {
       return;
     }
 
-    if (subject.length < 3) {
+    if ((subject ?? "").length < 3) {
       setFeedbackError(
         t("Feedback_SubjectMinLength") || "Konu en az 3 karakter olmalıdır.",
       );
       return;
     }
-    if (subject.length > 100) {
+    if ((subject ?? "").length > 100) {
       setFeedbackError("Konu en fazla 100 karakter olmalıdır.");
       return;
     }
-    if (message.length < 10) {
+    if ((message ?? "").length < 10) {
       setFeedbackError(
         t("Feedback_MessageMinLength") || "Mesaj en az 10 karakter olmalıdır.",
       );
       return;
     }
-    if (message.length > 1000) {
+    if ((message ?? "").length > 1000) {
       setFeedbackError("Mesaj en fazla 1000 karakter olmalıdır.");
       return;
     }
@@ -174,22 +192,24 @@ export default function Login() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target?.value ?? "")}
               placeholder="ad.soyad@universite.edu.tr"
             />
           </div>
 
           <div>
             <div className="auth-password-row">
-              <label>
+              <label htmlFor="login-password">
                 {t("Login_Password")}
               </label>
             </div>
-            <input
-              type="password"
+            <PasswordInput
+              id="login-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target?.value ?? "")}
               placeholder="••••••••"
+              autoComplete="current-password"
+              required
             />
           </div>
 
@@ -299,7 +319,7 @@ export default function Login() {
                   required
                   value={feedbackForm.email}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, email: e.target.value })
+                    setFeedbackForm((prev) => ({ ...prev, email: e.target?.value ?? "" }))
                   }
                   placeholder={
                     t("Feedback_EmailPlaceholder") || "ad.soyad@universite.edu.tr"
@@ -314,7 +334,7 @@ export default function Login() {
                     {t("Feedback_Subject") || "Konu"} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
-                    {feedbackForm.subject.length}/100
+                    {(feedbackForm.subject ?? "").length}/100
                   </span>
                 </div>
                 <input
@@ -324,7 +344,7 @@ export default function Login() {
                   maxLength={100}
                   value={feedbackForm.subject}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, subject: e.target.value })
+                    setFeedbackForm((prev) => ({ ...prev, subject: e.target?.value ?? "" }))
                   }
                   placeholder={
                     t("Feedback_SubjectPlaceholder") ||
@@ -340,7 +360,7 @@ export default function Login() {
                     {t("Feedback_Message") || "Mesajınız / Açıklama"} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
-                    {feedbackForm.message.length}/1000
+                    {(feedbackForm.message ?? "").length}/1000
                   </span>
                 </div>
                 <textarea
@@ -350,7 +370,7 @@ export default function Login() {
                   maxLength={1000}
                   value={feedbackForm.message}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, message: e.target.value })
+                    setFeedbackForm((prev) => ({ ...prev, message: e.target?.value ?? "" }))
                   }
                   placeholder={
                     t("Feedback_MessagePlaceholder") ||

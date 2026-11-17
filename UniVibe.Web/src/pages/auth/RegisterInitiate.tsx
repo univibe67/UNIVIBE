@@ -14,7 +14,8 @@ export default function RegisterInitiate() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage({ type: "", text: "" });
-    if (!email) {
+    const cleanEmail = (email ?? "").trim();
+    if (!cleanEmail) {
       setMessage({ type: "error", text: t("Register_EmailRequired") });
       return;
     }
@@ -22,7 +23,7 @@ export default function RegisterInitiate() {
     setIsLoading(true);
     try {
       const response = (await api.post("/Auth/register/init", {
-        email,
+        email: cleanEmail,
         targetUrl: `${window.location.origin}/register-complete`,
       })) as any;
       setMessage({
@@ -61,7 +62,7 @@ export default function RegisterInitiate() {
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             <div>
               <label htmlFor="register-email">{t("Login_Email")}</label>
-              <input id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ad.soyad@universite.edu.tr" />
+              <input id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target?.value ?? "")} placeholder="ad.soyad@universite.edu.tr" />
             </div>
             <button type="submit" className="auth-submit" disabled={isLoading}>
               {isLoading ? t("Register_Sending") : t("Register_PageSubmit")} <span aria-hidden="true">›</span>

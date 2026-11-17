@@ -31,18 +31,23 @@ export default function AdminLayout() {
             </div>
           </div>
           <div className="flex shrink-0 rounded-lg bg-[#f5f7f5] p-1 border border-[#e3e9e5]">
-            {["tr", "en"].map((language) => (
-              <button
-                key={language}
-                type="button"
-                onClick={() => i18n.changeLanguage(language)}
-                className={`rounded-md px-2 py-0.5 text-xs font-extrabold transition ${
-                  i18n.language.startsWith(language) ? "bg-white text-[#1559ac] shadow-sm" : "text-[#819098] hover:text-[#17212b]"
-                }`}
-              >
-                {language.toUpperCase()}
-              </button>
-            ))}
+            {["tr", "en"].map((language) => {
+              const currentLang = (i18n.language || "tr").toLowerCase();
+              const isEn = currentLang.startsWith("en");
+              const isActive = language === "tr" ? !isEn : isEn;
+              return (
+                <button
+                  key={language}
+                  type="button"
+                  onClick={() => i18n.changeLanguage(language)}
+                  className={`rounded-md px-2 py-0.5 text-xs font-extrabold transition ${
+                    isActive ? "bg-white text-[#1559ac] shadow-sm" : "text-[#819098] hover:text-[#17212b]"
+                  }`}
+                >
+                  {language.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
         </div>
         <nav className="flex gap-2 overflow-x-auto md:grid md:content-start md:gap-1">
