@@ -361,7 +361,7 @@ export default function StudentProfile() {
 
     try {
       const response: any = await api.post(
-        "/users/profile-picture",
+        "/users/profile/picture",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
