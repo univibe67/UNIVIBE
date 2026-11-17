@@ -120,7 +120,7 @@ namespace UniVibe.UnitTests.Services
             // Arrange
             var eventId = Guid.NewGuid();
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync((Event?)null);
 
             _localizerMock.Setup(l => l["Res_Event_NotFound"])
@@ -139,7 +139,7 @@ namespace UniVibe.UnitTests.Services
             var eventId = Guid.NewGuid();
             var cancelledEvent = new Event { Id = eventId, Status = EventStatus.Cancelled, IsDeleted = false };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(cancelledEvent);
 
             _localizerMock.Setup(l => l["Admin_EventCannotApproveCancelled"])
@@ -163,7 +163,7 @@ namespace UniVibe.UnitTests.Services
                 IsDeleted = false
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(pastEvent);
 
             _localizerMock.Setup(l => l["Admin_EventCannotApprovePast"])
@@ -188,7 +188,7 @@ namespace UniVibe.UnitTests.Services
                 IsDeleted = false
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(validEvent);
 
             _localizerMock.Setup(l => l["Res_Event_Approved"])
@@ -229,17 +229,32 @@ namespace UniVibe.UnitTests.Services
             // Arrange
             var eventId = Guid.NewGuid();
             string reason = "Uygunsuz içerik";
-            var eventEntity = new Event { Id = eventId, Status = EventStatus.Pending, IsDeleted = false };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            // 🚀 Tüm olası null reference tuzaklarını engellemek için nesneyi eksiksiz dolduruyoruz
+            var eventEntity = new Event
+            {
+                Id = eventId,
+                Title = "Yaz Konseri",
+                Status = EventStatus.Pending,
+                IsDeleted = false,
+                EventDate = DateTime.UtcNow.AddDays(1),
+                User = new User { FirstName = "Ahmet", Email = "ahmet@test.com" }
+            };
+
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
                 .ReturnsAsync(eventEntity);
 
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
-            // 💡 EKSİK OLAN LOCALIZER AYARI BURASI:
             _localizerMock.Setup(l => l["Res_Event_Rejected"])
                 .Returns(new LocalizedString("Res_Event_Rejected", "Etkinlik reddedildi."));
+
+            // 💡 E-posta şablon localizer mock'ları da ekleyelim ki mail bloğunda patlamasın
+            _localizerMock.Setup(l => l["EventRejectedEmailSubject"])
+                .Returns(new LocalizedString("EventRejectedEmailSubject", "Red Konusu"));
+            _localizerMock.Setup(l => l["EventRejectedEmailBody"])
+                .Returns(new LocalizedString("EventRejectedEmailBody", "Merhaba {0}, {1} etkinliğiniz reddedildi. Sebep: {2}"));
 
             // Act
             var result = await _adminEventService.RejectEventAsync(eventId, reason);
@@ -260,7 +275,7 @@ namespace UniVibe.UnitTests.Services
             // Arrange
             var eventId = Guid.NewGuid();
 
-            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId))
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>()))
                 .ReturnsAsync((Event?)null);
 
             _localizerMock.Setup(l => l["Event_NotFound"])
@@ -286,7 +301,7 @@ namespace UniVibe.UnitTests.Services
             };
             var expectedResponse = new EventDetailResponse { Title = "Concert" };
 
-            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId))
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>()))
                 .ReturnsAsync(eventEntity);
 
             _mapperMock.Setup(m => m.Map<EventDetailResponse>(eventEntity))

@@ -7,8 +7,8 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<User?> GetUserWithDetailsByUsernameAsync(string username);
         Task<User?> GetUserWithDetailsByIdAsync(Guid userId);
         Task<List<User>> GetAllIncludingDeletedAsync();
-        Task<User?> GetByIdIncludingDeletedAsync(Guid id);
-        Task<User?> GetByEmailIncludingDeletedAsync(string email);
+        Task<User?> GetByIdIncludingDeletedAsync(Guid id, bool trackChanges = false);
+        Task<User?> GetByEmailIncludingDeletedAsync(string email, bool trackChanges = false);
         Task<bool> IsUsernameTakenAsync(string username);
         Task<(List<User> Items, int TotalCount)> GetPagedUsersIncludingDeletedAsync(int pageNumber, int pageSize);
     }

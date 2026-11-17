@@ -64,7 +64,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ResolveFeedbackAsync(Guid feedbackId)
         {
-            var feedback = await _feedbackRepository.GetFeedbackWithUserByIdAsync(feedbackId);
+            var feedback = await _feedbackRepository.GetFeedbackWithUserByIdAsync(feedbackId, trackChanges: true);
 
             if (feedback == null)
                 throw new NotFoundException(_localizer["Res_Feedback_NotFound"].Value);

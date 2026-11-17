@@ -42,23 +42,37 @@ namespace UniVibe.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<User?> GetByIdIncludingDeletedAsync(Guid id)
+        public async Task<User?> GetByIdIncludingDeletedAsync(Guid id, bool trackChanges = false)
         {
-            return await _context.Set<User>()
+            var query = _context.Set<User>()
                 .Include(u => u.Department)
                     .ThenInclude(d => d.Faculty)
                         .ThenInclude(f => f.University)
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+                .AsQueryable();
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task<User?> GetByEmailIncludingDeletedAsync(string email)
+        public async Task<User?> GetByEmailIncludingDeletedAsync(string email, bool trackChanges = false)
         {
             var normalizedEmail = email.ToLowerInvariant();
 
-            return await _context.Set<User>()
+            var query = _context.Set<User>()
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+                .AsQueryable();
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
         }
 
         public async Task<bool> IsUsernameTakenAsync(string username)

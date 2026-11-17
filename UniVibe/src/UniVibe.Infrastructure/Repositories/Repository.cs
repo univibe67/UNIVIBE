@@ -37,16 +37,30 @@ namespace UniVibe.Infrastructure.Repositories
             return await _dbSet.SingleOrDefaultAsync(filter);
         }
 
-        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
+        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, bool trackChanges = false)
         {
-            return filter == null
-                ? await _dbSet.AsNoTracking().ToListAsync()
-                : await _dbSet.AsNoTracking().Where(filter).ToListAsync();
+            IQueryable<T> query = _dbSet;
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            return await query.ToListAsync();
         }
 
-        public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, bool trackChanges = false)
         {
-            return await _dbSet.FirstOrDefaultAsync(predicate);
+            IQueryable<T> query = _dbSet;
+            if (!trackChanges)
+                query = query.AsNoTracking();
+
+            return await query.FirstOrDefaultAsync(predicate);
         }
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)

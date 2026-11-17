@@ -75,14 +75,21 @@ namespace UniVibe.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId)
+        public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId, bool trackChanges = false)
         {
-            return await _context.Events
+            var query = _context.Events
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
                 .Include(e => e.Category)
                 .Include(e => e.Attendees)
-                .FirstOrDefaultAsync(e => e.Id == eventId);
+                .AsQueryable();
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.FirstOrDefaultAsync(e => e.Id == eventId);
         }
 
         public async Task<Event?> GetActiveEventByUserIdAsync(Guid userId)

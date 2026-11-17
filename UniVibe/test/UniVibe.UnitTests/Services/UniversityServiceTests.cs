@@ -64,7 +64,7 @@ namespace UniVibe.UnitTests.Services
                 .Setup(m => m.CreateEntry(It.IsAny<object>()))
                 .Returns(cacheEntryMock.Object);
 
-            _universityRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<University, bool>>>()))
+            _universityRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<University, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(universities);
 
             _mapperMock.Setup(m => m.Map<List<UniversityLookupResponse>>(It.IsAny<IEnumerable<University>>()))
@@ -96,6 +96,9 @@ namespace UniVibe.UnitTests.Services
                 new FacultyLookupResponse { Id = faculties[0].Id, Name = "Mühendislik Fakültesi" }
             };
 
+            _universityRepoMock.Setup(r => r.AnyAsync(It.IsAny<System.Linq.Expressions.Expression<Func<University, bool>>>()))
+                .ReturnsAsync(true);
+
             object? cachedValue = null;
             _memoryCacheMock
                 .Setup(m => m.TryGetValue(It.IsAny<object>(), out cachedValue))
@@ -106,7 +109,10 @@ namespace UniVibe.UnitTests.Services
                 .Setup(m => m.CreateEntry(It.IsAny<object>()))
                 .Returns(cacheEntryMock.Object);
 
-            _facultyRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Faculty, bool>>>()))
+            _facultyRepoMock.Setup(r => r.GetAllAsync(
+                    It.IsAny<System.Linq.Expressions.Expression<Func<Faculty, bool>>>(),
+                    It.IsAny<bool>()
+                ))
                 .ReturnsAsync(faculties);
 
             _mapperMock.Setup(m => m.Map<List<FacultyLookupResponse>>(It.IsAny<IEnumerable<Faculty>>()))
@@ -138,6 +144,9 @@ namespace UniVibe.UnitTests.Services
                 new DepartmentLookupResponse { Id = departments[0].Id, Name = "Bilgisayar Mühendisliği" }
             };
 
+            _facultyRepoMock.Setup(r => r.AnyAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Faculty, bool>>>()))
+                .ReturnsAsync(true);
+
             object? cachedValue = null;
             _memoryCacheMock
                 .Setup(m => m.TryGetValue(It.IsAny<object>(), out cachedValue))
@@ -148,7 +157,7 @@ namespace UniVibe.UnitTests.Services
                 .Setup(m => m.CreateEntry(It.IsAny<object>()))
                 .Returns(cacheEntryMock.Object);
 
-            _departmentRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Department, bool>>>()))
+            _departmentRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Department, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(departments);
 
             _mapperMock.Setup(m => m.Map<List<DepartmentLookupResponse>>(It.IsAny<IEnumerable<Department>>()))
