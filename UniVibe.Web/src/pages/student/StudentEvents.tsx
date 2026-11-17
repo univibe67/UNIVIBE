@@ -74,13 +74,15 @@ export default function StudentEvents() {
   const [cancelError, setCancelError] = useState("");
 
   // Detail Modal states
-  const [selectedEventDetail, setSelectedEventDetail] = useState<EventItem | null>(null);
+  const [selectedEventDetail, setSelectedEventDetail] =
+    useState<EventItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isLeavingEvent, setIsLeavingEvent] = useState(false);
 
   // Comments Modal states
-  const [selectedCommentsEvent, setSelectedCommentsEvent] = useState<EventItem | null>(null);
+  const [selectedCommentsEvent, setSelectedCommentsEvent] =
+    useState<EventItem | null>(null);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
 
   const handleOpenDetail = async (eventItem: EventItem) => {
@@ -93,8 +95,14 @@ export default function StudentEvents() {
       if (fetchedData && fetchedData.id) {
         setSelectedEventDetail({
           ...fetchedData,
-          isJoined: eventItem.isJoined !== undefined ? eventItem.isJoined : fetchedData.isJoined,
-          isCreator: eventItem.isCreator !== undefined ? eventItem.isCreator : fetchedData.isCreator,
+          isJoined:
+            eventItem.isJoined !== undefined
+              ? eventItem.isJoined
+              : fetchedData.isJoined,
+          isCreator:
+            eventItem.isCreator !== undefined
+              ? eventItem.isCreator
+              : fetchedData.isCreator,
         });
       }
     } catch (error) {
@@ -113,8 +121,14 @@ export default function StudentEvents() {
       if (actualData) {
         setSelectedCommentsEvent({
           ...actualData,
-          isJoined: actualData.isJoined !== undefined ? actualData.isJoined : eventItem.isJoined,
-          isCreator: actualData.isCreator !== undefined ? actualData.isCreator : eventItem.isCreator,
+          isJoined:
+            actualData.isJoined !== undefined
+              ? actualData.isJoined
+              : eventItem.isJoined,
+          isCreator:
+            actualData.isCreator !== undefined
+              ? actualData.isCreator
+              : eventItem.isCreator,
         });
       }
     } catch {
@@ -122,7 +136,10 @@ export default function StudentEvents() {
     }
   };
 
-  const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const showNotification = (type: "success" | "error", text: string) => {
     setNotification({ type, text });
@@ -135,14 +152,24 @@ export default function StudentEvents() {
     setIsLeavingEvent(true);
     try {
       await api.delete(`/events/${eventId}/attendees/me`);
-      showNotification("success", t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız.");
+      showNotification(
+        "success",
+        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız.",
+      );
       setJoinedEvents((prev) => prev.filter((e) => e.id !== eventId));
       setIsDetailModalOpen(false);
       setSelectedEventDetail(null);
-      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: false } : prev));
+      setSelectedCommentsEvent((prev) =>
+        prev && prev.id === eventId ? { ...prev, isJoined: false } : prev,
+      );
       await fetchData();
     } catch (err: any) {
-      showNotification("error", getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu.");
+      showNotification(
+        "error",
+        getErrorMessage(err) ||
+          t("Student_LeaveError") ||
+          "Etkinlikten ayrılırken bir sorun oluştu.",
+      );
     } finally {
       setIsLeavingEvent(false);
     }
@@ -180,7 +207,8 @@ export default function StudentEvents() {
       if (catResult.status === "fulfilled") {
         const catResponse = catResult.value;
         const rawData = catResponse.data || catResponse;
-        const catData = (rawData as any)?.data || (rawData as any)?.items || rawData;
+        const catData =
+          (rawData as any)?.data || (rawData as any)?.items || rawData;
         setCategories(Array.isArray(catData) ? catData : []);
       }
     } finally {
@@ -194,7 +222,10 @@ export default function StudentEvents() {
 
   const handleOpenCreateModal = useCallback(() => {
     if (activeEvent) {
-      showNotification("error", t("Student_AlreadyHasPending") || "Zaten aktif bir etkinliğiniz var.");
+      showNotification(
+        "error",
+        t("Student_AlreadyHasPending") || "Zaten aktif bir etkinliğiniz var.",
+      );
       return;
     }
     setTitle("");
@@ -215,7 +246,9 @@ export default function StudentEvents() {
     setCreateError("");
 
     if (!categoryId) {
-      setCreateError(t("Student_SelectCategoryError") || "Lütfen bir kategori seçiniz.");
+      setCreateError(
+        t("Student_SelectCategoryError") || "Lütfen bir kategori seçiniz.",
+      );
       return;
     }
 
@@ -226,8 +259,11 @@ export default function StudentEvents() {
 
     setIsCreating(true);
     try {
-      const localEventDate = eventDate && eventTime ? `${eventDate}T${eventTime}` : "";
-      const utcEventDate = localEventDate ? new Date(localEventDate).toISOString() : "";
+      const localEventDate =
+        eventDate && eventTime ? `${eventDate}T${eventTime}` : "";
+      const utcEventDate = localEventDate
+        ? new Date(localEventDate).toISOString()
+        : "";
       const formData = new FormData();
       formData.append("Title", title);
       formData.append("Description", description);
@@ -242,11 +278,18 @@ export default function StudentEvents() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      showNotification("success", t("Student_CreateSuccess") || "Etkinlik başarıyla oluşturuldu.");
+      showNotification(
+        "success",
+        t("Student_CreateSuccess") || "Etkinlik başarıyla oluşturuldu.",
+      );
       setIsCreateModalOpen(false);
       fetchData();
     } catch (error: any) {
-      setCreateError(getErrorMessage(error) || t("Student_CreateError") || "Etkinlik oluşturulamadı.");
+      setCreateError(
+        getErrorMessage(error) ||
+          t("Student_CreateError") ||
+          "Etkinlik oluşturulamadı.",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -255,7 +298,9 @@ export default function StudentEvents() {
   const handleConfirmCancel = async () => {
     if (!activeEvent) return;
     if (!cancelReason || !cancelReason.trim()) {
-      setCancelError(t("Admin_Reason_Required") || "Lütfen iptal nedeni girin.");
+      setCancelError(
+        t("Admin_Reason_Required") || "Lütfen iptal nedeni girin.",
+      );
       return;
     }
 
@@ -264,13 +309,20 @@ export default function StudentEvents() {
       await api.patch(`/events/${activeEvent.id}/cancel`, {
         reason: cancelReason,
       });
-      showNotification("success", t("Student_CancelSuccess") || "Etkinlik iptal edildi.");
+      showNotification(
+        "success",
+        t("Student_CancelSuccess") || "Etkinlik iptal edildi.",
+      );
       setCancelModalOpen(false);
       setTimeout(() => {
         navigate("/student/home");
       }, 700);
     } catch (error: any) {
-      setCancelError(getErrorMessage(error) || t("Student_CancelError") || "İptal başarısız oldu.");
+      setCancelError(
+        getErrorMessage(error) ||
+          t("Student_CancelError") ||
+          "İptal başarısız oldu.",
+      );
     } finally {
       setIsCancelling(false);
     }
@@ -285,7 +337,11 @@ export default function StudentEvents() {
           }`}
         >
           <div className="flex items-center gap-3">
-            {notification.type === "success" ? <Calendar size={20} /> : <AlertTriangle size={20} />}
+            {notification.type === "success" ? (
+              <Calendar size={20} />
+            ) : (
+              <AlertTriangle size={20} />
+            )}
             <span className="text-sm">{notification.text}</span>
           </div>
         </div>
@@ -294,14 +350,22 @@ export default function StudentEvents() {
       <div className="student-events-brand">
         <div className="brand-lockup">
           <span className="brand-mark">U</span>
-          <span>Uni<strong>Vibe</strong></span>
+          <span>
+            Uni<strong>Vibe</strong>
+          </span>
         </div>
       </div>
 
       <header className="student-events-header">
         <div>
-          <h1>{t("Student_Events_Title", { defaultValue: "Kampüs Etkinlikleri" })}</h1>
-          <p>{t("Student_Events_Desc", { defaultValue: "Oluşturduğun ve katıldığın etkinlikler" })}</p>
+          <h1>
+            {t("Student_Events_Title", { defaultValue: "Kampüs Etkinlikleri" })}
+          </h1>
+          <p>
+            {t("Student_Events_Desc", {
+              defaultValue: "Oluşturduğun ve katıldığın etkinlikler",
+            })}
+          </p>
         </div>
         <button
           type="button"
@@ -309,7 +373,9 @@ export default function StudentEvents() {
           className="student-events-create-button"
         >
           <PlusCircle size={18} />
-          <span>{t("Student_CreateEvent", { defaultValue: "Etkinlik oluştur" })}</span>
+          <span>
+            {t("Student_CreateEvent", { defaultValue: "Etkinlik oluştur" })}
+          </span>
         </button>
       </header>
 
@@ -330,8 +396,12 @@ export default function StudentEvents() {
                 <div className="student-event-panel">
                   <EventCard
                     event={{ ...activeEvent, isCreator: true }}
-                    onViewDetail={() => handleOpenDetail({ ...activeEvent, isCreator: true })}
-                    onOpenComments={() => handleOpenComments({ ...activeEvent, isCreator: true })}
+                    onViewDetail={() =>
+                      handleOpenDetail({ ...activeEvent, isCreator: true })
+                    }
+                    onOpenComments={() =>
+                      handleOpenComments({ ...activeEvent, isCreator: true })
+                    }
                   />
                   <div className="mt-4 flex justify-end">
                     <button
@@ -366,8 +436,12 @@ export default function StudentEvents() {
                     <EventCard
                       key={event.id}
                       event={{ ...event, isJoined: true }}
-                      onViewDetail={() => handleOpenDetail({ ...event, isJoined: true })}
-                      onOpenComments={() => handleOpenComments({ ...event, isJoined: true })}
+                      onViewDetail={() =>
+                        handleOpenDetail({ ...event, isJoined: true })
+                      }
+                      onOpenComments={() =>
+                        handleOpenComments({ ...event, isJoined: true })
+                      }
                     />
                   ))}
                 </div>
@@ -387,7 +461,12 @@ export default function StudentEvents() {
           <div className="create-event-sheet">
             <div className="create-event-header">
               <div className="student-topbar">
-                <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
+                <div className="brand-lockup">
+                  <span className="brand-mark">U</span>
+                  <span>
+                    Uni<strong>Vibe</strong>
+                  </span>
+                </div>
               </div>
               <div className="auth-eyebrow">{t("Student_NewEventEyebrow")}</div>
               <h2>{t("Student_NewEventTitle")}</h2>
@@ -396,87 +475,149 @@ export default function StudentEvents() {
             <form onSubmit={handleCreateEvent} className="create-event-form">
               <section className="create-event-section">
                 <div className="create-event-section-heading">
-                <strong>01</strong>
-                <div><h3>{t("Student_BasicInfo")}</h3><p>{t("Student_BasicInfoDescription")}</p></div>
+                  <strong>01</strong>
+                  <div>
+                    <h3>{t("Student_BasicInfo")}</h3>
+                    <p>{t("Student_BasicInfoDescription")}</p>
+                  </div>
                 </div>
                 <label>
-                <span>{t("Student_FieldTitle") || "Etkinlik başlığı"}</span>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t("Student_PlaceholderTitle")}
-                />
-                </label>
-                <label>
-                <span>{t("Student_FieldDesc") || "Açıklama"}</span>
-                <textarea required rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Student_PlaceholderDesc")} />
-                </label>
-                <label>
-                <span>{t("Student_FieldCategory") || "Kategori"}</span>
-                <select
-                  required
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                >
-                  <option value="">{t("Student_SelectCategory") || "Kategori seçin"}</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-                </label>
-              </section>
-              <section className="create-event-section">
-                <div className="create-event-section-heading">
-                <strong>02</strong>
-                <div><h3>{t("Student_TimeAndLocation")}</h3><p>{t("Student_TimeAndLocationDescription")}</p></div>
-                </div>
-                <div className="create-event-grid">
-                <label>
-                  <span>{t("Student_Date")}</span>
+                  <span>{t("Student_FieldTitle") || "Etkinlik başlığı"}</span>
                   <input
-                    type="date"
-                    lang={i18n.language === "en" ? "en-US" : "tr-TR"}
-                    aria-label={t("Student_Date")}
+                    type="text"
                     required
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t("Student_PlaceholderTitle")}
                   />
                 </label>
-                <label><span>{t("Student_Time")}</span><input type="time" required value={eventTime} onChange={(e) => setEventTime(e.target.value)} /></label>
-                </div>
-                <label><span>{t("Student_FieldLocation")}</span><input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("Student_LocationPlaceholder")} /></label>
+                <label>
+                  <span>{t("Student_FieldDesc") || "Açıklama"}</span>
+                  <textarea
+                    required
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t("Student_PlaceholderDesc")}
+                  />
+                </label>
+                <label>
+                  <span>{t("Student_FieldCategory") || "Kategori"}</span>
+                  <select
+                    required
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                  >
+                    <option value="">
+                      {t("Student_SelectCategory") || "Kategori seçin"}
+                    </option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </section>
               <section className="create-event-section">
                 <div className="create-event-section-heading">
-                <strong>03</strong>
-                <div><h3>{t("Student_AttendanceDetails")}</h3><p>{t("Student_AttendanceDetailsDescription")}</p></div>
+                  <strong>02</strong>
+                  <div>
+                    <h3>{t("Student_TimeAndLocation")}</h3>
+                    <p>{t("Student_TimeAndLocationDescription")}</p>
+                  </div>
                 </div>
-                <label><span>{t("Student_MinimumGrade")}</span>
-                <select value={minGrade} onChange={(e) => setMinGrade(e.target.value)}>
-                  <option value="">{t("Student_NoRestriction")}</option>
-                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="5">{t("Grade_5")}</option><option value="6">{t("Grade_6")}</option><option value="7">{t("Grade_Graduated")}</option>
-                </select>
+                <div className="create-event-grid">
+                  <label>
+                    <span>{t("Student_Date")}</span>
+                    <input
+                      type="date"
+                      lang={i18n.language === "en" ? "en-US" : "tr-TR"}
+                      aria-label={t("Student_Date")}
+                      required
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>{t("Student_Time")}</span>
+                    <input
+                      type="time"
+                      required
+                      value={eventTime}
+                      onChange={(e) => setEventTime(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <label>
+                  <span>{t("Student_FieldLocation")}</span>
+                  <input
+                    type="text"
+                    required
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder={t("Student_LocationPlaceholder")}
+                  />
                 </label>
-                <label><span>{t("Student_MaximumGrade")}</span>
-                <select value={maxGrade} onChange={(e) => setMaxGrade(e.target.value)}>
-                  <option value="">{t("Student_NoRestriction")}</option>
-                  <option value="0">{t("Grade_Prep")}</option><option value="1">{t("Grade_1")}</option><option value="2">{t("Grade_2")}</option><option value="3">{t("Grade_3")}</option><option value="4">{t("Grade_4")}</option><option value="5">{t("Grade_5")}</option><option value="6">{t("Grade_6")}</option><option value="7">{t("Grade_Graduated")}</option>
-                </select>
+              </section>
+              <section className="create-event-section">
+                <div className="create-event-section-heading">
+                  <strong>03</strong>
+                  <div>
+                    <h3>{t("Student_AttendanceDetails")}</h3>
+                    <p>{t("Student_AttendanceDetailsDescription")}</p>
+                  </div>
+                </div>
+                <label>
+                  <span>{t("Student_MinimumGrade")}</span>
+                  <select
+                    value={minGrade}
+                    onChange={(e) => setMinGrade(e.target.value)}
+                  >
+                    <option value="">{t("Student_NoRestriction")}</option>
+                    <option value="0">{t("Grade_Prep")}</option>
+                    <option value="1">{t("Grade_1")}</option>
+                    <option value="2">{t("Grade_2")}</option>
+                    <option value="3">{t("Grade_3")}</option>
+                    <option value="4">{t("Grade_4")}</option>
+                    <option value="5">{t("Grade_5")}</option>
+                    <option value="6">{t("Grade_6")}</option>
+                    <option value="7">{t("Grade_Graduated")}</option>
+                  </select>
                 </label>
                 <label>
-                  <span>{t("Student_FieldImage")} ({t("Student_Optional")})</span>
+                  <span>{t("Student_MaximumGrade")}</span>
+                  <select
+                    value={maxGrade}
+                    onChange={(e) => setMaxGrade(e.target.value)}
+                  >
+                    <option value="">{t("Student_NoRestriction")}</option>
+                    <option value="0">{t("Grade_Prep")}</option>
+                    <option value="1">{t("Grade_1")}</option>
+                    <option value="2">{t("Grade_2")}</option>
+                    <option value="3">{t("Grade_3")}</option>
+                    <option value="4">{t("Grade_4")}</option>
+                    <option value="5">{t("Grade_5")}</option>
+                    <option value="6">{t("Grade_6")}</option>
+                    <option value="7">{t("Grade_Graduated")}</option>
+                  </select>
+                </label>
+                <label>
+                  <span>
+                    {t("Student_FieldImage")} ({t("Student_Optional")})
+                  </span>
                   <span className="create-event-file-picker">
                     <input
                       className="create-event-file-input"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setImageFile(e.target.files?.[0] || null)
+                      }
                     />
-                    <span className="create-event-file-button">{t("Student_ChooseFile")}</span>
+                    <span className="create-event-file-button">
+                      {t("Student_ChooseFile")}
+                    </span>
                     <span className="create-event-file-name">
                       {imageFile?.name || t("Student_NoFileSelected")}
                     </span>
@@ -485,25 +626,27 @@ export default function StudentEvents() {
               </section>
               {createError && (
                 <div className="auth-error flex items-center gap-2">
-                <AlertTriangle size={16} className="shrink-0" />
-                <span>{createError}</span>
+                  <AlertTriangle size={16} className="shrink-0" />
+                  <span>{createError}</span>
                 </div>
               )}
               <div className="create-event-actions">
                 <button
-                type="button"
-                onClick={() => navigate("/student/home")}
-                className="create-event-cancel"
+                  type="button"
+                  onClick={() => navigate("/student/home")}
+                  className="create-event-cancel"
                 >
-                {t("Student_CancelBtn") || "Vazgeç"}
+                  {t("Student_CancelBtn") || "Vazgeç"}
                 </button>
                 <p>{t("Student_PublishNotice")}</p>
                 <button
-                type="submit"
-                disabled={isCreating}
-                className="create-event-submit"
+                  type="submit"
+                  disabled={isCreating}
+                  className="create-event-submit"
                 >
-                {isCreating ? t("Student_Creating") : `${t("Student_PublishEvent")} ›`}
+                  {isCreating
+                    ? t("Student_Creating")
+                    : `${t("Student_PublishEvent")} ›`}
                 </button>
               </div>
             </form>
@@ -515,7 +658,9 @@ export default function StudentEvents() {
       {cancelModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-8 space-y-4 shadow-2xl relative border border-blue-100">
-            <h3 className="text-xl font-black text-gray-900">{t("Student_CancelModalTitle")}</h3>
+            <h3 className="text-xl font-black text-gray-900">
+              {t("Student_CancelModalTitle")}
+            </h3>
             <p className="text-xs text-gray-500 font-medium">
               {t("Student_CancelModalDescription")}
             </p>
@@ -528,7 +673,9 @@ export default function StudentEvents() {
               placeholder={t("Student_CancelReasonPlaceholder")}
               className="w-full p-4 border border-blue-100 rounded-2xl outline-none text-sm h-32 resize-none bg-blue-50/40 focus:border-blue-500 font-medium"
             />
-            {cancelError && <p className="text-xs text-red-600 font-bold">{cancelError}</p>}
+            {cancelError && (
+              <p className="text-xs text-red-600 font-bold">{cancelError}</p>
+            )}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -543,7 +690,9 @@ export default function StudentEvents() {
                 disabled={isCancelling}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
               >
-                {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
+                {isCancelling
+                  ? t("Student_Cancelling")
+                  : t("Student_ConfirmCancel")}
               </button>
             </div>
           </div>
@@ -566,22 +715,35 @@ export default function StudentEvents() {
 
             {detailLoading ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Loader2 size={32} className="animate-spin text-blue-600 mb-2" />
-                <span className="text-xs font-semibold">{t("Admin_LoadingDetails")}</span>
+                <Loader2
+                  size={32}
+                  className="animate-spin text-blue-600 mb-2"
+                />
+                <span className="text-xs font-semibold">
+                  {t("Admin_LoadingDetails")}
+                </span>
               </div>
             ) : (
               <>
                 <div className="relative h-48 -mx-6 -mt-6 mb-6">
                   {selectedEventDetail.imageUrl ? (
-                    <img src={selectedEventDetail.imageUrl} alt={selectedEventDetail.title} className="w-full h-full object-cover rounded-t-3xl" />
+                    <img
+                      src={selectedEventDetail.imageUrl}
+                      alt={selectedEventDetail.title}
+                      className="w-full h-full object-cover rounded-t-3xl"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
                       <Calendar size={48} className="text-blue-300 mb-2" />
-                      <span className="text-blue-400 font-bold text-sm">{t("Student_EventPlaceholder")}</span>
+                      <span className="text-blue-400 font-bold text-sm">
+                        {t("Student_EventPlaceholder")}
+                      </span>
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <h2 className="text-2xl font-black text-white">{selectedEventDetail.title}</h2>
+                    <h2 className="text-2xl font-black text-white">
+                      {selectedEventDetail.title}
+                    </h2>
                   </div>
                 </div>
 
@@ -589,51 +751,80 @@ export default function StudentEvents() {
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <Calendar size={18} className="text-blue-500" />
                     <span className="text-sm font-semibold">
-                      {selectedEventDetail.eventDate ? new Date(selectedEventDetail.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", { dateStyle: "long", timeStyle: "short" }) : "-"}
+                      {selectedEventDetail.eventDate
+                        ? new Date(
+                            selectedEventDetail.eventDate,
+                          ).toLocaleString(
+                            i18n.language === "en" ? "en-US" : "tr-TR",
+                            { dateStyle: "long", timeStyle: "short" },
+                          )
+                        : "-"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <MapPin size={18} className="text-red-500" />
-                    <span className="text-sm font-semibold">{selectedEventDetail.location || t("Student_NotSpecified")}</span>
+                    <span className="text-sm font-semibold">
+                      {selectedEventDetail.location ||
+                        t("Student_NotSpecified")}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <User size={16} className="text-purple-500" />
-                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || t("Student_Unknown")}</span>
+                      <span className="text-xs font-semibold truncate">
+                        {selectedEventDetail.creatorName ||
+                          selectedEventDetail.organizerName ||
+                          t("Student_Unknown")}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <Tag size={16} className="text-green-500" />
-                      <span className="text-xs font-semibold truncate">{formatCategoryName(selectedEventDetail.categoryName, t)}</span>
+                      <span className="text-xs font-semibold truncate">
+                        {formatCategoryName(
+                          selectedEventDetail.categoryName,
+                          t,
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                     <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                      {selectedEventDetail.description || t("Student_NoEventDescription")}
+                      {selectedEventDetail.description ||
+                        t("Student_NoEventDescription")}
                     </p>
                   </div>
-                  
+
                   {selectedEventDetail.isJoined && (
                     <div className="space-y-2">
                       <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                         <CheckCircle2 size={18} />
-                        <span>{t("Student_JoinedBadge") || "✓ Katıldınız"}</span>
+                        <span>
+                          {t("Student_JoinedBadge") || "✓ Katıldınız"}
+                        </span>
                       </div>
                       {isEventInFuture(selectedEventDetail.eventDate) && (
                         <button
                           type="button"
-                          onClick={() => handleLeaveEvent(selectedEventDetail.id)}
+                          onClick={() =>
+                            handleLeaveEvent(selectedEventDetail.id)
+                          }
                           disabled={isLeavingEvent}
                           className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {isLeavingEvent ? (
                             <>
                               <Loader2 size={14} className="animate-spin" />
-                              <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                              <span>
+                                {t("Student_Leaving") || "Ayrılınıyor..."}
+                              </span>
                             </>
                           ) : (
                             <>
                               <LogOut size={14} />
-                              <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                              <span>
+                                {t("Student_LeaveEventBtn") ||
+                                  "Etkinlikten Ayrıl"}
+                              </span>
                             </>
                           )}
                         </button>
@@ -679,7 +870,8 @@ export default function StudentEvents() {
                     {selectedCommentsEvent.title}
                   </h2>
                   <p className="text-xs text-gray-500 font-medium truncate">
-                    {t("Event_CommentsModalSubtitle") || "Etkinlik Yorumları & Canlı Sohbet"}
+                    {t("Event_CommentsModalSubtitle") ||
+                      "Etkinlik Yorumları & Canlı Sohbet"}
                   </p>
                 </div>
               </div>
@@ -691,9 +883,12 @@ export default function StudentEvents() {
                 eventId={selectedCommentsEvent.id}
                 isJoined={selectedCommentsEvent.isJoined}
                 isCreator={selectedCommentsEvent.isCreator}
-                creatorId={(selectedCommentsEvent as any).creatorId ?? (selectedCommentsEvent as any).userId}
-                creatorName={selectedCommentsEvent.creatorName || selectedCommentsEvent.organizerName}
-                organizerName={selectedCommentsEvent.organizerName || selectedCommentsEvent.creatorName}
+                creatorId={
+                  (selectedCommentsEvent as any).creatorId ??
+                  (selectedCommentsEvent as any).createdById ??
+                  (selectedCommentsEvent as any).organizerId ??
+                  (selectedCommentsEvent as any).userId
+                }
                 className="!mt-0 !pt-2 !border-t-0"
               />
             </div>
