@@ -3,7 +3,8 @@ import { tokenService, setTokensSavedListener } from "./tokenService";
 import i18n from "../i18n";
 import { getErrorMessage } from "./errorMessage";
 
-const rawApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
+const rawApiUrl =
+  (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
 const API_BASE_URL = rawApiUrl.replace(/\/+$/, "");
 type UserFacingError = Error & { userMessage?: string };
 
@@ -52,7 +53,12 @@ export async function requestTokenRefresh(): Promise<string> {
   const refreshToken = tokenService.getRefreshToken();
   const expiredToken = tokenService.getAccessToken();
 
-  if (!refreshToken || refreshToken === "undefined" || refreshToken === "null" || !refreshToken.trim()) {
+  if (
+    !refreshToken ||
+    refreshToken === "undefined" ||
+    refreshToken === "null" ||
+    !refreshToken.trim()
+  ) {
     refreshFailed = true;
     redirectToLogin();
     return Promise.reject(new Error("No refresh token available"));
@@ -69,10 +75,12 @@ export async function requestTokenRefresh(): Promise<string> {
         {
           headers: {
             "Content-Type": "application/json",
-            "Accept-Language": i18n.language.startsWith("en") ? "en-US" : "tr-TR",
+            "Accept-Language": i18n.language.startsWith("en")
+              ? "en-US"
+              : "tr-TR",
           },
           timeout: 4000,
-        }
+        },
       );
 
       const responseData = response?.data;
@@ -143,6 +151,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: any) => {
     const apiResponse = response.data;
+    const requestUrl = (response.config?.url || "").toLowerCase();
 
     if (
       apiResponse &&
@@ -150,7 +159,14 @@ api.interceptors.response.use(
       "isSuccessful" in apiResponse
     ) {
       if (apiResponse.isSuccessful === false) {
-        const userMessage = getErrorMessage({ response: { data: apiResponse } });
+        // Profil endpoint'i başarısız dönerse (örn. kullanıcı DB'den silinmişse) oturumu kapat
+        if (requestUrl.includes("/users/profile/me")) {
+          redirectToLogin();
+        }
+
+        const userMessage = getErrorMessage({
+          response: { data: apiResponse },
+        });
         const error: UserFacingError = new Error(userMessage);
         error.userMessage = userMessage;
         error.message = userMessage;
@@ -165,8 +181,19 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const originalUrl = (originalRequest?.url || "").toLowerCase();
     const isAuthEndpoint = originalUrl.includes("auth/");
+    const status = error.response?.status;
 
-    if (error.response?.status === 401 && !isAuthEndpoint) {
+    // 1. Kullanıcı DB'den silinmişse /users/profile/me 404, 403 veya 401 döner -> doğrudan login'e at
+    if (
+      originalUrl.includes("/users/profile/me") &&
+      (status === 404 || status === 403 || status === 401)
+    ) {
+      redirectToLogin();
+      return Promise.reject(error);
+    }
+
+    // 2. Standart 401 Refresh Token akışı
+    if (status === 401 && !isAuthEndpoint) {
       const skipRedirect =
         Boolean(originalRequest?.headers?.["X-Skip-Auth-Redirect"]) ||
         Boolean(originalRequest?.headers?.["x-skip-auth-redirect"]);
@@ -180,7 +207,6 @@ api.interceptors.response.use(
         return Promise.reject(enrichedError);
       }
 
-      // If request has already been retried once, do not retry in loop!
       if (originalRequest._retry) {
         redirectToLogin();
         return Promise.reject(new Error("Unauthorized request after retry"));
