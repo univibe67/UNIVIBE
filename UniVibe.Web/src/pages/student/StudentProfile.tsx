@@ -106,13 +106,15 @@ function extractStringField(obj: any, keys: string[]): string {
 
 const isGuid = (val?: string | null): boolean =>
   typeof val === "string" &&
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val.trim(),
+  );
 
 function resolveLookupNames(
   _profileData: any,
   currentDept?: string,
   currentUniv?: string,
-  currentFac?: string
+  currentFac?: string,
 ): { deptName: string; univName: string; facName: string } {
   return {
     deptName: currentDept && !isGuid(currentDept) ? currentDept : "",
@@ -163,7 +165,7 @@ export default function StudentProfile() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  
+
   // Çıkış yapma onay modalı için state
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
 
@@ -176,7 +178,6 @@ export default function StudentProfile() {
   const [feedbackError, setFeedbackError] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
-  
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     text: string;
@@ -195,13 +196,15 @@ export default function StudentProfile() {
   const [activeTab, setActiveTab] = useState<"joined" | "created">("joined");
 
   // Detail Modal states
-  const [selectedEventDetail, setSelectedEventDetail] = useState<ProfileEvent | null>(null);
+  const [selectedEventDetail, setSelectedEventDetail] =
+    useState<ProfileEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isLeavingEvent, setIsLeavingEvent] = useState(false);
 
   // Comments Modal states
-  const [selectedCommentsEvent, setSelectedCommentsEvent] = useState<ProfileEvent | null>(null);
+  const [selectedCommentsEvent, setSelectedCommentsEvent] =
+    useState<ProfileEvent | null>(null);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
 
   const handleOpenDetail = async (eventItem: ProfileEvent) => {
@@ -214,8 +217,14 @@ export default function StudentProfile() {
       if (fetchedData && fetchedData.id) {
         setSelectedEventDetail({
           ...fetchedData,
-          isJoined: eventItem.isJoined !== undefined ? eventItem.isJoined : fetchedData.isJoined,
-          isCreator: eventItem.isCreator !== undefined ? eventItem.isCreator : fetchedData.isCreator,
+          isJoined:
+            eventItem.isJoined !== undefined
+              ? eventItem.isJoined
+              : fetchedData.isJoined,
+          isCreator:
+            eventItem.isCreator !== undefined
+              ? eventItem.isCreator
+              : fetchedData.isCreator,
         });
       }
     } catch (error) {
@@ -234,8 +243,14 @@ export default function StudentProfile() {
       if (fetchedData && fetchedData.id) {
         setSelectedCommentsEvent({
           ...fetchedData,
-          isJoined: fetchedData.isJoined !== undefined ? fetchedData.isJoined : eventItem.isJoined,
-          isCreator: fetchedData.isCreator !== undefined ? fetchedData.isCreator : eventItem.isCreator,
+          isJoined:
+            fetchedData.isJoined !== undefined
+              ? fetchedData.isJoined
+              : eventItem.isJoined,
+          isCreator:
+            fetchedData.isCreator !== undefined
+              ? fetchedData.isCreator
+              : eventItem.isCreator,
         });
       }
     } catch (error) {
@@ -268,17 +283,21 @@ export default function StudentProfile() {
       await api.delete(`/events/${eventId}/attendees/me`);
       showNotification(
         "success",
-        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız."
+        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız.",
       );
       setJoinedEvents((prev) => prev.filter((e) => e.id !== eventId));
       setIsDetailModalOpen(false);
       setSelectedEventDetail(null);
-      setSelectedCommentsEvent((prev) => (prev && prev.id === eventId ? { ...prev, isJoined: false } : prev));
+      setSelectedCommentsEvent((prev) =>
+        prev && prev.id === eventId ? { ...prev, isJoined: false } : prev,
+      );
       await fetchProfileEvents();
     } catch (err: any) {
       showNotification(
         "error",
-        getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu."
+        getErrorMessage(err) ||
+          t("Student_LeaveError") ||
+          "Etkinlikten ayrılırken bir sorun oluştu.",
       );
     } finally {
       setIsLeavingEvent(false);
@@ -360,13 +379,9 @@ export default function StudentProfile() {
     formData.append("profileImage", file);
 
     try {
-      const response: any = await api.post(
-        "/users/profile/picture",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const response: any = await api.post("/users/profile-picture", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       const newPhotoUrl =
         (typeof response === "string" ? response : response.data) +
@@ -385,7 +400,9 @@ export default function StudentProfile() {
       console.error("Fotoğraf yükleme hatası:", error);
       showNotification(
         "error",
-        getErrorMessage(error) || t("Student_PhotoUploadError") || "Fotoğraf sunucuya gönderilemedi.",
+        getErrorMessage(error) ||
+          t("Student_PhotoUploadError") ||
+          "Fotoğraf sunucuya gönderilemedi.",
       );
     } finally {
       setUploading(false);
@@ -406,7 +423,7 @@ export default function StudentProfile() {
 
       showNotification(
         "success",
-        t("Res_ProfileUpdated") || "Profil bilgileriniz güncellenmiştir."
+        t("Res_ProfileUpdated") || "Profil bilgileriniz güncellenmiştir.",
       );
       setEditModalOpen(false);
       fetchProfile();
@@ -420,11 +437,8 @@ export default function StudentProfile() {
   // Çıkış Onaylandığında Çalışacak Fonksiyon
   const confirmLogout = () => {
     setLogoutModalOpen(false);
-    showNotification(
-      "success",
-      t("Auth_LogoutSuccess")
-    );
-    
+    showNotification("success", t("Auth_LogoutSuccess"));
+
     setTimeout(() => {
       localStorage.clear();
       window.location.href = "/";
@@ -458,7 +472,8 @@ export default function StudentProfile() {
           });
         } catch {
           setDeleteError(
-            t("Auth_InvalidPassword") || "Girdiğiniz şifre hatalı. Lütfen kontrol edip tekrar deneyin."
+            t("Auth_InvalidPassword") ||
+              "Girdiğiniz şifre hatalı. Lütfen kontrol edip tekrar deneyin.",
           );
           setIsDeletingAccount(false);
           return;
@@ -471,7 +486,8 @@ export default function StudentProfile() {
       setDeleteAccountModalOpen(false);
       showNotification(
         "success",
-        t("Auth_DeleteAccountSuccess") || "Hesabınız başarıyla silindi (pasife alındı)."
+        t("Auth_DeleteAccountSuccess") ||
+          "Hesabınız başarıyla silindi (pasife alındı).",
       );
 
       setTimeout(() => {
@@ -482,7 +498,7 @@ export default function StudentProfile() {
       setDeleteError(
         getErrorMessage(error) ||
           t("Student_DeleteAccountError") ||
-          "Hesap silinirken bir sorun oluştu."
+          "Hesap silinirken bir sorun oluştu.",
       );
     } finally {
       setIsDeletingAccount(false);
@@ -496,11 +512,16 @@ export default function StudentProfile() {
     const currentPass = passwordForm.currentPassword ?? "";
 
     if (newPass.length < 6) {
-      setPasswordError(t("Student_PasswordMinLength") || "Yeni şifre en az 6 karakter olmalıdır.");
+      setPasswordError(
+        t("Student_PasswordMinLength") ||
+          "Yeni şifre en az 6 karakter olmalıdır.",
+      );
       return;
     }
     if (newPass !== confirmPass) {
-      setPasswordError(t("Reset_PasswordMismatch") || "Yeni şifreler birbiriyle eşleşmiyor.");
+      setPasswordError(
+        t("Reset_PasswordMismatch") || "Yeni şifreler birbiriyle eşleşmiyor.",
+      );
       return;
     }
 
@@ -511,11 +532,22 @@ export default function StudentProfile() {
         currentPassword: currentPass,
         newPassword: newPass,
       });
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
       setPasswordModalOpen(false);
-      showNotification("success", t("Student_PasswordChanged") || "Şifreniz başarıyla değiştirildi.");
+      showNotification(
+        "success",
+        t("Student_PasswordChanged") || "Şifreniz başarıyla değiştirildi.",
+      );
     } catch (error: any) {
-      setPasswordError(getErrorMessage(error) || t("Student_PasswordChangeError") || "Şifre değiştirilemedi.");
+      setPasswordError(
+        getErrorMessage(error) ||
+          t("Student_PasswordChangeError") ||
+          "Şifre değiştirilemedi.",
+      );
     } finally {
       setIsChangingPassword(false);
     }
@@ -631,12 +663,23 @@ export default function StudentProfile() {
                 onClick={() => setPhotoViewerOpen(true)}
                 aria-label={t("Student_ViewProfilePhoto")}
               >
-                <img src={profile.profilePictureUrl} alt={`${profile.firstName} ${profile.lastName}`} />
+                <img
+                  src={profile.profilePictureUrl}
+                  alt={`${profile.firstName} ${profile.lastName}`}
+                />
               </button>
             ) : (
-              <span>{profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}</span>
+              <span>
+                {profile?.firstName?.charAt(0)}
+                {profile?.lastName?.charAt(0)}
+              </span>
             )}
-            <input ref={photoInputRef} type="file" accept="image/*" onChange={handleImageChange} />
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
             <button
               type="button"
               className="profile-camera"
@@ -646,15 +689,21 @@ export default function StudentProfile() {
               <Camera size={15} />
             </button>
           </div>
-          {(profile?.title || profile?.departmentName || profile?.department) && (
+          {(profile?.title ||
+            profile?.departmentName ||
+            profile?.department) && (
             <div className="profile-hero-eyebrow">
               {profile.title || profile.departmentName || profile.department}
             </div>
           )}
-          <h1>{profile?.firstName} {profile?.lastName}</h1>
+          <h1>
+            {profile?.firstName} {profile?.lastName}
+          </h1>
           <p>
             @{profile?.username}
-            {(profile?.universityName || profile?.university) ? ` · ${profile.universityName || profile.university}` : ""}
+            {profile?.universityName || profile?.university
+              ? ` · ${profile.universityName || profile.university}`
+              : ""}
           </p>
           <p className="profile-bio">{profile?.bio || t("Student_NoBio")}</p>
           <button
@@ -700,42 +749,74 @@ export default function StudentProfile() {
         )}
 
         <section className="profile-tabs">
-          <button type="button" className={activeTab === "joined" ? "active" : ""} onClick={() => setActiveTab("joined")}>
+          <button
+            type="button"
+            className={activeTab === "joined" ? "active" : ""}
+            onClick={() => setActiveTab("joined")}
+          >
             {t("Student_JoinedEvents")} <span>{joinedEvents?.length ?? 0}</span>
           </button>
-          <button type="button" className={activeTab === "created" ? "active" : ""} onClick={() => setActiveTab("created")}>
+          <button
+            type="button"
+            className={activeTab === "created" ? "active" : ""}
+            onClick={() => setActiveTab("created")}
+          >
             {t("Student_CreatedEvents")} <span>{createdEvent ? 1 : 0}</span>
           </button>
         </section>
 
         <section className="profile-event-list">
           {activeTab === "joined" && (joinedEvents?.length ?? 0) === 0 && (
-            <div className="profile-empty-state">{t("Student_NoJoinedEvents")}</div>
+            <div className="profile-empty-state">
+              {t("Student_NoJoinedEvents")}
+            </div>
           )}
-          {activeTab === "joined" && joinedEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={{ ...event, isJoined: true }}
-              onViewDetail={() => handleOpenDetail({ ...event, isJoined: true })}
-              onOpenComments={() => handleOpenComments({ ...event, isJoined: true })}
-            />
-          ))}
+          {activeTab === "joined" &&
+            joinedEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={{ ...event, isJoined: true }}
+                onViewDetail={() =>
+                  handleOpenDetail({ ...event, isJoined: true })
+                }
+                onOpenComments={() =>
+                  handleOpenComments({ ...event, isJoined: true })
+                }
+              />
+            ))}
           {activeTab === "created" && createdEvent && (
             <EventCard
               event={{ ...createdEvent, isCreator: true }}
-              onViewDetail={() => handleOpenDetail({ ...createdEvent, isCreator: true })}
-              onOpenComments={() => handleOpenComments({ ...createdEvent, isCreator: true })}
+              onViewDetail={() =>
+                handleOpenDetail({ ...createdEvent, isCreator: true })
+              }
+              onOpenComments={() =>
+                handleOpenComments({ ...createdEvent, isCreator: true })
+              }
             />
           )}
           {activeTab === "created" && !createdEvent && (
-            <div className="profile-empty-state">{t("Student_NoCreatedEvents")}</div>
+            <div className="profile-empty-state">
+              {t("Student_NoCreatedEvents")}
+            </div>
           )}
         </section>
 
         <section className="profile-settings">
           <h2>{t("Student_AccountSettings")}</h2>
-          <button type="button" onClick={() => setEditModalOpen(true)}><Edit3 size={18} /> {t("Student_EditProfile")} <span>›</span></button>
-          <button type="button" onClick={() => { setPasswordError(""); setPasswordModalOpen(true); }}><LockKeyhole size={18} /> {t("Student_ChangePassword")} <span>›</span></button>
+          <button type="button" onClick={() => setEditModalOpen(true)}>
+            <Edit3 size={18} /> {t("Student_EditProfile")} <span>›</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPasswordError("");
+              setPasswordModalOpen(true);
+            }}
+          >
+            <LockKeyhole size={18} /> {t("Student_ChangePassword")}{" "}
+            <span>›</span>
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -744,16 +825,28 @@ export default function StudentProfile() {
               setFeedbackModalOpen(true);
             }}
           >
-            <MessageSquare size={18} /> {t("Student_FeedbackButton") || "Geri Bildirim / Sorun Bildir"} <span>›</span>
+            <MessageSquare size={18} />{" "}
+            {t("Student_FeedbackButton") || "Geri Bildirim / Sorun Bildir"}{" "}
+            <span>›</span>
           </button>
-          <button type="button" onClick={() => setLogoutModalOpen(true)}><LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"} <span>›</span></button>
-          <button type="button" className="danger" onClick={handleDeleteAccount}><Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"} <span>›</span></button>
+          <button type="button" onClick={() => setLogoutModalOpen(true)}>
+            <LogOut size={18} /> {t("Auth_Logout") || "Çıkış Yap"}{" "}
+            <span>›</span>
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onClick={handleDeleteAccount}
+          >
+            <Trash2 size={18} /> {t("Student_DeleteAccount") || "Hesabımı Sil"}{" "}
+            <span>›</span>
+          </button>
         </section>
       </div>
 
       <div className="profile-legacy">
         <div className="max-w-7xl mx-auto space-y-6 pt-6 sm:pt-0">
-        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6">
             {/* Profil Header */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
               <div className="relative mb-4 group">
@@ -791,7 +884,9 @@ export default function StudentProfile() {
               </h1>
               <p className="text-sm font-medium text-gray-500 mt-0.5">
                 @{profile?.username}
-                {(profile?.universityName || profile?.university) ? ` · ${profile.universityName || profile.university}` : ""}
+                {profile?.universityName || profile?.university
+                  ? ` · ${profile.universityName || profile.university}`
+                  : ""}
               </p>
             </div>
 
@@ -907,7 +1002,10 @@ export default function StudentProfile() {
               >
                 <div className="flex items-center gap-3">
                   <LogOut size={18} strokeWidth={2.5} />
-                  <span>{t("Auth_Logout") || (i18n.language === "en" ? "Logout" : "Çıkış Yap")}</span>
+                  <span>
+                    {t("Auth_Logout") ||
+                      (i18n.language === "en" ? "Logout" : "Çıkış Yap")}
+                  </span>
                 </div>
               </button>
 
@@ -923,140 +1021,141 @@ export default function StudentProfile() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Çıkış Yap Onay Modalı */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative text-center">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+              <LogOut size={24} strokeWidth={2.5} />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-gray-900">
+                {t("Auth_LogoutConfirmTitle") || "Çıkış Yap"}
+              </h3>
+              <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                {t("Auth_LogoutConfirmMessage") ||
+                  "Sistemden çıkış yapmak istediğinize emin misiniz?"}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setLogoutModalOpen(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-xs transition-colors"
+              >
+                {t("Auth_Cancel") || "İptal"}
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl text-xs shadow-md shadow-red-600/20 transition-colors"
+              >
+                {t("Auth_Yes") || "Evet, Çıkış Yap"}
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Çıkış Yap Onay Modalı */}
-        {isLogoutModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative text-center">
-              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-                <LogOut size={24} strokeWidth={2.5} />
-              </div>
+      {/* Profil Düzenleme Modalı */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button
+              onClick={() => setEditModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
 
-              <div className="space-y-1.5">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {t("Auth_LogoutConfirmTitle") || "Çıkış Yap"}
-                </h3>
-                <p className="text-xs text-gray-500 font-medium leading-relaxed">
-                  {t("Auth_LogoutConfirmMessage") || "Sistemden çıkış yapmak istediğinize emin misiniz?"}
+            <h2 className="text-xl font-bold text-gray-900 border-b pb-3">
+              {t("Student_EditProfile") || "Profili Düzenle"}
+            </h2>
+
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  {t("Student_FieldUsername") || "Kullanıcı Adı"}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.username}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, username: e.target.value })
+                  }
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                />
+                <p className="text-[11px] text-red-500 italic">
+                  *{" "}
+                  {t("Student_UsernameWarning") ||
+                    "Kullanıcı adınızı güncelledikten sonra 30 gün boyunca değiştiremezsiniz."}
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-1">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  {t("Student_Bio") || "Biyografi"}
+                </label>
+                <textarea
+                  rows={3}
+                  value={editForm.bio}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bio: e.target.value })
+                  }
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  {t("Student_SocialMedia") || "Sosyal Medya Linki"}
+                </label>
+                <input
+                  type="text"
+                  value={editForm.socialMediaLink}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      socialMediaLink: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {updateError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0" />
+                  <span>{updateError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setLogoutModalOpen(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-xs transition-colors"
+                  onClick={() => setEditModalOpen(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm"
                 >
-                  {t("Auth_Cancel") || "İptal"}
+                  {t("Student_CancelBtn") || "İptal"}
                 </button>
                 <button
-                  type="button"
-                  onClick={confirmLogout}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl text-xs shadow-md shadow-red-600/20 transition-colors"
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-blue-600/20"
                 >
-                  {t("Auth_Yes") || "Evet, Çıkış Yap"}
+                  {isUpdating
+                    ? t("Student_Saving") || "Kaydediliyor..."
+                    : t("Student_Save") || "Kaydet"}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
-        )}
-
-        {/* Profil Düzenleme Modalı */}
-        {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
-              <button
-                onClick={() => setEditModalOpen(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-              >
-                <X size={20} />
-              </button>
-
-              <h2 className="text-xl font-bold text-gray-900 border-b pb-3">
-                {t("Student_EditProfile") || "Profili Düzenle"}
-              </h2>
-
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Student_FieldUsername") || "Kullanıcı Adı"}
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.username}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, username: e.target.value })
-                    }
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
-                  />
-                  <p className="text-[11px] text-red-500 italic">
-                    *{" "}
-                    {t("Student_UsernameWarning") ||
-                      "Kullanıcı adınızı güncelledikten sonra 30 gün boyunca değiştiremezsiniz."}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Student_Bio") || "Biyografi"}
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={editForm.bio}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, bio: e.target.value })
-                    }
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 resize-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Student_SocialMedia") || "Sosyal Medya Linki"}
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.socialMediaLink}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        socialMediaLink: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                {updateError && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2">
-                    <AlertTriangle size={16} className="shrink-0" />
-                    <span>{updateError}</span>
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditModalOpen(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm"
-                  >
-                    {t("Student_CancelBtn") || "İptal"}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-blue-600/20"
-                  >
-                    {isUpdating
-                      ? t("Student_Saving") || "Kaydediliyor..."
-                      : t("Student_Save") || "Kaydet"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        </div>
+      )}
 
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
@@ -1066,7 +1165,11 @@ export default function StudentProfile() {
               onClick={() => {
                 setPasswordModalOpen(false);
                 setPasswordError("");
-                setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                setPasswordForm({
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                });
               }}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
               aria-label={t("Admin_Close") || "Kapat"}
@@ -1083,18 +1186,26 @@ export default function StudentProfile() {
                   {t("Student_ChangePassword") || "Şifre Değiştir"}
                 </h2>
                 <p className="text-xs text-gray-500 font-medium">
-                  {t("Reset_Description") || "Hesap güvenliğiniz için şifrenizi güncelleyin."}
+                  {t("Reset_Description") ||
+                    "Hesap güvenliğiniz için şifrenizi güncelleyin."}
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">{t("Student_CurrentPassword") || "Mevcut şifre"}</span>
+                <span className="text-xs font-bold text-gray-700">
+                  {t("Student_CurrentPassword") || "Mevcut şifre"}
+                </span>
                 <PasswordInput
                   required
                   value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target?.value ?? "" }))}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      currentPassword: e.target?.value ?? "",
+                    }))
+                  }
                   placeholder="••••••••"
                   autoComplete="current-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
@@ -1102,12 +1213,19 @@ export default function StudentProfile() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">{t("Student_NewPassword") || "Yeni şifre"}</span>
+                <span className="text-xs font-bold text-gray-700">
+                  {t("Student_NewPassword") || "Yeni şifre"}
+                </span>
                 <PasswordInput
                   required
                   minLength={6}
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target?.value ?? "" }))}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      newPassword: e.target?.value ?? "",
+                    }))
+                  }
                   placeholder="••••••••"
                   autoComplete="new-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
@@ -1115,13 +1233,22 @@ export default function StudentProfile() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-gray-700">{t("Student_ConfirmNewPassword") || "Yeni şifre (Tekrar)"}</span>
+                <span className="text-xs font-bold text-gray-700">
+                  {t("Student_ConfirmNewPassword") || "Yeni şifre (Tekrar)"}
+                </span>
                 <PasswordInput
                   required
                   minLength={6}
                   value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target?.value ?? "" }))}
-                  placeholder={t("Student_ConfirmNewPasswordPlaceholder") || "••••••••"}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target?.value ?? "",
+                    }))
+                  }
+                  placeholder={
+                    t("Student_ConfirmNewPasswordPlaceholder") || "••••••••"
+                  }
                   autoComplete="new-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500"
                 />
@@ -1140,7 +1267,11 @@ export default function StudentProfile() {
                   onClick={() => {
                     setPasswordModalOpen(false);
                     setPasswordError("");
-                    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+                    setPasswordForm({
+                      currentPassword: "",
+                      newPassword: "",
+                      confirmPassword: "",
+                    });
                   }}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm transition-colors"
                 >
@@ -1189,10 +1320,12 @@ export default function StudentProfile() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {t("Auth_DeleteAccountTitle") || "Hesabını Silmek İstediğine Emin Misin?"}
+                  {t("Auth_DeleteAccountTitle") ||
+                    "Hesabını Silmek İstediğine Emin Misin?"}
                 </h2>
                 <p className="text-xs text-gray-500 font-medium mt-1">
-                  {t("Auth_DeleteAccountSubtitle") || "Bu işlem profilinizi pasife alacak ve aktif etkinliklerinizi iptal edecektir."}
+                  {t("Auth_DeleteAccountSubtitle") ||
+                    "Bu işlem profilinizi pasife alacak ve aktif etkinliklerinizi iptal edecektir."}
                 </p>
               </div>
             </div>
@@ -1201,7 +1334,10 @@ export default function StudentProfile() {
             <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 text-xs text-amber-900 space-y-1.5 leading-relaxed">
               <div className="flex items-center gap-2 font-bold text-amber-800">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600" />
-                <span>{t("Auth_DeleteAccountNoticeTitle") || "15 Günlük Kurtarma Süresi"}</span>
+                <span>
+                  {t("Auth_DeleteAccountNoticeTitle") ||
+                    "15 Günlük Kurtarma Süresi"}
+                </span>
               </div>
               <p className="text-amber-700/90 text-[11.5px]">
                 {t("Auth_DeleteAccountNotice") ||
@@ -1212,7 +1348,8 @@ export default function StudentProfile() {
             <form onSubmit={handleConfirmDeleteAccount} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block">
-                  {t("Auth_DeleteAccountPasswordLabel") || "Mevcut Şifreniz"} <span className="text-red-500">*</span>
+                  {t("Auth_DeleteAccountPasswordLabel") || "Mevcut Şifreniz"}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <PasswordInput
                   value={deletePassword}
@@ -1220,13 +1357,17 @@ export default function StudentProfile() {
                     setDeletePassword(e.target?.value ?? "");
                     if (deleteError) setDeleteError("");
                   }}
-                  placeholder={t("Auth_DeleteAccountPasswordPlaceholder") || "Onaylamak için şifrenizi girin"}
+                  placeholder={
+                    t("Auth_DeleteAccountPasswordPlaceholder") ||
+                    "Onaylamak için şifrenizi girin"
+                  }
                   required
                   autoComplete="current-password"
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                 />
                 <p className="text-[11px] text-gray-500">
-                  {t("Auth_DeleteAccountPasswordHint") || "Güvenliğiniz için lütfen mevcut şifrenizi giriniz."}
+                  {t("Auth_DeleteAccountPasswordHint") ||
+                    "Güvenliğiniz için lütfen mevcut şifrenizi giriniz."}
                 </p>
               </div>
 
@@ -1299,14 +1440,17 @@ export default function StudentProfile() {
             </div>
 
             <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3 text-[11px] text-blue-700 leading-relaxed">
-              ℹ️ {t("Feedback_DailyLimitNotice") || "Günde en fazla 2 geri bildirim gönderebilirsiniz."}
+              ℹ️{" "}
+              {t("Feedback_DailyLimitNotice") ||
+                "Günde en fazla 2 geri bildirim gönderebilirsiniz."}
             </div>
 
             <form onSubmit={handleSubmitFeedback} className="space-y-4">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Feedback_Subject") || "Konu"} <span className="text-red-500">*</span>
+                    {t("Feedback_Subject") || "Konu"}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
                     {(feedbackForm.subject ?? "").length}/100
@@ -1319,7 +1463,10 @@ export default function StudentProfile() {
                   maxLength={100}
                   value={feedbackForm.subject ?? ""}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, subject: e.target?.value ?? "" })
+                    setFeedbackForm({
+                      ...feedbackForm,
+                      subject: e.target?.value ?? "",
+                    })
                   }
                   placeholder={
                     t("Feedback_SubjectPlaceholder") ||
@@ -1332,7 +1479,8 @@ export default function StudentProfile() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    {t("Feedback_Message") || "Mesajınız / Açıklama"} <span className="text-red-500">*</span>
+                    {t("Feedback_Message") || "Mesajınız / Açıklama"}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-gray-400 font-medium">
                     {(feedbackForm.message ?? "").length}/1000
@@ -1345,7 +1493,10 @@ export default function StudentProfile() {
                   maxLength={1000}
                   value={feedbackForm.message ?? ""}
                   onChange={(e) =>
-                    setFeedbackForm({ ...feedbackForm, message: e.target?.value ?? "" })
+                    setFeedbackForm({
+                      ...feedbackForm,
+                      message: e.target?.value ?? "",
+                    })
                   }
                   placeholder={
                     t("Feedback_MessagePlaceholder") ||
@@ -1410,22 +1561,35 @@ export default function StudentProfile() {
 
             {detailLoading ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Loader2 size={32} className="animate-spin text-blue-600 mb-2" />
-                <span className="text-xs font-semibold">{t("Admin_LoadingDetails")}</span>
+                <Loader2
+                  size={32}
+                  className="animate-spin text-blue-600 mb-2"
+                />
+                <span className="text-xs font-semibold">
+                  {t("Admin_LoadingDetails")}
+                </span>
               </div>
             ) : (
               <>
                 <div className="relative h-48 -mx-6 -mt-6 mb-6">
                   {selectedEventDetail.imageUrl ? (
-                    <img src={selectedEventDetail.imageUrl} alt={selectedEventDetail.title} className="w-full h-full object-cover rounded-t-3xl" />
+                    <img
+                      src={selectedEventDetail.imageUrl}
+                      alt={selectedEventDetail.title}
+                      className="w-full h-full object-cover rounded-t-3xl"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
                       <Calendar size={48} className="text-blue-300 mb-2" />
-                      <span className="text-blue-400 font-bold text-sm">{t("Student_EventPlaceholder")}</span>
+                      <span className="text-blue-400 font-bold text-sm">
+                        {t("Student_EventPlaceholder")}
+                      </span>
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <h2 className="text-2xl font-black text-white">{selectedEventDetail.title}</h2>
+                    <h2 className="text-2xl font-black text-white">
+                      {selectedEventDetail.title}
+                    </h2>
                   </div>
                 </div>
 
@@ -1433,51 +1597,80 @@ export default function StudentProfile() {
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <Calendar size={18} className="text-blue-500" />
                     <span className="text-sm font-semibold">
-                      {selectedEventDetail.eventDate ? new Date(selectedEventDetail.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", { dateStyle: "long", timeStyle: "short" }) : "-"}
+                      {selectedEventDetail.eventDate
+                        ? new Date(
+                            selectedEventDetail.eventDate,
+                          ).toLocaleString(
+                            i18n.language === "en" ? "en-US" : "tr-TR",
+                            { dateStyle: "long", timeStyle: "short" },
+                          )
+                        : "-"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <MapPin size={18} className="text-red-500" />
-                    <span className="text-sm font-semibold">{selectedEventDetail.location || t("Student_NotSpecified")}</span>
+                    <span className="text-sm font-semibold">
+                      {selectedEventDetail.location ||
+                        t("Student_NotSpecified")}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <User size={16} className="text-purple-500" />
-                      <span className="text-xs font-semibold truncate">{selectedEventDetail.creatorName || selectedEventDetail.organizerName || t("Student_Unknown")}</span>
+                      <span className="text-xs font-semibold truncate">
+                        {selectedEventDetail.creatorName ||
+                          selectedEventDetail.organizerName ||
+                          t("Student_Unknown")}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
                       <Tag size={16} className="text-green-500" />
-                      <span className="text-xs font-semibold truncate">{formatCategoryName(selectedEventDetail.categoryName, t)}</span>
+                      <span className="text-xs font-semibold truncate">
+                        {formatCategoryName(
+                          selectedEventDetail.categoryName,
+                          t,
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                     <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                      {selectedEventDetail.description || t("Student_NoEventDescription")}
+                      {selectedEventDetail.description ||
+                        t("Student_NoEventDescription")}
                     </p>
                   </div>
-                  
+
                   {selectedEventDetail.isJoined && (
                     <div className="space-y-2">
                       <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                         <CheckCircle2 size={18} />
-                        <span>{t("Student_JoinedBadge") || "✓ Katıldınız"}</span>
+                        <span>
+                          {t("Student_JoinedBadge") || "✓ Katıldınız"}
+                        </span>
                       </div>
                       {isEventInFuture(selectedEventDetail.eventDate) && (
                         <button
                           type="button"
-                          onClick={() => handleLeaveEvent(selectedEventDetail.id)}
+                          onClick={() =>
+                            handleLeaveEvent(selectedEventDetail.id)
+                          }
                           disabled={isLeavingEvent}
                           className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {isLeavingEvent ? (
                             <>
                               <Loader2 size={14} className="animate-spin" />
-                              <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                              <span>
+                                {t("Student_Leaving") || "Ayrılınıyor..."}
+                              </span>
                             </>
                           ) : (
                             <>
                               <LogOut size={14} />
-                              <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                              <span>
+                                {t("Student_LeaveEventBtn") ||
+                                  "Etkinlikten Ayrıl"}
+                              </span>
                             </>
                           )}
                         </button>
@@ -1523,7 +1716,8 @@ export default function StudentProfile() {
                     {selectedCommentsEvent.title}
                   </h2>
                   <p className="text-xs text-gray-500 font-medium truncate">
-                    {t("Event_CommentsModalSubtitle") || "Etkinlik Yorumları & Canlı Sohbet"}
+                    {t("Event_CommentsModalSubtitle") ||
+                      "Etkinlik Yorumları & Canlı Sohbet"}
                   </p>
                 </div>
               </div>
@@ -1535,9 +1729,10 @@ export default function StudentProfile() {
                 eventId={selectedCommentsEvent.id}
                 isJoined={selectedCommentsEvent.isJoined}
                 isCreator={selectedCommentsEvent.isCreator}
-                creatorId={(selectedCommentsEvent as any).creatorId ?? (selectedCommentsEvent as any).userId}
-                creatorName={selectedCommentsEvent.creatorName || selectedCommentsEvent.organizerName}
-                organizerName={selectedCommentsEvent.organizerName || selectedCommentsEvent.creatorName}
+                creatorId={
+                  (selectedCommentsEvent as any).creatorId ??
+                  (selectedCommentsEvent as any).userId
+                }
                 className="!mt-0 !pt-2 !border-t-0"
               />
             </div>
