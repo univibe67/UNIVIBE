@@ -76,7 +76,7 @@ namespace UniVibe.UnitTests.Services
             var eventId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync((Event?)null);
 
             _localizerMock.Setup(l => l["Event_NotFound"])
@@ -101,7 +101,7 @@ namespace UniVibe.UnitTests.Services
                 IsDeleted = false
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(unapprovedEvent);
 
             _localizerMock.Setup(l => l["Event_NotApproved"])
@@ -128,7 +128,7 @@ namespace UniVibe.UnitTests.Services
                 IsDeleted = false
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(ownEvent);
 
             _localizerMock.Setup(l => l["Event_CannotJoinOwnEvent"])
@@ -156,7 +156,7 @@ namespace UniVibe.UnitTests.Services
                 EventDate = DateTime.UtcNow.AddDays(2)
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(existingEvent);
 
             _localizerMock.Setup(l => l["Event_UnauthorizedCancel"])
@@ -181,7 +181,7 @@ namespace UniVibe.UnitTests.Services
                 IsDeleted = false
             };
 
-            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(validEvent);
 
             _eventRepoMock.Setup(r => r.GetAttendeeAsync(eventId, userId))

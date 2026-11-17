@@ -9,8 +9,8 @@ namespace UniVibe.Application.Interfaces.Repositories
         void Delete(T entity);  
         void Update(T entity); 
         Task<T?> GetAsync(Expression<Func<T, bool>> filter);
-        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null);
-        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, bool trackChanges = false);
+        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, bool trackChanges = false);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
         IQueryable<T> AsQueryable();
     }

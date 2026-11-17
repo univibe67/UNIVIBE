@@ -131,7 +131,7 @@ namespace UniVibe.UnitTests.Services
             // Arrange
             var feedbackId = Guid.NewGuid();
 
-            _feedbackRepoMock.Setup(r => r.GetFeedbackWithUserByIdAsync(feedbackId))
+            _feedbackRepoMock.Setup(r => r.GetFeedbackWithUserByIdAsync(feedbackId, It.IsAny<bool>()))
                 .ReturnsAsync((Feedback?)null);
 
             _localizerMock.Setup(l => l["Res_Feedback_NotFound"])
@@ -151,7 +151,7 @@ namespace UniVibe.UnitTests.Services
             var feedbackId = Guid.NewGuid();
             var feedback = new Feedback { Id = feedbackId, IsResolved = false };
 
-            _feedbackRepoMock.Setup(r => r.GetFeedbackWithUserByIdAsync(feedbackId))
+            _feedbackRepoMock.Setup(r => r.GetFeedbackWithUserByIdAsync(feedbackId, It.IsAny<bool>()))
                 .ReturnsAsync(feedback);
 
             _localizerMock.Setup(l => l["Res_Feedback_Resolved"])

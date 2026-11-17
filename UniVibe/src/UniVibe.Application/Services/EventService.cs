@@ -287,7 +287,7 @@ namespace UniVibe.Application.Services
         {
             await _cancelEventValidator.ValidateAndThrowCustomAsync(request);
 
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted, trackChanges: true);
 
             if (existingEvent == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);

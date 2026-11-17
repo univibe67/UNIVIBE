@@ -55,7 +55,7 @@ namespace UniVibe.Application.Services
             if (currentAdminId == userId)
                 throw new BadRequestException(_localizer["Admin_CannotChangeOwnRole"].Value);
 
-            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
+            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId, trackChanges: true);
 
             if (user == null)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
@@ -72,7 +72,7 @@ namespace UniVibe.Application.Services
             if (currentAdminId == userId)
                 throw new BadRequestException(_localizer["Admin_CannotSuspendOwnAccount"].Value);
 
-            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
+            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId, trackChanges: true);
 
             if (user == null || user.IsDeleted)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
@@ -87,7 +87,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ActivateUserAsync(Guid userId)
         {
-            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
+            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId, trackChanges: true);
 
             if (user == null)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
@@ -106,7 +106,7 @@ namespace UniVibe.Application.Services
             if (currentAdminId == userId)
                 throw new BadRequestException(_localizer["Admin_CannotDeleteOwnAccount"].Value);
 
-            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId);
+            var user = await _userRepository.GetByIdIncludingDeletedAsync(userId, trackChanges: true);
 
             if (user == null || user.IsDeleted)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
@@ -115,7 +115,8 @@ namespace UniVibe.Application.Services
                 e.UserId == userId &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected &&
-                e.EventDate >= DateTime.UtcNow);
+                e.EventDate >= DateTime.UtcNow,
+                trackChanges: true);
 
             string cancellationReason = _localizer["Event_OrganizerAdminDeletedReason"].Value;
 
