@@ -19,7 +19,7 @@ namespace UniVibe.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("profile-picture")]
+        [HttpPost("profile/picture")]
         public async Task<IActionResult> UploadProfilePicture(IFormFile profileImage)
         {
             var userId = User.GetUserId();
