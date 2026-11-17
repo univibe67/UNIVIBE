@@ -12,10 +12,13 @@ import {
   XCircle,
   AlertCircle,
   AlertTriangle,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { getErrorMessage } from "../../services/errorMessage";
 import { formatCategoryName } from "../../utils/categoryLabel";
+import { isEventInFuture } from "../../utils/eventFilter";
 
 interface EventItem {
   id: string;
@@ -47,6 +50,7 @@ export default function StudentEventDetail() {
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const [notification, setNotification] = useState<{
     type: "success" | "error";
@@ -89,9 +93,40 @@ export default function StudentEventDetail() {
         "success",
         t("Student_JoinSuccess") || "Etkinliğe başarıyla katıldınız!"
       );
-      fetchEventDetail();
+      void fetchEventDetail();
     } catch (err: any) {
+      const status = err?.response?.status || err?.status;
+      if (status === 409) {
+        setEvent((prev) => (prev ? { ...prev, isJoined: true } : null));
+        showNotification(
+          "success",
+          t("Student_AlreadyJoinedNotice") || "Bu etkinliğe zaten katılmışsınız."
+        );
+        void fetchEventDetail();
+        return;
+      }
       showNotification("error", getErrorMessage(err) || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.");
+    }
+  };
+
+  const handleLeaveEvent = async () => {
+    if (!id) return;
+    setIsLeaving(true);
+    try {
+      await api.delete(`/events/${id}/attendees/me`);
+      showNotification(
+        "success",
+        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız."
+      );
+      setEvent((prev) => (prev ? { ...prev, isJoined: false } : null));
+      await fetchEventDetail();
+    } catch (err: any) {
+      showNotification(
+        "error",
+        getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu."
+      );
+    } finally {
+      setIsLeaving(false);
     }
   };
 
@@ -342,9 +377,31 @@ export default function StudentEventDetail() {
                     )}
                   </div>
                 ) : event.isJoined ? (
-                  <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3.5 rounded-2xl text-sm text-center flex items-center justify-center gap-2">
-                    <CheckCircle2 size={18} />
-                    {t("Student_JoinedEvent")}
+                  <div className="space-y-2">
+                    <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3.5 rounded-2xl text-sm text-center flex items-center justify-center gap-2">
+                      <CheckCircle2 size={18} />
+                      <span>{t("Student_JoinedEvent") || "✓ Katıldınız"}</span>
+                    </div>
+                    {isEventInFuture(event.eventDate) && (
+                      <button
+                        type="button"
+                        onClick={handleLeaveEvent}
+                        disabled={isLeaving}
+                        className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-2xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isLeaving ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <LogOut size={14} />
+                            <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button

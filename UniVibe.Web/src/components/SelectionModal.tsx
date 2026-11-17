@@ -43,7 +43,7 @@ export function SelectionModal({ isOpen, modalType, data, onClose, onSelect, t }
               {item.name}
             </button>
           ))}
-          {data.length === 0 && (
+          {(data?.length ?? 0) === 0 && (
             <p className="text-center text-gray-400 py-8 text-sm">{t('RegComplete_SelectParentFirst')}</p>
           )}
         </div>

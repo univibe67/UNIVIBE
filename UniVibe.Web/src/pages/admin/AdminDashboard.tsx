@@ -27,6 +27,7 @@ import { adminStore, useAdminStore } from "../../services/adminStore";
 import { getErrorMessage } from "../../services/errorMessage";
 import { formatUserRole, normalizeRole, roleValue } from "../../utils/userRole";
 import { formatCategoryName } from "../../utils/categoryLabel";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <section className={`rounded-2xl border border-[#e3e9e5] bg-white p-5 shadow-[0_5px_16px_#17212b0b] ${className}`}>{children}</section>
@@ -50,10 +51,10 @@ function Overview() {
   }, []);
 
   const pendingEventsCount = stats.pendingEvents ?? 0;
-  const totalFeedbacksCount = feedbacks.length;
-  const totalUsersCount = users.length;
-  const activeUsersCount = users.filter((u) => u.isActive).length;
-  const suspendedUsersCount = users.filter((u) => !u.isActive).length;
+  const totalFeedbacksCount = feedbacks?.length ?? 0;
+  const totalUsersCount = users?.length ?? 0;
+  const activeUsersCount = (users || []).filter((u) => u.isActive).length;
+  const suspendedUsersCount = (users || []).filter((u) => !u.isActive).length;
 
   const cards = [
     [t("Admin_TotalUsers"), totalUsersCount, Users],
@@ -210,6 +211,11 @@ function Events() {
   const [selectedEvent, setSelectedEvent] = useState<AdminEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [eventToRejectId, setEventToRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectError, setRejectError] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -232,37 +238,109 @@ function Events() {
     [events, search]
   );
 
-  const isEventApproved = (status?: string | number | null) => {
-    const value = String(status ?? "").toLowerCase().trim();
-    return value === "2" || value === "approved" || value === "onaylandi" || value === "onaylandı";
+  const [currentTime] = useState(() => Date.now());
+
+  const normalizeStatus = (status?: string | number | null): number => {
+    if (status === null || status === undefined) return 1;
+    const s = String(status).toLowerCase().trim();
+    if (s === "1" || s === "pending" || s === "onay bekliyor") return 1;
+    if (s === "2" || s === "approved" || s === "onaylandi" || s === "onaylandı") return 2;
+    if (s === "3" || s === "rejected" || s === "reddedildi") return 3;
+    if (s === "4" || s === "cancelled" || s === "canceled" || s === "iptal" || s === "iptal edildi") return 4;
+    if (s === "5" || s === "completed" || s === "tamamlandi" || s === "tamamlandı") return 5;
+    const parsed = Number(status);
+    return Number.isNaN(parsed) ? 1 : parsed;
   };
 
-  const isEventRejected = (status?: string | number | null) => {
-    const value = String(status ?? "").toLowerCase().trim();
-    return value === "3" || value === "rejected" || value === "reddedildi";
+  const isEventPast = (dateStr?: string | null): boolean => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return !isNaN(d.getTime()) && d.getTime() <= currentTime;
+  };
+
+  const canApproveEvent = (eventItem: AdminEvent): boolean => {
+    if (eventItem.isDeleted) return false;
+    const st = normalizeStatus(eventItem.status);
+    if (st !== 1) return false;
+    if (isEventPast(eventItem.eventDate)) return false;
+    return true;
+  };
+
+  const canRejectEvent = (eventItem: AdminEvent): boolean => {
+    if (eventItem.isDeleted) return false;
+    const st = normalizeStatus(eventItem.status);
+    if (st !== 1 && st !== 2) return false;
+    if (isEventPast(eventItem.eventDate)) return false;
+    return true;
+  };
+
+  const getApproveTitle = (eventItem: AdminEvent): string => {
+    const st = normalizeStatus(eventItem.status);
+    if (isEventPast(eventItem.eventDate)) {
+      return t("Admin_EventCannotApprovePast") || (i18n.language.startsWith("en") ? "Past events cannot be approved" : "Tarihi geçmiş bir etkinlik onaylanamaz.");
+    }
+    if (st === 4) {
+      return t("Admin_EventCannotApproveCancelled") || (i18n.language.startsWith("en") ? "Cancelled events cannot be approved" : "İptal edilmiş bir etkinlik onaylanamaz.");
+    }
+    if (st === 2) {
+      return t("Admin_Status_Approved") ? `${t("Admin_Status_Approved")}` : (i18n.language.startsWith("en") ? "Event already approved" : "Bu etkinlik zaten onaylandı.");
+    }
+    if (st === 3) {
+      return i18n.exists("Admin_EventCannotApproveRejected")
+        ? t("Admin_EventCannotApproveRejected")
+        : i18n.language.startsWith("en")
+        ? "Rejected events cannot be approved"
+        : "Reddedilmiş bir etkinlik onaylanamaz.";
+    }
+    if (st === 5) {
+      return t("Admin_Status_Completed") || (i18n.language.startsWith("en") ? "Completed events cannot be approved" : "Tamamlanmış bir etkinlik onaylanamaz.");
+    }
+    return t("Admin_Approve") || (i18n.language.startsWith("en") ? "Approve" : "Onayla");
+  };
+
+  const getRejectTitle = (eventItem: AdminEvent): string => {
+    const st = normalizeStatus(eventItem.status);
+    if (isEventPast(eventItem.eventDate)) {
+      return t("Admin_EventCannotRejectPast") || (i18n.language.startsWith("en") ? "Past events cannot be rejected" : "Tarihi geçmiş bir etkinlik reddedilemez.");
+    }
+    if (st === 4) {
+      return t("Admin_EventCannotRejectCancelled") || (i18n.language.startsWith("en") ? "Cancelled events cannot be rejected" : "İptal edilmiş bir etkinlik reddedilemez.");
+    }
+    if (st === 3) {
+      return t("Admin_EventAlreadyRejected") || (i18n.language.startsWith("en") ? "Event already rejected" : "Bu etkinlik zaten reddedilmiş.");
+    }
+    if (st === 5) {
+      return t("Admin_Status_Completed") || (i18n.language.startsWith("en") ? "Completed events cannot be rejected" : "Tamamlanmış bir etkinlik reddedilemez.");
+    }
+    return t("Admin_Reject") || (i18n.language.startsWith("en") ? "Reject" : "Reddet");
   };
 
   const statusLabel = (status?: string | number | null) => {
-    if (isEventApproved(status)) {
+    const st = normalizeStatus(status);
+    if (st === 2) {
       return [t("Admin_Status_Approved") || (i18n.language.startsWith("en") ? "Approved" : "Onaylandı"), "bg-[#ecfdf3] text-[#16804b]"];
     }
-    if (isEventRejected(status)) {
+    if (st === 3) {
       return [t("Admin_Status_Rejected") || (i18n.language.startsWith("en") ? "Rejected" : "Reddedildi"), "bg-[#fff0f2] text-[#d73f55]"];
     }
-    const value = String(status ?? "").toLowerCase().trim();
-    if (value === "4" || value === "cancelled" || value === "canceled" || value === "iptal" || value === "iptal edildi") {
+    if (st === 4) {
       return [t("Admin_Status_Cancelled") || (i18n.language.startsWith("en") ? "Cancelled" : "İptal Edildi"), "bg-gray-100 text-gray-700"];
     }
-    if (value === "5" || value === "completed" || value === "tamamlandi" || value === "tamamlandı") {
+    if (st === 5) {
       return [t("Admin_Status_Completed") || (i18n.language.startsWith("en") ? "Completed" : "Tamamlandı"), "bg-[#eaf2ff] text-[#1559ac]"];
     }
     // 1 (Pending) veya bilinmeyen/boş/0 olan tüm değerler onay bekliyor kabul edilir (sarı/turuncu rozet)
     return [t("Admin_Status_Pending") || (i18n.language.startsWith("en") ? "Pending" : "Onay Bekliyor"), "bg-[#fff4e8] text-[#c66a16]"];
   };
 
-  const update = async (action: () => Promise<unknown>) => {
+  const handleApprove = async (eventId: string) => {
     try {
-      await action();
+      await adminApi.approveEvent(eventId);
+      adminStore.approveEvent(eventId);
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 2 } : e)));
+      if (selectedEvent && selectedEvent.id === eventId) {
+        setSelectedEvent((prev) => (prev ? { ...prev, status: 2 } : null));
+      }
       void adminStore.refresh();
       load();
     } catch (e) {
@@ -270,24 +348,47 @@ function Events() {
     }
   };
 
-  const handleApprove = async (eventId: string) => {
-    adminStore.approveEvent(eventId);
-    setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 2 } : e)));
-    if (selectedEvent && selectedEvent.id === eventId) {
-      setSelectedEvent((prev) => (prev ? { ...prev, status: 2 } : null));
-    }
-    await update(() => adminApi.approveEvent(eventId));
+  const openRejectModal = (eventId: string) => {
+    setEventToRejectId(eventId);
+    setRejectReason("");
+    setRejectError("");
+    setRejectModalOpen(true);
   };
 
-  const handleReject = async (eventId: string) => {
-    const reason = window.prompt(t("Admin_RejectReasonPrompt") || "Reddetme sebebi giriniz:");
-    if (!reason?.trim()) return;
-    adminStore.rejectEvent(eventId, reason);
-    setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 3, rejectionReason: reason } : e)));
-    if (selectedEvent && selectedEvent.id === eventId) {
-      setSelectedEvent((prev) => (prev ? { ...prev, status: 3, rejectionReason: reason } : null));
+  const handleConfirmReject = async () => {
+    if (!rejectReason.trim()) {
+      setRejectError(t("Admin_Reason_Required") || "Lütfen bir reddetme sebebi belirtiniz.");
+      return;
     }
-    await update(() => adminApi.rejectEvent(eventId, reason));
+    if (!eventToRejectId) return;
+
+    setIsRejecting(true);
+    setRejectError("");
+    try {
+      await adminApi.rejectEvent(eventToRejectId, rejectReason.trim());
+      adminStore.rejectEvent(eventToRejectId, rejectReason.trim());
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === eventToRejectId
+            ? { ...e, status: 3, rejectionReason: rejectReason.trim() }
+            : e
+        )
+      );
+      if (selectedEvent && selectedEvent.id === eventToRejectId) {
+        setSelectedEvent((prev) =>
+          prev
+            ? { ...prev, status: 3, rejectionReason: rejectReason.trim() }
+            : null
+        );
+      }
+      setRejectModalOpen(false);
+      void adminStore.refresh();
+      load();
+    } catch (e) {
+      setRejectError(getErrorMessage(e));
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   const handleViewDetails = async (event: AdminEvent) => {
@@ -360,30 +461,39 @@ function Events() {
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => void handleViewDetails(event)}
-                            className="rounded-lg bg-[#f0f3f1] p-2 text-[#718089] hover:bg-[#e3e9e5] hover:text-[#17212b] transition"
-                            title={t("Admin_ViewDetails")}
+                            className="rounded-lg bg-[#f0f3f1] p-2 text-[#718089] hover:bg-[#e3e9e5] hover:text-[#17212b] transition cursor-pointer"
+                            title={t("Admin_ViewDetails") || "Detayları Gör"}
                           >
                             <Eye size={17} />
                           </button>
-                          {!isEventApproved(event.status) && (
-                            <button
-                              onClick={() => void handleApprove(event.id)}
-                              className="rounded-lg bg-[#ecfdf3] p-2 text-[#16804b] hover:bg-[#d4f8e3] transition cursor-pointer"
-                              title={t("Admin_Approve") || "Onayla"}
-                            >
-                              <Check size={17} />
-                            </button>
-                          )}
-                          {!isEventRejected(event.status) && (
-                            <button
-                              onClick={() => void handleReject(event.id)}
-                              className="rounded-lg bg-[#fff0f2] p-2 text-[#d73f55] hover:bg-[#ffe2e6] transition cursor-pointer"
-                              title={t("Admin_Reject") || "Reddet"}
-                            >
-                              <X size={17} />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            disabled={!canApproveEvent(event)}
+                            onClick={() => void handleApprove(event.id)}
+                            className={`rounded-lg p-2 transition ${
+                              canApproveEvent(event)
+                                ? "bg-[#ecfdf3] text-[#16804b] hover:bg-[#d4f8e3] cursor-pointer"
+                                : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                            }`}
+                            title={getApproveTitle(event)}
+                          >
+                            <Check size={17} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canRejectEvent(event)}
+                            onClick={() => openRejectModal(event.id)}
+                            className={`rounded-lg p-2 transition ${
+                              canRejectEvent(event)
+                                ? "bg-[#fff0f2] text-[#d73f55] hover:bg-[#ffe2e6] cursor-pointer"
+                                : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                            }`}
+                            title={getRejectTitle(event)}
+                          >
+                            <X size={17} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -391,7 +501,7 @@ function Events() {
                 })}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {(filtered?.length ?? 0) === 0 && (
               <p className="py-10 text-center text-sm text-[#819098]">{t("Admin_NoEventsFound")}</p>
             )}
           </div>
@@ -538,30 +648,110 @@ function Events() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-[#e8eeea] pt-4">
-              {!isEventApproved(selectedEvent.status) && (
-                <button
-                  type="button"
-                  onClick={() => void handleApprove(selectedEvent.id)}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#ecfdf3] px-4 py-2.5 text-sm font-bold text-[#16804b] hover:bg-[#d4f8e3] transition cursor-pointer"
-                >
-                  <Check size={16} /> {t("Admin_Approve") || "Onayla"}
-                </button>
-              )}
-              {!isEventRejected(selectedEvent.status) && (
-                <button
-                  type="button"
-                  onClick={() => void handleReject(selectedEvent.id)}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#fff0f2] px-4 py-2.5 text-sm font-bold text-[#d73f55] hover:bg-[#ffe2e6] transition cursor-pointer"
-                >
-                  <X size={16} /> {t("Admin_Reject") || "Reddet"}
-                </button>
-              )}
+              <button
+                type="button"
+                disabled={!canApproveEvent(selectedEvent)}
+                onClick={() => void handleApprove(selectedEvent.id)}
+                className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                  canApproveEvent(selectedEvent)
+                    ? "bg-[#ecfdf3] text-[#16804b] hover:bg-[#d4f8e3] cursor-pointer"
+                    : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                }`}
+                title={getApproveTitle(selectedEvent)}
+              >
+                <Check size={16} /> {t("Admin_Approve") || "Onayla"}
+              </button>
+              <button
+                type="button"
+                disabled={!canRejectEvent(selectedEvent)}
+                onClick={() => openRejectModal(selectedEvent.id)}
+                className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                  canRejectEvent(selectedEvent)
+                    ? "bg-[#fff0f2] text-[#d73f55] hover:bg-[#ffe2e6] cursor-pointer"
+                    : "bg-gray-100 text-gray-400 opacity-40 cursor-not-allowed"
+                }`}
+                title={getRejectTitle(selectedEvent)}
+              >
+                <X size={16} /> {t("Admin_Reject") || "Reddet"}
+              </button>
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(false)}
                 className="rounded-xl bg-[#f0f3f1] px-5 py-2.5 text-sm font-bold text-[#718089] hover:bg-[#e3e9e5] hover:text-[#17212b] transition cursor-pointer"
               >
                 {t("Admin_Close") || "Kapat"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Reject Modal */}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-[#e3e9e5] space-y-4">
+            <div className="flex items-center gap-3.5 border-b border-[#e8eeea] pb-4">
+              <div className="p-2.5 bg-[#fff0f2] text-[#d73f55] rounded-xl shrink-0 border border-[#fecaca]">
+                <AlertTriangle size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-[#17212b]">
+                  {t("Admin_Reject_Modal_Title") || "Etkinliği Reddet"}
+                </h3>
+                <p className="text-xs text-[#819098] mt-0.5">
+                  {t("Admin_Reject_Modal_Desc") || "Lütfen bir reddetme sebebi belirtiniz. Bu sebep kullanıcıya iletilecektir."}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#17212b] uppercase tracking-wider">
+                {t("Admin_Rejection_Reason") || "Reddetme Sebebi"}
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  if (rejectError) setRejectError("");
+                }}
+                placeholder={t("Admin_Reject_Placeholder") || "Reddetme sebebini detaylıca yazınız..."}
+                className={`w-full p-3.5 border rounded-xl outline-none text-sm h-32 resize-none transition-all placeholder:text-[#9aa5a9] bg-[#f8fafc] ${
+                  rejectError
+                    ? "border-[#ef3653] focus:ring-2 focus:ring-[#ef3653]/20"
+                    : "border-[#e3e9e5] focus:border-[#1559ac] focus:ring-2 focus:ring-[#1559ac]/10"
+                }`}
+              />
+              {rejectError && (
+                <p className="text-xs text-[#ef3653] font-medium mt-1 flex items-center gap-1.5">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>{rejectError}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRejectModalOpen(false)}
+                disabled={isRejecting}
+                className="flex-1 bg-[#f0f3f1] hover:bg-[#e3e9e5] text-[#17212b] font-bold py-2.5 rounded-xl transition-colors text-sm cursor-pointer"
+              >
+                {t("Admin_Cancel") || "İptal"}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                disabled={isRejecting}
+                className="flex-1 bg-[#ef3653] hover:bg-[#dc2643] text-white font-bold py-2.5 rounded-xl transition-all text-sm shadow-md shadow-[#ef3653]/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isRejecting ? (
+                  <>
+                    <LoaderCircle size={16} className="animate-spin" />
+                    <span>{t("Admin_Rejecting") || "Reddediliyor..."}</span>
+                  </>
+                ) : (
+                  <span>{t("Admin_Reject_Confirm") || "Reddetmeyi Onayla"}</span>
+                )}
               </button>
             </div>
           </div>
@@ -576,6 +766,19 @@ function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "danger" | "warning";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger",
+    onConfirm: () => {},
+  });
   const load = () =>
     adminApi
       .getUsers()
@@ -605,23 +808,73 @@ function UsersPage() {
     }
   })();
   const filtered = users.filter((user) => `${user.firstName ?? ""} ${user.lastName ?? ""} ${user.email ?? ""}`.toLowerCase().includes(search.toLowerCase()));
-  const action = async (work: () => Promise<unknown>) => {
+  const updateRole = async (user: AdminUser, value: string) => {
+    const newRole = roleValue(value);
+    if (newRole === null) {
+      setMessage(t("Admin_InvalidRole"));
+      return;
+    }
     try {
-      await work();
+      await adminApi.changeUserRole(user.id, newRole);
+      adminStore.updateUserRole(user.id, newRole);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u)));
       void adminStore.refresh();
       load();
     } catch (e) {
       setMessage(getErrorMessage(e));
     }
   };
-  const updateRole = (user: AdminUser, value: string) => {
-    const newRole = roleValue(value);
-    if (newRole === null) {
-      setMessage(t("Admin_InvalidRole"));
-      return;
+
+  const toggleUserStatus = async (user: AdminUser) => {
+    try {
+      if (user.isActive) {
+        await adminApi.suspendUser(user.id);
+      } else {
+        await adminApi.activateUser(user.id);
+      }
+      adminStore.updateUserStatus(user.id, !user.isActive);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isActive: !u.isActive } : u)));
+      void adminStore.refresh();
+      load();
+    } catch (e) {
+      setMessage(getErrorMessage(e));
     }
-    adminStore.updateUserRole(user.id, newRole);
-    void action(() => adminApi.changeUserRole(user.id, newRole));
+  };
+
+  const requestToggleUserStatus = (user: AdminUser) => {
+    const isEn = i18n.language.startsWith("en");
+    const fullName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email || (isEn ? "User" : "Kullanıcı");
+
+    const title = user.isActive
+      ? (i18n.exists("Admin_SuspendUser_Title")
+          ? t("Admin_SuspendUser_Title")
+          : isEn ? "Suspend User" : "Kullanıcıyı Askıya Al")
+      : (i18n.exists("Admin_ActivateUser_Title")
+          ? t("Admin_ActivateUser_Title")
+          : isEn ? "Activate User" : "Kullanıcıyı Aktifleştir");
+
+    const message = user.isActive
+      ? (i18n.exists("Admin_SuspendUser_Confirm")
+          ? t("Admin_SuspendUser_Confirm", { name: fullName })
+          : isEn
+            ? `Are you sure you want to suspend ${fullName}?`
+            : `${fullName} adlı kullanıcıyı askıya almak istediğinizden emin misiniz?`)
+      : (i18n.exists("Admin_ActivateUser_Confirm")
+          ? t("Admin_ActivateUser_Confirm", { name: fullName })
+          : isEn
+            ? `Are you sure you want to activate ${fullName}?`
+            : `${fullName} adlı kullanıcıyı tekrar aktifleştirmek istediğinizden emin misiniz?`);
+
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      type: user.isActive ? "danger" : "warning",
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        await toggleUserStatus(user);
+      },
+    });
   };
   return (
     <>
@@ -688,11 +941,8 @@ function UsersPage() {
                             <option value="Admin">{t("Role_Admin")}</option>
                           </select>
                           <button
-                            onClick={() => {
-                              adminStore.updateUserStatus(user.id, !user.isActive);
-                              void action(() => (user.isActive ? adminApi.suspendUser(user.id) : adminApi.activateUser(user.id)));
-                            }}
-                            className={`rounded-lg px-3 py-2 text-xs font-bold ${user.isActive ? "bg-[#fff0f2] text-[#d73f55]" : "bg-[#ecfdf3] text-[#16804b]"}`}
+                            onClick={() => requestToggleUserStatus(user)}
+                            className={`rounded-lg px-3 py-2 text-xs font-bold transition cursor-pointer ${user.isActive ? "bg-[#fff0f2] text-[#d73f55] hover:bg-[#ffe2e6]" : "bg-[#ecfdf3] text-[#16804b] hover:bg-[#d4f8e3]"}`}
                           >
                             {user.isActive ? t("Admin_Suspend") : t("Admin_Activate")}
                           </button>
@@ -704,9 +954,18 @@ function UsersPage() {
               })}
             </tbody>
           </table>
-          {filtered.length === 0 && <p className="py-10 text-center text-sm text-[#819098]">{t("Admin_NoUsersFound")}</p>}
+          {(filtered?.length ?? 0) === 0 && <p className="py-10 text-center text-sm text-[#819098]">{t("Admin_NoUsersFound")}</p>}
         </div>
       </Card>
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+      />
     </>
   );
 }
@@ -746,10 +1005,11 @@ function Feedback() {
             const cleanMessage = emailMatch
               ? item.message?.replace(/^\[Gönderen E-posta:\s*[^\]]+\]\s*/i, "")
               : item.message;
-            const hasRealUserName =
+            const hasRealUserName = Boolean(
               item.userFullName &&
               item.userFullName !== "Unknown" &&
-              item.userFullName.trim().length > 0;
+              (item.userFullName ?? "").trim().length > 0
+            );
             const senderDisplay = hasRealUserName
               ? item.userFullName
               : (extractedEmail || t("Admin_Unknown"));
@@ -782,7 +1042,7 @@ function Feedback() {
           })}
         </div>
       )}
-      {!loading && !items.length && (
+      {!loading && !(items?.length) && (
         <Card><p className="text-center text-sm text-[#819098]">{t("Admin_NoFeedback")}</p></Card>
       )}
     </>
