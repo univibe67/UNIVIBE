@@ -72,7 +72,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new BadRequestException(_localizer["Res_Event_ReasonRequired"].Value);
 
-            var evnt = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+            var evnt = await _eventRepository.GetEventWithDetailsByIdAsync(eventId, trackChanges: true);
             if (evnt == null || evnt.IsDeleted)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
 
@@ -115,7 +115,7 @@ namespace UniVibe.Application.Services
 
         private async Task<Event> GetEventOrThrowAsync(Guid eventId)
         {
-            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted, trackChanges: true);
             if (evnt == null)
                 throw new NotFoundException(_localizer["Res_Event_NotFound"].Value);
             return evnt;

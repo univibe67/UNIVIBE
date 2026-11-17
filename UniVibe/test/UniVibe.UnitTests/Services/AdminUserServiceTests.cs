@@ -98,7 +98,7 @@ namespace UniVibe.UnitTests.Services
             var targetUserId = Guid.NewGuid();
             var newRole = UserRole.Teacher;
 
-            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId, It.IsAny<bool>()))
                 .ReturnsAsync((User?)null);
 
             _localizerMock.Setup(l => l["Res_User_NotFound"])
@@ -119,7 +119,7 @@ namespace UniVibe.UnitTests.Services
             var targetUserId = Guid.NewGuid();
             var user = new User { Id = targetUserId, Role = UserRole.Student };
 
-            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId, It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _localizerMock.Setup(l => l["Res_User_RoleChanged"])
@@ -160,7 +160,7 @@ namespace UniVibe.UnitTests.Services
             var targetUserId = Guid.NewGuid();
             var user = new User { Id = targetUserId, IsActive = true, IsDeleted = false };
 
-            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId, It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _localizerMock.Setup(l => l["Res_User_Suspended"])
@@ -186,7 +186,7 @@ namespace UniVibe.UnitTests.Services
             var targetUserId = Guid.NewGuid();
             var user = new User { Id = targetUserId, IsActive = false, IsDeleted = true, DeletedAt = DateTime.UtcNow };
 
-            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId, It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _localizerMock.Setup(l => l["Res_User_Activated"])
@@ -232,10 +232,10 @@ namespace UniVibe.UnitTests.Services
                     new Event { Id = Guid.NewGuid(), UserId = targetUserId, Status = EventStatus.Approved, EventDate = DateTime.UtcNow.AddDays(1) }
                 };
 
-            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId))
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(targetUserId, It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
-            _eventRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(activeEvents);
 
             _localizerMock.Setup(l => l["Res_User_Deleted"])

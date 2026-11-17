@@ -78,7 +78,7 @@ namespace UniVibe.UnitTests.Services
         {
             var request = new LoginRequest("test@univibe.com", "Password123");
 
-            _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email))
+            _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))
                 .ReturnsAsync((User?)null);
 
             _localizerMock.Setup(l => l["Auth_InvalidCredentials"])
@@ -96,7 +96,7 @@ namespace UniVibe.UnitTests.Services
             var request = new LoginRequest("test@univibe.com", "Password123");
             var user = new User { Email = request.Email, PasswordHash = "hashed_pass", IsActive = true };
 
-            _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email))
+            _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _passwordHasherMock.Setup(p => p.Verify(request.Password, user.PasswordHash))
@@ -134,7 +134,7 @@ namespace UniVibe.UnitTests.Services
                 ExpiryDate = DateTime.UtcNow.AddMinutes(10)
             };
 
-            _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>()))
+            _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(pendingUser);
 
             var result = await _authService.VerifyTokenAsync(token);
@@ -158,7 +158,7 @@ namespace UniVibe.UnitTests.Services
 
         private void _pendingUserRepositoryMockSetupForNullToken(string token)
         {
-            _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>()))
+            _pendingUserRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<PendingUser, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync((PendingUser?)null);
         }
     }

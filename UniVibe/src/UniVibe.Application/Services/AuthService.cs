@@ -67,7 +67,7 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email, trackChanges: true);
 
             if (user == null)
                 throw new UnauthorizedException(_localizer["Auth_InvalidCredentials"].Value);
@@ -114,7 +114,7 @@ namespace UniVibe.Application.Services
         {
             await _registerInitValidator.ValidateAndThrowCustomAsync(request);
 
-            var existingUser = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
+            var existingUser = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email, trackChanges: true);
 
             if (existingUser != null)
             {
@@ -280,7 +280,7 @@ namespace UniVibe.Application.Services
 
         public async Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken, trackChanges: true);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
                 throw new UnauthorizedException(_localizer["Auth_SessionExpired"].Value);
@@ -301,7 +301,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email, trackChanges: true);
 
             if (user != null)
             {
@@ -337,7 +337,7 @@ namespace UniVibe.Application.Services
             if (string.IsNullOrWhiteSpace(request.Token))
                 throw new UnauthorizedException(_localizer["Auth_InvalidOrExpiredToken"].Value);
 
-            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email);
+            var user = await _userRepository.GetByEmailIncludingDeletedAsync(request.Email, trackChanges: true);
 
             if (user == null || user.PasswordResetToken != request.Token || user.ResetTokenExpires < DateTime.UtcNow)
             {

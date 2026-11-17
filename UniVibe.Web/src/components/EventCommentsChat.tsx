@@ -20,11 +20,10 @@ import {
 
 interface EventCommentsChatProps {
   eventId: string;
+  event?: any;
   isJoined?: boolean;
   isCreator?: boolean;
   creatorId?: string;
-  creatorName?: string;
-  organizerName?: string;
   className?: string;
 }
 
@@ -53,7 +52,10 @@ function getAvatarBg(name?: string): string {
   return colors[index];
 }
 
-function formatMessageTime(dateString: string, currentLang: string = "tr"): string {
+function formatMessageTime(
+  dateString: string,
+  currentLang: string = "tr",
+): string {
   try {
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return "";
@@ -63,19 +65,25 @@ function formatMessageTime(dateString: string, currentLang: string = "tr"): stri
       d.getMonth() === now.getMonth() &&
       d.getFullYear() === now.getFullYear();
 
-    const timeStr = d.toLocaleTimeString(currentLang.startsWith("en") ? "en-US" : "tr-TR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const timeStr = d.toLocaleTimeString(
+      currentLang.startsWith("en") ? "en-US" : "tr-TR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    );
 
     if (isToday) {
       return timeStr;
     }
 
-    const dateStr = d.toLocaleDateString(currentLang.startsWith("en") ? "en-US" : "tr-TR", {
-      day: "numeric",
-      month: "short",
-    });
+    const dateStr = d.toLocaleDateString(
+      currentLang.startsWith("en") ? "en-US" : "tr-TR",
+      {
+        day: "numeric",
+        month: "short",
+      },
+    );
 
     return `${dateStr}, ${timeStr}`;
   } catch {
@@ -85,11 +93,10 @@ function formatMessageTime(dateString: string, currentLang: string = "tr"): stri
 
 export default function EventCommentsChat({
   eventId,
+  event,
   isJoined,
   isCreator,
   creatorId,
-  creatorName,
-  organizerName,
   className = "",
 }: EventCommentsChatProps) {
   const { t, i18n } = useTranslation();
@@ -106,9 +113,13 @@ export default function EventCommentsChat({
   // 1. Giriş yapan kullanıcının kimliği
   const currentUserId = tokenService.getUserId();
 
-  // Etkinlik sahibi ID'si (doğrudan veya isCreator'dan)
   const effectiveCreatorId =
-    creatorId || (isCreator && currentUserId ? currentUserId : undefined);
+    creatorId ??
+    event?.creatorId ??
+    event?.createdById ??
+    event?.organizerId ??
+    event?.userId ??
+    (isCreator && currentUserId ? currentUserId : undefined);
 
   // 1. Etkinliğe katılmış olan kullanıcılar (joined / participant)
   const isJoinedUser = Boolean(isJoined);
@@ -116,9 +127,9 @@ export default function EventCommentsChat({
   // 2. Etkinliği oluşturan kullanıcı (creator / organizer)
   const isCreatorUser = Boolean(
     isCreator ||
-      (effectiveCreatorId &&
-        currentUserId &&
-        effectiveCreatorId.toLowerCase() === currentUserId.toLowerCase())
+    (creatorId &&
+      currentUserId &&
+      creatorId.toLowerCase() === currentUserId.toLowerCase()),
   );
 
   // canAccessChat: Kimler mesajları okuyabilir ve SignalR'a bağlanabilir?
@@ -129,8 +140,6 @@ export default function EventCommentsChat({
   // canPostMessage: Yalnızca etkinliğe katılmış olan veya organizatör olan kullanıcılar mesaj yazabilir
   // (Admin dahi olsa backend kuralı gereği etkinliğe katılmamışsa mesaj gönderemez)
   const canPostMessage = isJoinedUser || isCreatorUser;
-
-  const cleanCreatorName = (creatorName || organizerName || "").trim().toLowerCase();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -152,13 +161,17 @@ export default function EventCommentsChat({
         if (!isMounted) return;
         // Backend en yeni mesajı ilk sırada döndüğü için kronolojik sıralayalım
         const sorted = [...data].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
         setMessages(sorted);
       })
       .catch((err) => {
         // Kullanıcı etkinliğe katılmamışsa backend 403 dönebilir
-        console.warn("Geçmiş mesajlar yüklenirken bilgi:", getErrorMessage(err));
+        console.warn(
+          "Geçmiş mesajlar yüklenirken bilgi:",
+          getErrorMessage(err),
+        );
       })
       .finally(() => {
         if (isMounted) {
@@ -196,13 +209,24 @@ export default function EventCommentsChat({
     connection.on("ReceiveMessage", (rawMessage: any) => {
       if (isDisposed) return;
       const normalizedMsg: EventMessageItem = {
-        id: String(rawMessage?.id ?? rawMessage?.Id ?? `${Date.now()}-${Math.random()}`),
+        id: String(
+          rawMessage?.id ?? rawMessage?.Id ?? `${Date.now()}-${Math.random()}`,
+        ),
         eventId: String(rawMessage?.eventId ?? rawMessage?.EventId ?? eventId),
         userId: String(rawMessage?.userId ?? rawMessage?.UserId ?? ""),
-        senderName: String(rawMessage?.senderName ?? rawMessage?.SenderName ?? "Katılımcı"),
-        senderProfileImage: rawMessage?.senderProfileImage ?? rawMessage?.SenderProfileImage ?? null,
+        senderName: String(
+          rawMessage?.senderName ?? rawMessage?.SenderName ?? "Katılımcı",
+        ),
+        senderProfileImage:
+          rawMessage?.senderProfileImage ??
+          rawMessage?.SenderProfileImage ??
+          null,
         content: String(rawMessage?.content ?? rawMessage?.Content ?? ""),
-        createdAt: String(rawMessage?.createdAt ?? rawMessage?.CreatedAt ?? new Date().toISOString()),
+        createdAt: String(
+          rawMessage?.createdAt ??
+            rawMessage?.CreatedAt ??
+            new Date().toISOString(),
+        ),
       };
 
       setMessages((prev) => {
@@ -297,7 +321,9 @@ export default function EventCommentsChat({
       } else {
         // SignalR bağlantısı o an hazır değilse HTTP fallback
         const sent = await sendEventMessageHttp(eventId, trimmed);
-        setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+        setMessages((prev) =>
+          prev.some((m) => m.id === sent.id) ? prev : [...prev, sent],
+        );
         setContent("");
       }
     } catch (err: any) {
@@ -320,7 +346,9 @@ export default function EventCommentsChat({
   };
 
   return (
-    <div className={`mt-6 border-t border-gray-100 pt-5 space-y-4 ${className}`}>
+    <div
+      className={`mt-6 border-t border-gray-100 pt-5 space-y-4 ${className}`}
+    >
       {/* Başlık */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -356,26 +384,25 @@ export default function EventCommentsChat({
             <MessageCircle size={28} className="text-gray-300 stroke-[1.5]" />
             <p className="text-xs font-medium">
               {canPostMessage
-                ? t("Event_NoCommentsYet") || "Henüz yorum yapılmamış. İlk yorumu sen yap!"
-                : t("Event_ChatJoinRequired") || "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
+                ? t("Event_NoCommentsYet") ||
+                  "Henüz yorum yapılmamış. İlk yorumu sen yap!"
+                : t("Event_ChatJoinRequired") ||
+                  "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
             </p>
           </div>
         ) : (
           messages.map((msg) => {
             const isMe = Boolean(
-              currentUserId && msg.userId && msg.userId.toLowerCase() === currentUserId.toLowerCase()
+              currentUserId &&
+              msg.userId &&
+              msg.userId.toLowerCase() === currentUserId.toLowerCase(),
             );
 
             // Organizatör kontrolü (etkinliği oluşturan) - Önce organizatör olup olmadığına bakılır
             const isOrganizer = Boolean(
-              (effectiveCreatorId &&
-                msg.userId &&
-                msg.userId.toLowerCase() === effectiveCreatorId.toLowerCase()) ||
-                (isCreator && isMe) ||
-                (cleanCreatorName &&
-                  msg.senderName &&
-                  cleanCreatorName.length > 0 &&
-                  msg.senderName.trim().toLowerCase() === cleanCreatorName)
+              effectiveCreatorId &&
+              msg.userId &&
+              msg.userId.toLowerCase() === effectiveCreatorId.toLowerCase(),
             );
 
             const hasValidImage = msg.senderProfileImage && !imgErrors[msg.id];
@@ -391,7 +418,9 @@ export default function EventCommentsChat({
                   <img
                     src={msg.senderProfileImage!}
                     alt={msg.senderName}
-                    onError={() => setImgErrors((prev) => ({ ...prev, [msg.id]: true }))}
+                    onError={() =>
+                      setImgErrors((prev) => ({ ...prev, [msg.id]: true }))
+                    }
                     className={`w-8 h-8 rounded-full object-cover shrink-0 shadow-xs ${
                       isOrganizer
                         ? "ring-1.5 ring-blue-300"
@@ -401,9 +430,7 @@ export default function EventCommentsChat({
                 ) : (
                   <div
                     className={`w-8 h-8 rounded-full ${getAvatarBg(msg.senderName)} text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs ${
-                      isOrganizer
-                        ? "ring-1.5 ring-blue-300"
-                        : ""
+                      isOrganizer ? "ring-1.5 ring-blue-300" : ""
                     }`}
                   >
                     {initials}
@@ -420,7 +447,9 @@ export default function EventCommentsChat({
                 >
                   <div className="flex items-center justify-between gap-3 text-[11px]">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`font-bold truncate ${isMe ? "text-blue-100" : "text-gray-900"}`}>
+                      <span
+                        className={`font-bold truncate ${isMe ? "text-blue-100" : "text-gray-900"}`}
+                      >
                         {msg.senderName}
                       </span>
 
@@ -432,8 +461,8 @@ export default function EventCommentsChat({
                               ? "bg-white/25 text-white"
                               : "bg-white/15 text-blue-100"
                             : isOrganizer
-                            ? "bg-blue-50 text-blue-700 border border-blue-100"
-                            : "bg-gray-100 text-gray-600 border border-gray-200/70"
+                              ? "bg-blue-50 text-blue-700 border border-blue-100"
+                              : "bg-gray-100 text-gray-600 border border-gray-200/70"
                         }`}
                       >
                         {isOrganizer
@@ -466,13 +495,18 @@ export default function EventCommentsChat({
 
       {/* Mesaj Gönderme / Kısıtlama Alanı (Chat Bar) */}
       {canPostMessage ? (
-        <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
+        <form
+          onSubmit={handleSendMessage}
+          className="relative flex items-center gap-2"
+        >
           <input
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={t("Event_ChatPlaceholder") || "Bir yorum veya mesaj yaz..."}
+            placeholder={
+              t("Event_ChatPlaceholder") || "Bir yorum veya mesaj yaz..."
+            }
             disabled={isSending}
             maxLength={1000}
             className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-3 text-xs outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-gray-400 disabled:opacity-60 shadow-xs"
@@ -494,7 +528,8 @@ export default function EventCommentsChat({
         <div className="flex items-center justify-center gap-2 py-3.5 px-4 bg-gray-50 border border-gray-200/80 rounded-2xl text-gray-600 text-xs font-semibold text-center select-none shadow-xs">
           <Lock size={15} className="shrink-0 text-gray-400" />
           <span>
-            {t("Event_ChatJoinRequired") || "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
+            {t("Event_ChatJoinRequired") ||
+              "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
           </span>
         </div>
       )}

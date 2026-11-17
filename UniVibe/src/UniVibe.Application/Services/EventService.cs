@@ -272,7 +272,8 @@ namespace UniVibe.Application.Services
             var attendee = new EventAttendee
             {
                 EventId = eventId,
-                UserId = userId
+                UserId = userId,
+                JoinedAt = DateTime.UtcNow
             };
 
             await _eventRepository.AddAttendeeAsync(attendee);
@@ -286,7 +287,7 @@ namespace UniVibe.Application.Services
         {
             await _cancelEventValidator.ValidateAndThrowCustomAsync(request);
 
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted, trackChanges: true);
 
             if (existingEvent == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
@@ -387,6 +388,14 @@ namespace UniVibe.Application.Services
             var attendee = await _eventRepository.GetAttendeeAsync(eventId, userId);
             if (attendee == null)
                 throw new NotFoundException(_localizer["Event_NotJoined"].Value);
+
+            var joinTime = attendee.JoinedAt ?? attendee.CreatedAt;
+            var timeSinceJoined = DateTime.UtcNow - joinTime;
+
+            if (timeSinceJoined.TotalMinutes < 15)
+            {
+                throw new BadRequestException("Etkinliğe katıldıktan sonra en az 15 dakika geçmeden etkinlikten ayrılamazsınız.");
+            }
 
             _eventRepository.RemoveAttendee(attendee);
             await _unitOfWork.SaveChangesAsync();

@@ -18,11 +18,18 @@ namespace UniVibe.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Feedback?> GetFeedbackWithUserByIdAsync(Guid id)
+        public async Task<Feedback?> GetFeedbackWithUserByIdAsync(Guid id, bool trackChanges = false)
         {
-            return await _context.Set<Feedback>()
+            var query = _context.Set<Feedback>()
                 .Include(f => f.User)
-                .FirstOrDefaultAsync(f => f.Id == id);
+                .AsQueryable();
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.FirstOrDefaultAsync(f => f.Id == id);
         }
         public async Task<int> GetTodayFeedbackCountByUserIdAsync(Guid userId)
         {

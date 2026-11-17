@@ -55,7 +55,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId, trackChanges: true);
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
@@ -79,7 +79,7 @@ namespace UniVibe.Application.Services
         {
             await _updateProfileValidator.ValidateAndThrowCustomAsync(updateDto);
 
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId, trackChanges: true);
 
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
@@ -145,7 +145,7 @@ namespace UniVibe.Application.Services
         {
             await _changePasswordValidator.ValidateAndThrowCustomAsync(request);
 
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId, trackChanges: true);
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
@@ -167,7 +167,7 @@ namespace UniVibe.Application.Services
 
         public async Task<string> DeleteAccountAsync(Guid userId)
         {
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == userId, trackChanges: true);
 
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
@@ -177,7 +177,8 @@ namespace UniVibe.Application.Services
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected &&
                 !e.IsDeleted &&
-                (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved));
+                (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved),
+                trackChanges: true);
 
             string cancellationReason = _localizer["Event_OrganizerDeletedReason"].Value;
             foreach (var ev in userActiveEvents)

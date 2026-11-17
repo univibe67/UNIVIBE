@@ -2,6 +2,7 @@
 {
     public class EventAttendee : BaseEntity
     {
+        public DateTime? JoinedAt { get; set; } = DateTime.UtcNow;
         public Guid EventId { get; set; }
         public Event Event { get; set; } = null!;
 

@@ -9,6 +9,7 @@ namespace UniVibe.API.Controllers
 {
     [Route("api/feedbacks")]
     [ApiController]
+    [Authorize]
     public sealed class FeedbacksController : ControllerBase
     {
         private readonly IFeedbackService _feedbackService;
@@ -19,7 +20,6 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateFeedbackDto dto)
         {
             var userId = User.GetUserId();

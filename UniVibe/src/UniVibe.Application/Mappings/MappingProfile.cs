@@ -26,6 +26,7 @@ namespace UniVibe.Application.Mappings
 
 
             CreateMap<Event, EventDetailResponse>()
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
                 .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0))
@@ -48,6 +49,7 @@ namespace UniVibe.Application.Mappings
                 .ForMember(dest => dest.FacultyName, opt => opt.MapFrom(src => src.Department != null && src.Department.Faculty != null ? src.Department.Faculty.Name : null));
 
             CreateMap<Event, EventListResponse>()
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
                 .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
                 .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0));
 
