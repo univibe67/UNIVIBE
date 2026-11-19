@@ -1,630 +1,281 @@
-import { useState, useEffect, useMemo } from "react";
-import type { ChangeEvent } from "react";
-import {
-  Search,
-  MapPin,
-  Calendar,
-  User,
-  Tag,
-  MessageCircle,
-  X,
-  CheckCircle2,
-  LogOut,
-  Loader2,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, CalendarDays, CalendarSearch, ChevronRight, Clock3, Compass, MapPin, Plus, RefreshCw, SearchX } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import CategoryChips from "../../components/events/CategoryChips";
+import EventCard from "../../components/events/EventCard";
+import EventChatModal from "../../components/events/EventChatModal";
+import EventCover from "../../components/events/EventCover";
+import EventDetailModal from "../../components/events/EventDetailModal";
+import { EventGrid, EventGridSkeleton } from "../../components/events/EventGrid";
+import Button from "../../components/ui/Button";
+import EmptyState from "../../components/ui/EmptyState";
+import { SearchInput } from "../../components/ui/Field";
+import VibeWave from "../../components/ui/VibeWave";
+import { useEventDialogs } from "../../hooks/useEventDialogs";
 import { api } from "../../services/api";
-import EventCard from "../../components/EventCard";
-import EventCommentsChat from "../../components/EventCommentsChat";
+import { useCurrentUser } from "../../services/currentUser";
 import { getErrorMessage } from "../../services/errorMessage";
-import { tokenService } from "../../services/tokenService";
-import { formatCategoryName } from "../../utils/categoryLabel";
-import {
-  isEventActiveAndJoinable,
-  isEventInFuture,
-} from "../../utils/eventFilter";
+import { unwrap } from "../../services/unwrap";
+import type { EventItem } from "../../types/event";
+import { CATEGORY_KEYS, formatCategoryName, getCategoryKey } from "../../utils/categoryLabel";
+import { categoryVisual } from "../../utils/categoryVisual";
+import type { CategoryKey } from "../../utils/categoryLabel";
+import { isEventActiveAndJoinable } from "../../utils/eventFilter";
+import { dateParts, formatCardDate, formatDateTime } from "../../utils/format";
 
-interface EventItem {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl?: string;
-  location?: string;
-  creatorName?: string;
-  organizerName?: string;
-  eventDate: string;
-  status: string | number;
-  categoryName?: string;
-  isCreator?: boolean;
-  isJoined?: boolean;
-  isActive?: boolean;
-  isDeleted?: boolean;
+interface PaginatedEvents {
+  items?: EventItem[];
+  Items?: EventItem[];
 }
 
-interface PaginatedResponse<T> {
-  items?: T[];
-  Items?: T[];
-  totalCount?: number;
-  TotalCount?: number;
-  totalItems?: number;
-  TotalItems?: number;
-}
-
-interface UserProfile {
-  firstName?: string;
-  lastName?: string;
-  profilePictureUrl?: string;
-}
-
-interface ApiResponse<T> {
-  data?: T;
-  message?: string;
-  errors?: string[];
-  isSuccessful?: boolean;
-}
-
-function getApiData<T>(response: unknown): T | undefined {
-  if (!response || typeof response !== "object") {
-    return undefined;
-  }
-
-  const value = response as Record<string, unknown>;
-  if ("isSuccessful" in value) {
-    return value.data as T | undefined;
-  }
-
-  return response as T;
-}
+const normalize = (value?: string) => (value ?? "").toLocaleLowerCase("tr-TR");
 
 export default function StudentHome() {
   const { t, i18n } = useTranslation();
+  const user = useCurrentUser();
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<CategoryKey | "">("");
 
-  const [selectedEventDetail, setSelectedEventDetail] =
-    useState<EventItem | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-
-  const [selectedCommentsEvent, setSelectedCommentsEvent] =
-    useState<EventItem | null>(null);
-  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
-
-  const showNotification = (type: "success" | "error", text: string) => {
-    setNotification({ type, text });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  const fetchEventsAndCategories = async () => {
-    if (tokenService.isTokenExpired(undefined, 0)) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
+  const fetchEvents = useCallback(async () => {
     try {
-      const [eventsResult, profileResult] = await Promise.allSettled([
-        api.get<
-          | PaginatedResponse<EventItem>
-          | ApiResponse<PaginatedResponse<EventItem>>
-        >("/events", {
-          params: { PageNumber: 1, PageSize: 50, OnlyActive: true },
-        }),
-        api.get<UserProfile | ApiResponse<UserProfile>>("/users/profile/me"),
-      ]);
-
-      if (eventsResult.status === "fulfilled") {
-        const actualData =
-          getApiData<PaginatedResponse<EventItem>>(eventsResult.value) ?? {};
-        const items = actualData.items ?? actualData.Items ?? [];
-        setEvents(items);
-      } else {
-        console.error(
-          "Etkinlikler yüklenirken hata oluştu:",
-          getErrorMessage(eventsResult.reason),
-        );
-        setEvents([]);
-      }
-
-      if (profileResult.status === "fulfilled") {
-        setProfile(getApiData<UserProfile>(profileResult.value) ?? null);
-      }
+      const result = unwrap<PaginatedEvents>(
+        await api.get("/events", { params: { PageNumber: 1, PageSize: 50, OnlyActive: true } }),
+      );
+      setEvents(result?.items ?? result?.Items ?? []);
+      setLoadError("");
+    } catch (error) {
+      setLoadError(getErrorMessage(error));
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchEventsAndCategories();
   }, []);
 
-  const handleOpenDetail = async (eventItem: EventItem) => {
-    setDetailLoading(true);
-    setSelectedEventDetail(eventItem);
-    setIsDetailModalOpen(true);
-    try {
-      const response = await api.get<EventItem | ApiResponse<EventItem>>(
-        `/events/${eventItem.id}`,
-      );
-      const fetchedData = getApiData<EventItem>(response);
-      if (fetchedData) {
-        setSelectedEventDetail(fetchedData);
-      }
-    } catch (error) {
-      console.error("Detay yüklenemedi:", error);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
+  useEffect(() => {
+    void fetchEvents();
+  }, [fetchEvents]);
 
-  const handleOpenComments = async (eventItem: EventItem) => {
-    setSelectedCommentsEvent(eventItem);
-    setIsCommentsModalOpen(true);
-    try {
-      const response = await api.get<EventItem | ApiResponse<EventItem>>(
-        `/events/${eventItem.id}`,
-      );
-      const fetchedData = getApiData<EventItem>(response);
-      if (fetchedData) {
-        setSelectedCommentsEvent({
-          ...fetchedData,
-          isJoined:
-            fetchedData.isJoined !== undefined
-              ? fetchedData.isJoined
-              : eventItem.isJoined,
-          isCreator:
-            fetchedData.isCreator !== undefined
-              ? fetchedData.isCreator
-              : eventItem.isCreator,
-        });
-      }
-    } catch (error) {
-      console.error("Yorum modalı için etkinlik bilgisi yüklenemedi:", error);
-    }
-  };
+  const { openDetail, openComments, detailProps, chatProps } = useEventDialogs({ onChanged: fetchEvents });
 
-  const handleJoinEvent = async (eventId: string) => {
-    try {
-      await api.post(`/events/${eventId}/attendees`);
-      showNotification(
-        "success",
-        t("Student_JoinSuccess") || "Etkinliğe başarıyla katıldınız!",
-      );
-      setSelectedEventDetail((prev) =>
-        prev ? { ...prev, isJoined: true } : null,
-      );
-      setSelectedCommentsEvent((prev) =>
-        prev && prev.id === eventId ? { ...prev, isJoined: true } : prev,
-      );
-      setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? { ...e, isJoined: true } : e)),
-      );
-      void fetchEventsAndCategories();
-    } catch (error: any) {
-      const status = error?.response?.status || error?.status;
-      if (status === 409) {
-        setSelectedEventDetail((prev) =>
-          prev ? { ...prev, isJoined: true } : null,
-        );
-        setSelectedCommentsEvent((prev) =>
-          prev && prev.id === eventId ? { ...prev, isJoined: true } : prev,
-        );
-        setEvents((prev) =>
-          prev.map((e) => (e.id === eventId ? { ...e, isJoined: true } : e)),
-        );
-        showNotification(
-          "success",
-          t("Student_AlreadyJoinedNotice") ||
-            "Bu etkinliğe zaten katılmışsınız.",
-        );
-        void fetchEventsAndCategories();
-        return;
-      }
-      showNotification(
-        "error",
-        getErrorMessage(error) ||
-          t("Student_JoinError") ||
-          "Katılım sırasında bir hata oluştu.",
-      );
-    }
-  };
+  const activeEvents = useMemo(
+    () =>
+      events
+        .filter(isEventActiveAndJoinable)
+        .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()),
+    [events],
+  );
 
-  const handleLeaveEvent = async (eventId: string) => {
-    setIsLeaving(true);
-    try {
-      await api.delete(`/events/${eventId}/attendees/me`);
-      showNotification(
-        "success",
-        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız.",
-      );
-      setSelectedEventDetail((prev) =>
-        prev ? { ...prev, isJoined: false } : null,
-      );
-      setSelectedCommentsEvent((prev) =>
-        prev && prev.id === eventId ? { ...prev, isJoined: false } : prev,
-      );
-      setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? { ...e, isJoined: false } : e)),
-      );
-      await fetchEventsAndCategories();
-    } catch (error: any) {
-      showNotification(
-        "error",
-        getErrorMessage(error) ||
-          t("Student_LeaveError") ||
-          "Etkinlikten ayrılırken bir sorun oluştu.",
-      );
-    } finally {
-      setIsLeaving(false);
-    }
-  };
-
-  const categories = [
-    { value: "", label: t("Admin_All") },
-    { value: "Sanat ve Kültür", label: t("Category_ArtsCulture") },
-    { value: "Akademik", label: t("Category_Academic") },
-    { value: "Müzik ve Eğlence", label: t("Category_MusicEntertainment") },
-    { value: "Kulüp ve Sosyal", label: t("Category_ClubsSocial") },
-    { value: "Spor", label: t("Category_Sports") },
-    { value: "Teknoloji", label: t("Category_Technology") },
-  ];
-  // Aktif ve katılınabilir etkinlikler:
-  // 1. Onaylanmış (Approved / aktif statüde) - taslak, bekleyen veya reddedilenler hariç
-  // 2. Gelecek tarihte/saatte olanlar - geçmiş etkinlikler hariç
-  const activeEvents = useMemo(() => {
-    return events.filter(isEventActiveAndJoinable);
-  }, [events]);
-
-  // Banner sayacı: aktif ve katılınabilir etkinliklerin sayısı
-  const eventCount = activeEvents?.length ?? 0;
-
-  // "Senin için etkinlikler" listesi: banner sayacıyla birebir aynı aktif/katılınabilir
-  // filtreleme mantığı temel alınarak arama terimi ve kategori filtresi uygulanır
   const filteredEvents = useMemo(() => {
-    return (activeEvents || []).filter((event) => {
-      const matchesSearch = (event.title ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        !selectedCategory ||
-        event.categoryName?.toLocaleLowerCase("tr-TR") ===
-          selectedCategory.toLocaleLowerCase("tr-TR");
-
-      return matchesSearch && matchesCategory;
+    const term = normalize(search.trim());
+    return activeEvents.filter((event) => {
+      const matchesSearch =
+        !term ||
+        normalize(event.title).includes(term) ||
+        normalize(event.creatorName ?? event.organizerName).includes(term);
+      return matchesSearch && (!category || getCategoryKey(event.categoryName) === category);
     });
-  }, [activeEvents, searchTerm, selectedCategory]);
-  const displayName =
-    [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
-    "UniVibe";
-  const initials =
-    displayName === "UniVibe"
-      ? "U"
-      : displayName
-          .split(" ")
-          .map((part) => part.charAt(0))
-          .join("")
-          .slice(0, 2)
-          .toUpperCase();
+  }, [activeEvents, search, category]);
+
+  const [featured, ...upcoming] = activeEvents;
+  const hasFilters = Boolean(search.trim() || category);
+  const joinedCount = activeEvents.filter((event) => event.isJoined).length;
+
   return (
-    <div className="student-page">
-      {notification && (
+    <>
+      <section className="relative isolate overflow-hidden rounded-[32px] bg-ink-900 px-6 py-10 text-white shadow-raised sm:px-10 sm:py-14 lg:px-14">
         <div
-          className={`fixed top-4 right-4 z-50 max-w-sm rounded-xl px-4 py-3 text-sm font-bold text-white shadow-lg ${notification.type === "success" ? "bg-emerald-600" : "bg-red-600"}`}
-        >
-          {notification.text}
+          className="absolute inset-0 -z-20"
+          style={{ background: "radial-gradient(80% 90% at 0% 0%, #1b3a6b 0%, transparent 60%), linear-gradient(135deg, #0d1b33 0%, #10284a 55%, #1a2350 100%)" }}
+          aria-hidden="true"
+        />
+        <VibeWave className="absolute inset-0 -z-10 h-full w-full opacity-95 [mask-image:linear-gradient(to_right,transparent_15%,black_60%)] max-sm:opacity-40" />
+        <div className="absolute inset-y-0 left-0 -z-10 w-full bg-gradient-to-r from-ink-900 via-ink-900/80 to-transparent sm:w-2/3" aria-hidden="true" />
+
+        <div className="max-w-xl">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white/90 ring-1 ring-white/15 backdrop-blur">
+            <span className="size-2 rounded-full bg-vibe shadow-[0_0_0_4px_rgb(16_185_129/0.25)]" aria-hidden="true" />
+            {t("Student_Greeting")} {user?.firstName ?? ""}
+          </p>
+          <h1 className="mt-5 text-[40px] leading-[1.05] font-extrabold sm:text-[56px]">{t("Student_HeroTitle")}</h1>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/75 sm:text-base">{t("UI_HeroSubtitle")}</p>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            <a
+              href="#events-heading"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-[15px] font-bold text-brand-800 shadow-raised transition hover:bg-brand-50"
+            >
+              <Compass size={18} aria-hidden="true" />
+              {t("UI_BrowseEvents")}
+            </a>
+            <Link
+              to="/student/events/new"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-white/10 px-5 text-[15px] font-bold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/20"
+            >
+              <Plus size={18} aria-hidden="true" />
+              {t("Student_CreateEvent")}
+            </Link>
+          </div>
+
+          <dl className="mt-10 flex gap-8">
+            <div>
+              <dt className="text-[13px] text-white/60">{t("UI_ActiveEventsStat")}</dt>
+              <dd className="font-display text-[32px] leading-tight font-extrabold tabular-nums">{loading ? "–" : activeEvents.length}</dd>
+            </div>
+            <div className="border-l border-white/15 pl-8">
+              <dt className="text-[13px] text-white/60">{t("UI_CategoriesStat")}</dt>
+              <dd className="font-display text-[32px] leading-tight font-extrabold tabular-nums">{CATEGORY_KEYS.length}</dd>
+            </div>
+            <div className="border-l border-white/15 pl-8 max-sm:hidden">
+              <dt className="text-[13px] text-white/60">{t("UI_JoinedStat")}</dt>
+              <dd className="font-display text-[32px] leading-tight font-extrabold text-vibe tabular-nums">{loading ? "–" : joinedCount}</dd>
+            </div>
+          </dl>
         </div>
-      )}
-      <div className="student-content">
-        <div className="student-topbar">
-          <div className="brand-lockup">
-            <span className="brand-mark">U</span>
-            <span>
-              Uni<strong>Vibe</strong>
+      </section>
+
+      {featured && (
+        <section className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]" aria-label={t("UI_NextUp")}>
+          <button
+            type="button"
+            onClick={() => void openDetail(featured)}
+            className="group relative isolate flex min-h-[340px] flex-col justify-end overflow-hidden rounded-3xl p-6 text-left text-white shadow-card ring-1 ring-ink-200/70 transition duration-300 hover:-translate-y-0.5 hover:shadow-raised sm:min-h-[400px] sm:p-8"
+          >
+            <span className="absolute inset-0 -z-20 transition-transform duration-700 group-hover:scale-105">
+              <EventCover title={featured.title} imageUrl={featured.imageUrl} categoryName={featured.categoryName} iconSize={40} />
             </span>
-          </div>
-        </div>
-        <div className="student-greeting">
-          {profile?.profilePictureUrl ? (
-            <img
-              className="student-avatar student-avatar-image"
-              src={profile.profilePictureUrl}
-              alt={displayName}
-            />
-          ) : (
-            <div className="student-avatar">{initials}</div>
-          )}
-          <div>
-            <small>{t("Student_Greeting")}</small>
-            <strong>
-              {displayName === "UniVibe"
-                ? t("Student_Welcome")
-                : `${t("Student_Welcome").replace("UniVibe", displayName)}`}
-            </strong>
-          </div>
-        </div>
-        <section className="student-hero">
-          <div className="auth-eyebrow">{t("Student_HeroEyebrow")}</div>
-          <h1>{t("Student_HeroTitle")}</h1>
-          <p>{t("Student_HeroDescription")}</p>
-          <div className="hero-count">
-            <strong>{eventCount}</strong>
-            <span>{t("Student_NewEvents")}</span>
-          </div>
-        </section>
-        <div className="section-heading">
-          <div>
-            <div className="auth-eyebrow">{t("Student_Discover")}</div>
-            <h2>{t("Student_ForYou")}</h2>
-          </div>
-        </div>
-        <div className="category-scroller">
-          {categories.map((category) => (
-            <button
-              type="button"
-              key={category.value}
-              onClick={() => setSelectedCategory(category.value)}
-              className={`category-pill ${selectedCategory === category.value ? "active" : ""}`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
+            <span className="absolute inset-0 -z-10 bg-gradient-to-t from-ink-900/90 via-ink-900/40 via-45% to-transparent to-75%" aria-hidden="true" />
+            <span className="absolute top-5 left-5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[13px] leading-none font-bold text-coral-600 shadow-card">
+              <span className="size-1.5 animate-pulse rounded-full bg-coral-500" aria-hidden="true" />
+              {t("UI_NextUp")}
+            </span>
+            <span className="absolute top-5 right-5 grid size-11 place-items-center rounded-xl bg-white/20 text-white ring-1 ring-white/35 backdrop-blur-md transition group-hover:bg-white group-hover:text-brand-700" aria-hidden="true">
+              <ArrowUpRight size={20} />
+            </span>
+            <span className="text-[13px] font-semibold text-white/80">{formatCategoryName(featured.categoryName, t)}</span>
+            <span className="mt-1.5 block max-w-xl font-display text-[30px] leading-[1.1] font-extrabold sm:text-[40px]">{featured.title}</span>
+            <span className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[14px] text-white/90">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock3 size={15} className="shrink-0" aria-hidden="true" />
+                {formatDateTime(featured.eventDate, i18n.language)}
+              </span>
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <MapPin size={15} className="shrink-0" aria-hidden="true" />
+                <span className="truncate">{featured.location || t("Student_NoLocation")}</span>
+              </span>
+            </span>
+          </button>
 
-        <div className="space-y-6 max-w-7xl mx-auto">
-          <div className="relative">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder={t("Student_SearchPlaceholder") || "Etkinlik ara..."}
-              value={searchTerm}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setSearchTerm(e.target.value)
-              }
-              className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-300 transition-all shadow-sm font-medium"
-            />
-          </div>
-
-          {isLoading ? (
-            <div className="flex flex-col justify-center items-center h-64 space-y-4">
-              <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-              <p className="text-gray-500 font-medium">
-                {t("Student_Loading")}
-              </p>
+          <div className="flex flex-col rounded-3xl bg-white p-6 shadow-card ring-1 ring-ink-200/70">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink-900">{t("UI_Upcoming")}</h2>
+              <CalendarDays size={18} className="text-brand-500" aria-hidden="true" />
             </div>
-          ) : (filteredEvents?.length ?? 0) > 0 ? (
-            <div className="event-grid">
-              {filteredEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onViewDetail={() => handleOpenDetail(event)}
-                  onOpenComments={() => handleOpenComments(event)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl border border-gray-100 shadow-sm">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                <Search className="text-gray-300" size={32} />
-              </div>
-              <p className="text-gray-500 font-medium text-center">
-                {t("Student_NoEvents")}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-      {/* Etkinlik Detay Modalı */}
-      {isDetailModalOpen && selectedEventDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl relative border border-gray-100">
-            <button
-              onClick={() => setIsDetailModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-            {detailLoading ? (
-              <div className="flex justify-center items-center h-48">
-                <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              <>
-                <div className="relative h-48 -mx-6 -mt-6 mb-6">
-                  {selectedEventDetail.imageUrl ? (
-                    <img
-                      src={selectedEventDetail.imageUrl}
-                      alt={selectedEventDetail.title}
-                      className="w-full h-full object-cover rounded-t-3xl"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex flex-col items-center justify-center rounded-t-3xl">
-                      <Calendar size={48} className="text-blue-300 mb-2" />
-                      <span className="text-blue-400 font-bold text-sm">
-                        {t("Student_EventPlaceholder")}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <h2 className="text-2xl font-black text-white">
-                      {selectedEventDetail.title}
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <Calendar size={18} className="text-blue-500" />
-                    <span className="text-sm font-semibold">
-                      {new Date(selectedEventDetail.eventDate).toLocaleString(
-                        i18n.language === "en" ? "en-US" : "tr-TR",
-                        { dateStyle: "long", timeStyle: "short" },
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <MapPin size={18} className="text-red-500" />
-                    <span className="text-sm font-semibold">
-                      {selectedEventDetail.location ||
-                        t("Student_NotSpecified")}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <User size={16} className="text-purple-500" />
-                      <span className="text-xs font-semibold truncate">
-                        {selectedEventDetail.creatorName ||
-                          selectedEventDetail.organizerName ||
-                          t("Student_Unknown")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <Tag size={16} className="text-green-500" />
-                      <span className="text-xs font-semibold truncate">
-                        {formatCategoryName(
-                          selectedEventDetail.categoryName,
-                          t,
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                    <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                      {selectedEventDetail.description ||
-                        t("Student_NoEventDescription")}
-                    </p>
-                  </div>
-
-                  {!selectedEventDetail.isCreator &&
-                    !selectedEventDetail.isJoined && (
+            {upcoming.length > 0 ? (
+              <ul className="mt-3 flex-1 space-y-1">
+                {upcoming.slice(0, 4).map((event) => {
+                  const parts = dateParts(event.eventDate, i18n.language);
+                  const { from, to } = categoryVisual(event.categoryName);
+                  return (
+                    <li key={event.id}>
                       <button
-                        onClick={() => handleJoinEvent(selectedEventDetail.id)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition-colors shadow-lg shadow-blue-600/20"
+                        type="button"
+                        onClick={() => void openDetail(event)}
+                        className="group -mx-2 flex w-[calc(100%+1rem)] items-center gap-3.5 rounded-2xl p-2 text-left transition-colors hover:bg-ink-50"
                       >
-                        {t("Student_JoinEventBtn") || "Etkinliğe Katıl"}
-                      </button>
-                    )}
-                  {selectedEventDetail.isJoined && (
-                    <div className="space-y-2">
-                      <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3 rounded-xl text-sm text-center flex items-center justify-center gap-2">
-                        <CheckCircle2 size={18} />
-                        <span>
-                          {t("Student_JoinedBadge") || "✓ Katıldınız"}
-                        </span>
-                      </div>
-                      {isEventInFuture(selectedEventDetail.eventDate) && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleLeaveEvent(selectedEventDetail.id)
-                          }
-                          disabled={isLeaving}
-                          className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        <span
+                          className="flex size-14 shrink-0 flex-col items-center justify-center rounded-2xl text-white shadow-card"
+                          style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
                         >
-                          {isLeaving ? (
-                            <>
-                              <Loader2 size={14} className="animate-spin" />
-                              <span>
-                                {t("Student_Leaving") || "Ayrılınıyor..."}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <LogOut size={14} />
-                              <span>
-                                {t("Student_LeaveEventBtn") ||
-                                  "Etkinlikten Ayrıl"}
-                              </span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {selectedEventDetail.isCreator && (
-                    <div className="w-full bg-gray-100 border border-gray-200 text-gray-600 font-bold py-3.5 rounded-xl text-sm text-center">
-                      Sizin Etkinliğiniz
-                    </div>
-                  )}
-                </div>
-              </>
+                          <span className="font-display text-[20px] leading-none font-extrabold tabular-nums">{parts?.day}</span>
+                          <span className="mt-0.5 text-[10px] leading-none font-bold uppercase opacity-90">{parts?.month}</span>
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 text-[15px] font-semibold text-ink-900 transition-colors group-hover:text-brand-700">{event.title}</span>
+                          <span className="mt-0.5 block truncate text-[13px] text-ink-500">
+                            {formatCategoryName(event.categoryName, t)} · {formatCardDate(event.eventDate, i18n.language)}
+                          </span>
+                        </span>
+                        <ChevronRight size={16} className="shrink-0 text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="mt-4 text-sm leading-relaxed text-ink-500">{t("UI_NoEventsHint")}</p>
             )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Yorumlar & Sohbet Modalı */}
-      {isCommentsModalOpen && selectedCommentsEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col p-6 shadow-2xl relative border border-gray-100">
-            {/* Modal Kapatma Butonu */}
-            <button
-              onClick={() => {
-                setIsCommentsModalOpen(false);
-                setSelectedCommentsEvent(null);
-              }}
-              className="absolute top-5 right-5 p-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors z-10"
-              aria-label={t("Admin_Close") || "Kapat"}
-            >
-              <X size={18} />
-            </button>
+      <section className="mt-14 sm:mt-16" aria-labelledby="events-heading">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 id="events-heading" className="scroll-mt-24 text-[26px] leading-tight font-extrabold text-ink-900 sm:text-[32px]">
+            {t("Student_ForYou")}
+            {!loading && <span className="ml-2.5 inline-grid h-7 min-w-7 place-items-center rounded-full bg-brand-50 px-2 align-middle text-sm font-bold text-brand-700 ring-1 ring-brand-100 tabular-nums">{filteredEvents.length}</span>}
+          </h2>
+          <SearchInput
+            className="sm:w-80"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("Student_SearchPlaceholder")}
+            aria-label={t("Student_SearchPlaceholder")}
+          />
+        </div>
 
-            {/* Modal Başlığı */}
-            <div className="border-b border-gray-100 pb-4 pr-10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <MessageCircle size={20} strokeWidth={2.2} />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900 truncate leading-snug">
-                    {selectedCommentsEvent.title}
-                  </h2>
-                  <p className="text-xs text-gray-500 font-medium truncate">
-                    {t("Event_CommentsModalSubtitle") ||
-                      "Etkinlik Yorumları & Canlı Sohbet"}
-                  </p>
-                </div>
-              </div>
-            </div>
+        <CategoryChips value={category} onChange={setCategory} className="mt-5 mb-6" />
 
-            {/* Sohbet Bileşeni */}
-            <div className="overflow-y-auto flex-1">
-              <EventCommentsChat
-                eventId={selectedCommentsEvent.id}
-                isJoined={selectedCommentsEvent.isJoined}
-                isCreator={selectedCommentsEvent.isCreator}
-                creatorId={
-                  (selectedCommentsEvent as any).creatorId ??
-                  (selectedCommentsEvent as any).userId
-                }
-                className="!mt-0 !pt-2 !border-t-0"
+        {loading ? (
+          <EventGridSkeleton />
+        ) : loadError ? (
+          <EmptyState
+            icon={<RefreshCw size={22} />}
+            title={t("UI_EventsLoadError")}
+            description={loadError}
+            action={
+              <Button variant="secondary" onClick={() => void fetchEvents()}>
+                {t("UI_TryAgain")}
+              </Button>
+            }
+          />
+        ) : filteredEvents.length > 0 ? (
+          <EventGrid>
+            {filteredEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onViewDetail={() => void openDetail(event)}
+                onOpenComments={() => void openComments(event)}
               />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            ))}
+          </EventGrid>
+        ) : hasFilters ? (
+          <EmptyState
+            icon={<SearchX size={22} />}
+            title={t("UI_NoResults")}
+            description={t("UI_NoResultsHint")}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSearch("");
+                  setCategory("");
+                }}
+              >
+                {t("UI_ClearFilters")}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState icon={<CalendarSearch size={22} />} title={t("Student_NoEvents")} description={t("UI_NoEventsHint")} />
+        )}
+      </section>
+
+      <EventDetailModal {...detailProps} />
+      <EventChatModal {...chatProps} />
+    </>
   );
 }

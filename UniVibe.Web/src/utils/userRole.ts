@@ -33,6 +33,6 @@ export function formatUserRole(
   translate: (key: string) => string,
 ): string {
   const normalized = normalizeRole(role);
-  if (!normalized) return "Bilinmeyen rol";
+  if (!normalized) return translate("UI_UnknownRole");
   return translate(`Role_${normalized}`) || normalized;
 }

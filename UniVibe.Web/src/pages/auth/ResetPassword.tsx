@@ -1,135 +1,104 @@
-import { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { api } from '../../services/api';
-import { ResetSuccessView } from '../../components/ResetSuccessView';
-import { getErrorMessage } from '../../services/errorMessage';
-import PasswordInput from '../../components/PasswordInput';
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { CircleCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import PasswordRules from "../../components/auth/PasswordRules";
+import PasswordInput from "../../components/PasswordInput";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonStyles";
+import { Field } from "../../components/ui/Field";
+import AuthLayout from "../../layouts/AuthLayout";
+import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
+import { REGISTER_PASSWORD_RULES, meetsPasswordRules } from "../../utils/password";
 
 export default function ResetPassword() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const email = searchParams.get("email") || "";
+  const token = searchParams.get("token") || "";
 
-  const email = searchParams.get('email') || '';
-  const token = searchParams.get('token') || '';
-
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [error, setError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setHasAttemptedSubmit(true);
-    setErrorMessage('');
-
-    const pass = newPassword ?? '';
-    const confirmPass = confirmPassword ?? '';
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
 
     if (!email || !token) {
-      setErrorMessage(t('Reset_InvalidLinkError') || 'Geçersiz veya eksik şifre sıfırlama bağlantısı.');
+      setError(t("Reset_InvalidLinkError"));
       return;
     }
-
-    if (pass !== confirmPass) {
-      setErrorMessage(t('Reset_PasswordMismatch') || 'Şifreler birbiriyle eşleşmiyor.');
+    if (!meetsPasswordRules(newPassword, REGISTER_PASSWORD_RULES)) {
+      setError(t("UI_PasswordRulesUnmet"));
       return;
     }
-
-    if ((pass ?? '').length < 6) {
-      setErrorMessage(t('Reset_PasswordTooShort') || 'Şifreniz en az 6 karakter olmalıdır.');
+    if (newPassword !== confirmPassword) {
+      setError(t("Reset_PasswordMismatch"));
       return;
     }
 
     setIsLoading(true);
-
     try {
-      await api.post('/Auth/password/reset', {
-        email,
-        token,
-        newPassword: pass
-      });
-
+      await api.post("/Auth/password/reset", { email, token, newPassword });
       setIsSuccess(true);
-    } catch (err: any) {
-      const msg = getErrorMessage(err) || t('Reset_DefaultError') || 'Şifre sıfırlama başarısız oldu.';
-      setErrorMessage(msg);
+    } catch (err) {
+      setError(getErrorMessage(err) || t("Reset_DefaultError"));
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
-        
-        <button type="button" className="auth-back" onClick={() => navigate('/')}>
-          <span aria-hidden="true">‹</span> {t('Reset_BackToLogin') || 'Girişe dön'}
-        </button>
-
-        <div className="auth-forgot-heading">
-          <div className="auth-eyebrow">{t('Reset_Eyebrow') || 'Yeni şifre'}</div>
-          <h1 className="auth-title">{t('Reset_Title') || 'Yeni şifreni belirle'}</h1>
-          <p className="auth-subtitle">
-            {t('Reset_Description') || 'Güçlü ve daha önce kullanmadığın bir şifre seç.'}
-          </p>
+  if (isSuccess) {
+    return (
+      <AuthLayout>
+        <div className="text-center" role="status">
+          <span className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-emerald-100 text-emerald-700" aria-hidden="true">
+            <CircleCheck size={28} />
+          </span>
+          <h1 className="text-2xl font-bold text-ink-900">{t("Reset_SuccessTitle")}</h1>
+          <p className="mt-2 text-sm text-ink-500">{t("Reset_SuccessDesc")}</p>
+          <Link to="/login" className={buttonClass("primary", "lg", "mt-6 w-full")}>
+            {t("Reset_LoginButton")}
+          </Link>
         </div>
+      </AuthLayout>
+    );
+  }
 
-        {hasAttemptedSubmit && errorMessage && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 animate-pulse">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <p>{errorMessage}</p>
-          </div>
-        )}
-
-        {isSuccess ? (
-          <ResetSuccessView onNavigateHome={() => navigate('/')} t={t} />
-        ) : (
-          <form onSubmit={handleSubmit} className="auth-form">
-            
-            <div>
-              <label>
-                {t('Reset_NewPasswordLabel') || 'Yeni Şifre'}
-              </label>
-              <PasswordInput
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target?.value ?? '')}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-
-            <div>
-              <label>
-                {t('Reset_ConfirmPasswordLabel') || 'Yeni Şifre (Tekrar)'}
-              </label>
-              <PasswordInput
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target?.value ?? '')}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="auth-submit"
-            >
-              {isLoading ? (t('Reset_Loading') || 'Güncelleniyor...') : (t('Reset_SubmitButton') || 'Şifreyi güncelle')} <span aria-hidden="true">›</span>
-            </button>
-          </form>
-        )}
-
-        <p className="auth-legal">{t("Auth_Legal")}</p>
-      </div>
-    </div>
+  return (
+    <AuthLayout
+      title={t("Reset_Title")}
+      description={t("Reset_Description")}
+      backTo={{ to: "/login", label: t("Reset_BackToLogin") }}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {error && <Alert>{error}</Alert>}
+        <div>
+          <Field label={t("Reset_NewPasswordLabel")}>
+            <PasswordInput
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </Field>
+          <PasswordRules password={newPassword} rules={REGISTER_PASSWORD_RULES} />
+        </div>
+        <Field label={t("Reset_ConfirmPasswordLabel")}>
+          <PasswordInput
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+        </Field>
+        <Button type="submit" size="lg" className="w-full" loading={isLoading}>
+          {isLoading ? t("Reset_Loading") : t("Reset_SubmitButton")}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }
