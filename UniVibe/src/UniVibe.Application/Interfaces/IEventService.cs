@@ -6,7 +6,7 @@ namespace UniVibe.Application.Interfaces
 {
     public interface IEventService
     {
-        Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId);
+        Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId, bool isAdmin = false);
         Task<string> CreateEventAsync(CreateEventRequest request, Guid userId);
         Task<List<EventCategoryResponse>> GetCategoriesAsync();
         Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId);

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using System.Linq;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.DTOs.Feedback.Response;
@@ -19,17 +20,15 @@ namespace UniVibe.Application.Mappings
 
             CreateMap<CreateEventRequest, Event>();
 
-
             CreateMap<EventMessage, EventMessageResponse>()
                 .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"))
                 .ForMember(dest => dest.SenderProfileImage, opt => opt.MapFrom(src => src.User != null ? src.User.ProfilePictureUrl : null));
-
 
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
                 .ForMember(dest => dest.CreatorName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
-                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0))
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count(a => !a.IsDeleted) : 0))
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.User != null && src.User.Department != null ? src.User.Department.Name : null))
                 .ForMember(dest => dest.Grade, opt => opt.MapFrom(src => src.User != null ? src.User.Grade : null));
 
@@ -50,8 +49,9 @@ namespace UniVibe.Application.Mappings
 
             CreateMap<Event, EventListResponse>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : string.Empty))
                 .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : string.Empty))
-                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count : 0));
+                .ForMember(dest => dest.ParticipantCount, opt => opt.MapFrom(src => src.Attendees != null ? src.Attendees.Count(a => !a.IsDeleted) : 0));
 
             CreateMap<Feedback, FeedbackResponseDto>()
                 .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"));

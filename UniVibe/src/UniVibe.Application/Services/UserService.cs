@@ -59,10 +59,7 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
-            if (!string.IsNullOrEmpty(user.ProfilePicturePublicId))
-            {
-                await _imageService.DeleteImageAsync(user.ProfilePicturePublicId);
-            }
+            var oldPublicId = user.ProfilePicturePublicId;
 
             var uploadResult = await _imageService.UploadImageAsync(profileImage, "Users");
 
@@ -71,6 +68,18 @@ namespace UniVibe.Application.Services
 
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(oldPublicId) && !string.Equals(oldPublicId, uploadResult.PublicId, StringComparison.Ordinal))
+            {
+                try
+                {
+                    await _imageService.DeleteImageAsync(oldPublicId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Eski profil fotoğrafı silinemedi. UserId: {UserId}, PublicId: {PublicId}", userId, oldPublicId);
+                }
+            }
 
             return user.ProfilePictureUrl;
         }

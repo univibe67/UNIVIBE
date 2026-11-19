@@ -11,6 +11,7 @@ using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Application.Services;
+using UniVibe.Application.Validators.Auth;
 using UniVibe.Domain.Entities;
 
 namespace UniVibe.UnitTests.Services
@@ -32,6 +33,8 @@ namespace UniVibe.UnitTests.Services
 
         private readonly IValidator<RegisterInitRequest> _registerInitValidator;
         private readonly IValidator<RegisterCompleteRequest> _registerCompleteValidator;
+        private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
+        private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
 
         private readonly AuthService _authService;
         private readonly Mock<ILogger<AuthService>> _loggerMock;
@@ -50,9 +53,11 @@ namespace UniVibe.UnitTests.Services
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
             _configurationMock = new Mock<IConfiguration>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            _loggerMock = new Mock<ILogger<AuthService>>();
             _registerInitValidator = new InlineValidator<RegisterInitRequest>();
             _registerCompleteValidator = new InlineValidator<RegisterCompleteRequest>();
-            _loggerMock = new Mock<ILogger<AuthService>>();
+            _forgotPasswordValidator = new InlineValidator<ForgotPasswordRequest>();
+            _resetPasswordValidator = new InlineValidator<ResetPasswordRequest>();
 
             _authService = new AuthService(
                 _pendingUserRepoMock.Object,        // 1. IPendingUserRepository
@@ -64,10 +69,12 @@ namespace UniVibe.UnitTests.Services
                 _unitOfWorkMock.Object,             // 7. IUnitOfWork
                 _localizerMock.Object,              // 8. IStringLocalizer<SharedResources>
                 _configurationMock.Object,          // 9. IConfiguration
-                _registerInitValidator,             // 10. IValidator<RegisterInitRequest>
+                _registerInitValidator,          // 10. IValidator<RegisterInitRequest>
                 _registerCompleteValidator,         // 11. IValidator<RegisterCompleteRequest>
-                _httpContextAccessorMock.Object,    // 12. IHttpContextAccessor
-                _facultyRepositoryMock.Object,      // 13. IFacultyRepository
+                _forgotPasswordValidator,           // 12. IValidator<ForgotPasswordRequest>
+                _resetPasswordValidator,            // 13. IValidator<ResetPasswordRequest>
+                _httpContextAccessorMock.Object,    // 14. IHttpContextAccessor
+                _facultyRepositoryMock.Object,      // 15. IFacultyRepository
                 _universityRepositoryMock.Object,
                 _loggerMock.Object                  // 14. ILogger<AuthService> (YENİ)
             );

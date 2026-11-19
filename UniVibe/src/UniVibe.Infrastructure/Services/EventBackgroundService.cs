@@ -65,8 +65,6 @@ namespace UniVibe.Infrastructure.Services
             }
 
             var oneHourLater = utcNow.AddHours(1);
-            var windowStart = oneHourLater.AddMinutes(-7.5);
-            var windowEnd = oneHourLater.AddMinutes(7.5);
 
             var upcomingEvents = await _context.Events
                 .Include(e => e.User)
@@ -90,42 +88,53 @@ namespace UniVibe.Infrastructure.Services
 
             foreach (var ev in upcomingEvents)
             {
-                try
-                {
-                    var utcDate = DateTime.SpecifyKind(ev.EventDate, DateTimeKind.Utc);
-                    var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, turkeyTimeZone);
-                    var formattedTime = localEventTime.ToString("HH:mm");
-                    var remainingMinutes = (int)Math.Round((ev.EventDate - utcNow).TotalMinutes);
+                var utcDate = DateTime.SpecifyKind(ev.EventDate, DateTimeKind.Utc);
+                var localEventTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, turkeyTimeZone);
+                var formattedTime = localEventTime.ToString("HH:mm");
+                var remainingMinutes = Math.Max(0, (int)Math.Round((ev.EventDate - utcNow).TotalMinutes));
 
-                    if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
+                if (ev.User != null && !string.IsNullOrEmpty(ev.User.Email))
+                {
+                    try
                     {
                         var subject = string.Format(_localizer["OrganizerReminderSubject"].Value, ev.Title, remainingMinutes);
                         var body = string.Format(_localizer["OrganizerReminderBody"].Value, ev.User.FirstName, ev.Title, formattedTime, remainingMinutes);
 
                         await _emailService.SendEmailAsync(ev.User.Email, subject, body);
                     }
-
-                    if (ev.Attendees != null)
+                    catch (Exception ex)
                     {
-                        foreach (var attendeeRelation in ev.Attendees)
+                        _logger.LogError(ex, "Organizatör hatırlatma e-postası gönderilemedi. EventId: {EventId}, UserId: {UserId}", ev.Id, ev.User.Id);
+                    }
+                }
+
+                if (ev.Attendees != null)
+                {
+                    foreach (var attendeeRelation in ev.Attendees)
+                    {
+                        if (attendeeRelation.IsDeleted)
+                            continue;
+
+                        var attendee = attendeeRelation.User;
+                        if (attendee != null && !string.IsNullOrEmpty(attendee.Email))
                         {
-                            var attendee = attendeeRelation.User;
-                            if (attendee != null && !string.IsNullOrEmpty(attendee.Email))
+                            try
                             {
                                 var subject = string.Format(_localizer["AttendeeReminderSubject"].Value, remainingMinutes);
                                 var body = string.Format(_localizer["AttendeeReminderBody"].Value, attendee.FirstName, ev.Title, formattedTime, remainingMinutes);
 
                                 await _emailService.SendEmailAsync(attendee.Email, subject, body);
                             }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Katılımcı hatırlatma e-postası gönderilemedi. EventId: {EventId}, AttendeeUserId: {AttendeeUserId}", ev.Id, attendee.Id);
+                            }
                         }
                     }
+                }
 
-                    ev.IsReminderSent = true;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Etkinlik hatırlatması gönderilirken hata oluştu. EventId: {EventId}", ev.Id);
-                }
+                ev.IsReminderSent = true;
+                ev.UpdatedAt = utcNow;
             }
 
             if (expiredEvents.Any() || upcomingEvents.Any())

@@ -2,6 +2,7 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
@@ -94,13 +95,17 @@ namespace UniVibe.Application.Services
             await _eventRepository.AddAsync(newEvent);
             await _unitOfWork.SaveChangesAsync();
 
-
             return _localizer["Res_Event_Created"].Value;
         }
 
-        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId)
+        public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(
+            GetAllEventsRequest request,
+            Guid currentUserId,
+            bool isAdmin = false)
         {
             await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
+
+            var statusFilter = isAdmin ? request.Status : EventStatus.Approved;
 
             var (items, totalCount) = await _eventRepository.GetPagedEventsAsync(
                 request.PageNumber,
@@ -108,7 +113,7 @@ namespace UniVibe.Application.Services
                 request.OnlyActive,
                 request.SearchTerm,
                 request.CategoryId,
-                request.Status);
+                statusFilter);
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
@@ -148,7 +153,6 @@ namespace UniVibe.Application.Services
             {
                 Id = c.Id,
                 Name = _localizer[c.Name].Value
-
             }).ToList();
 
             return response;
@@ -243,13 +247,13 @@ namespace UniVibe.Application.Services
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
             if (!string.IsNullOrWhiteSpace(eventEntity.TargetFaculty) &&
-                !string.Equals(userWithDept.Department?.Faculty?.Name, eventEntity.TargetFaculty, StringComparison.OrdinalIgnoreCase))
+                !EqualsTurkishIgnoreCase(userWithDept.Department?.Faculty?.Name, eventEntity.TargetFaculty))
             {
                 throw new BadRequestException(_localizer["Event_FacultyRestriction"].Value);
             }
 
             if (!string.IsNullOrWhiteSpace(eventEntity.TargetDepartment) &&
-                !string.Equals(userWithDept.Department?.Name, eventEntity.TargetDepartment, StringComparison.OrdinalIgnoreCase))
+                !EqualsTurkishIgnoreCase(userWithDept.Department?.Name, eventEntity.TargetDepartment))
             {
                 throw new BadRequestException(_localizer["Event_DepartmentRestriction"].Value);
             }
@@ -278,7 +282,6 @@ namespace UniVibe.Application.Services
 
             await _eventRepository.AddAttendeeAsync(attendee);
             await _unitOfWork.SaveChangesAsync();
-
 
             return _localizer["Res_Event_Joined"].Value;
         }
@@ -400,8 +403,16 @@ namespace UniVibe.Application.Services
             _eventRepository.RemoveAttendee(attendee);
             await _unitOfWork.SaveChangesAsync();
 
-
             return _localizer["Res_Event_LeftSuccessfully"].Value;
+        }
+
+        private static bool EqualsTurkishIgnoreCase(string? left, string? right)
+        {
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+                return false;
+
+            var trCulture = CultureInfo.GetCultureInfo("tr-TR");
+            return string.Compare(left.Trim(), right.Trim(), trCulture, CompareOptions.IgnoreCase) == 0;
         }
     }
 }

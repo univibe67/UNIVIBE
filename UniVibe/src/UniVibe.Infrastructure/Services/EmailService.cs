@@ -22,7 +22,13 @@ namespace UniVibe.Infrastructure.Services
             var emailSettings = _configuration.GetSection("EmailSettings");
             var apiKey = emailSettings["Password"];
             var senderEmail = emailSettings["SenderEmail"];
-            var senderName = emailSettings["SenderName"];
+            var senderName = emailSettings["SenderName"] ?? "UniVibe";
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("E-posta servisi yapılandırması eksik: EmailSettings:Password (Brevo API Key) tanımlanmamış.");
+
+            if (string.IsNullOrWhiteSpace(senderEmail))
+                throw new InvalidOperationException("E-posta servisi yapılandırması eksik: EmailSettings:SenderEmail tanımlanmamış.");
 
             var apiUrl = "https://api.brevo.com/v3/smtp/email";
 
@@ -35,7 +41,7 @@ namespace UniVibe.Infrastructure.Services
             };
 
             var jsonContent = JsonSerializer.Serialize(payload);
-            
+
             var request = new HttpRequestMessage(HttpMethod.Post, apiUrl)
             {
                 Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")

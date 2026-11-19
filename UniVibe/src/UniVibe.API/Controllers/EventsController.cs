@@ -31,7 +31,9 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
         {
             var currentUserId = User.GetUserId();
-            var pagedEvents = await _eventService.GetAllEventsAsync(request, currentUserId);
+            var isAdmin = User.IsInRole("Admin");
+
+            var pagedEvents = await _eventService.GetAllEventsAsync(request, currentUserId, isAdmin);
             return Ok(ApiResponse<PaginatedResult<EventDetailResponse>>.Success(pagedEvents));
         }
 
