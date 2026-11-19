@@ -11,10 +11,10 @@ namespace UniVibe.Application.Validators.Auth
         {
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .EmailAddress().WithMessage(x => localizer["Val_InvalidEmail"].Value);
-                /* BU KISIM CANLI TESTLERİNDE ACILICAK SAUNLIK KAPALI KALICAK
+                .EmailAddress().WithMessage(x => localizer["Val_InvalidEmail"].Value)
+                .MaximumLength(256).WithMessage(x => localizer["Val_InvalidEmail"].Value)
                 .Must(email => email.EndsWith(".edu.tr", StringComparison.OrdinalIgnoreCase))
-                .WithMessage(x => localizer["Val_InvalidEmailDomain"].Value);*/
+                .WithMessage(x => localizer["Val_InvalidEmailDomain"].Value);
         }
     }
 }

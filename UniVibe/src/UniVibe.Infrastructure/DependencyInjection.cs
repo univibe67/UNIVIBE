@@ -36,7 +36,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IEventMessageRepository, EventMessageRepository>();
 
             services.AddHttpClient();
-            services.AddScoped<IEmailService, EmailService>();
+            services.AddHttpClient<IEmailService, EmailService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();

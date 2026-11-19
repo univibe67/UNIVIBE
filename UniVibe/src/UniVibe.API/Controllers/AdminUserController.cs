@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Requests;
 using UniVibe.Application.DTOs.User.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -50,8 +51,11 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPatch("{id:guid}/role")]
-        public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest request)
+        public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest? request)
         {
+            if (request is null)
+                throw new BadRequestException("Rol değiştirme isteği gövdesi boş olamaz.");
+
             var currentAdminId = User.GetUserId();
             var message = await _adminUserService.ChangeUserRoleAsync(id, request.NewRole, currentAdminId);
             return Ok(ApiResponse<string>.Success(message));
