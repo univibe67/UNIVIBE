@@ -374,8 +374,8 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.Property<string>("AcademicEmailDomain")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -393,8 +393,8 @@ namespace UniVibe.Infrastructure.Migrations
 
                     b.Property<string>("StudentEmailDomain")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -442,6 +442,9 @@ namespace UniVibe.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsBannedByAdmin")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")

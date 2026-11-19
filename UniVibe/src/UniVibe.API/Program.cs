@@ -1,5 +1,4 @@
 using Hangfire;
-using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using UniVibe.API;
 using UniVibe.API.Hubs;
@@ -25,10 +24,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {

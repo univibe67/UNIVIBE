@@ -12,16 +12,17 @@ namespace UniVibe.Infrastructure.Repositories
         public EventRepository(UniVibeDbContext context) : base(context) { }
 
         public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(
-            int pageNumber,
-            int pageSize,
-            bool onlyActive = true,
-            string? searchTerm = null,
-            Guid? categoryId = null,
-            EventStatus? status = null)
+    int pageNumber,
+    int pageSize,
+    bool onlyActive = true,
+    string? searchTerm = null,
+    Guid? categoryId = null,
+    EventStatus? status = null)
         {
             var query = _context.Events
                 .AsNoTracking()
                 .Include(e => e.Category)
+                .Include(e => e.Attendees.Where(a => !a.IsDeleted))
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
                 .AsQueryable();
@@ -55,6 +56,7 @@ namespace UniVibe.Infrastructure.Repositories
                 .OrderBy(e => e.EventDate)
                 .ThenBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             return (items, totalCount);

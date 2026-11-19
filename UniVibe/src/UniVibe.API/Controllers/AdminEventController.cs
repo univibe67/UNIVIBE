@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
+using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 
 namespace UniVibe.API.Controllers
@@ -48,8 +49,11 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpPatch("{id:guid}/rejection")]
-        public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest request)
+        public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest? request)
         {
+            if (request is null)
+                throw new BadRequestException("Etkinlik reddetme isteği gövdesi boş olamaz.");
+
             var message = await _adminEventService.RejectEventAsync(id, request.Reason);
             return Ok(ApiResponse<string>.Success(message));
         }

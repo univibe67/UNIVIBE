@@ -94,6 +94,7 @@ namespace UniVibe.Application.Services
 
             user.IsActive = true;
             user.IsDeleted = false;
+            user.IsBannedByAdmin = false;
             user.DeletedAt = null;
 
             await _unitOfWork.SaveChangesAsync();
@@ -129,6 +130,7 @@ namespace UniVibe.Application.Services
             await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsDeleted = true;
+            user.IsBannedByAdmin = true;
             user.DeletedAt = DateTime.UtcNow;
             user.IsActive = false;
             user.RefreshToken = null;

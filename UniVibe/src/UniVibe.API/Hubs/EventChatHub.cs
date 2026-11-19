@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Message.Requests;
 using UniVibe.Application.Interfaces;
+using UniVibe.Application.Interfaces.Repositories;
 
 namespace UniVibe.API.Hubs
 {
@@ -10,16 +11,42 @@ namespace UniVibe.API.Hubs
     public sealed class EventChatHub : Hub
     {
         private readonly IEventMessageService _eventMessageService;
+        private readonly IEventRepository _eventRepository;
 
-        public EventChatHub(IEventMessageService eventMessageService)
+        public EventChatHub(
+            IEventMessageService eventMessageService,
+            IEventRepository eventRepository)
         {
             _eventMessageService = eventMessageService;
+            _eventRepository = eventRepository;
         }
 
         public async Task JoinEventGroup(string eventId)
         {
+            var userId = GetCurrentUserIdOrThrow();
+
+            if (!Guid.TryParse(eventId, out var parsedEventId))
+            {
+                throw new HubException("Geçersiz etkinlik ID formatı.");
+            }
+
+            var evnt = await _eventRepository.FirstOrDefaultAsync(e => e.Id == parsedEventId && !e.IsDeleted);
+            if (evnt == null)
+            {
+                throw new HubException("Etkinlik bulunamadı.");
+            }
+
+            bool isOrganizer = evnt.UserId == userId;
+            bool isParticipant = await _eventRepository.IsUserJoinedEventAsync(parsedEventId, userId);
+
+            if (!isOrganizer && !isParticipant)
+            {
+                throw new HubException("Bu etkinliğin sohbet odasına katılma yetkiniz yok.");
+            }
+
             await Groups.AddToGroupAsync(Context.ConnectionId, eventId);
         }
+
         public async Task LeaveEventGroup(string eventId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, eventId);
@@ -29,14 +56,7 @@ namespace UniVibe.API.Hubs
         {
             try
             {
-                var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                                   ?? Context.User?.FindFirst("sub")?.Value;
-
-                if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
-                {
-                    await Clients.Caller.SendAsync("OnError", "Yetkilendirme hatası: Kullanıcı kimliği bulunamadı.");
-                    return;
-                }
+                var userId = GetCurrentUserIdOrThrow();
 
                 if (!Guid.TryParse(eventId, out var parsedEventId))
                 {
@@ -53,6 +73,21 @@ namespace UniVibe.API.Hubs
             catch (Exception ex)
             {
                 await Clients.Caller.SendAsync("OnError", ex.Message);
+            }
+        }
+
+        private Guid GetCurrentUserIdOrThrow()
+        {
+            if (Context.User == null)
+                throw new HubException("Yetkilendirme hatası: Kullanıcı kimliği bulunamadı.");
+
+            try
+            {
+                return Context.User.GetUserId();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new HubException(ex.Message);
             }
         }
     }

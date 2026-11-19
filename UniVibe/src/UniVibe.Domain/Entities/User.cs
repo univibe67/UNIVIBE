@@ -23,6 +23,7 @@ namespace UniVibe.Domain.Entities
         public string? PasswordResetToken { get; set; }
         public DateTime? ResetTokenExpires { get; set; }
         public string? Title { get; set; }
+        public bool IsBannedByAdmin { get; set; } = false;
         public DateTime? RefreshTokenExpiryTime { get; set; }
         public DateTime? DeletedAt { get; set; }
         public UserRole Role { get; set; } = UserRole.Student;
