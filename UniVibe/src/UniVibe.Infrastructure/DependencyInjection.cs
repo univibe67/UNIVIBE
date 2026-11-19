@@ -34,6 +34,7 @@ namespace UniVibe.Infrastructure
             services.AddScoped<IFacultyRepository, FacultyRepository>();
             services.AddScoped<IFeedbackRepository, FeedbackRepository>();
             services.AddScoped<IEventMessageRepository, EventMessageRepository>();
+            services.AddScoped<IAcademicDirectoryRepository, AcademicDirectoryRepository>();
 
             services.AddHttpClient();
             services.AddHttpClient<IEmailService, EmailService>();

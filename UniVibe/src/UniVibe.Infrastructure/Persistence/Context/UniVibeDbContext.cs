@@ -19,6 +19,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
         public DbSet<EventAttendee> EventAttendees { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
         public DbSet<EventMessage> EventMessages { get; set; }
+        public DbSet<AcademicDirectory> AcademicDirectories { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -163,6 +164,34 @@ namespace UniVibe.Infrastructure.Persistence.Context
                       .WithMany(u => u.EventMessages)
                       .HasForeignKey(em => em.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<AcademicDirectory>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.Property(a => a.Email)
+                      .IsRequired()
+                      .HasMaxLength(256);
+
+                entity.HasIndex(a => a.Email)
+                      .IsUnique();
+
+                entity.Property(a => a.Title)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(a => a.FirstName)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(a => a.LastName)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.HasOne(a => a.University)
+                      .WithMany()
+                      .HasForeignKey(a => a.UniversityId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
