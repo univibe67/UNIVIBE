@@ -13,6 +13,8 @@ namespace UniVibe.Application.DTOs.User.Responses
         public DateTime? DateOfBirth { get; set; }
         public Gender? Gender { get; set; }
         public GradeLevel? Grade { get; set; }
+        public string? Title { get; set; }
+        public UserRole Role { get; set; }
         public string? SocialMediaLink { get; set; }
         public string? Department { get; set; }
         public string? Faculty { get; set; }
