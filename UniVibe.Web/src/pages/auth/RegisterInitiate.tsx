@@ -1,22 +1,26 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import EmailSentNotice from "../../components/auth/EmailSentNotice";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import { Field, Input } from "../../components/ui/Field";
+import AuthLayout from "../../layouts/AuthLayout";
 import { api } from "../../services/api";
 import { getErrorMessage } from "../../services/errorMessage";
 
 export default function RegisterInitiate() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setMessage({ type: "", text: "" });
-    const cleanEmail = (email ?? "").trim();
+    setError("");
+    const cleanEmail = email.trim();
     if (!cleanEmail) {
-      setMessage({ type: "error", text: t("Register_EmailRequired") });
+      setError(t("Register_EmailRequired"));
       return;
     }
 
@@ -26,51 +30,40 @@ export default function RegisterInitiate() {
         email: cleanEmail,
         targetUrl: `${window.location.origin}/register-complete`,
       })) as any;
-      setMessage({
-        type: "success",
-        text: response.message || response.data?.message || t("Register_SuccessMessage"),
-      });
-    } catch (error: any) {
-      setMessage({
-        type: "error",
-        text: getErrorMessage(error) || t("Register_ErrorMessage"),
-      });
+      setSuccess(response.message || response.data?.message || t("Register_SuccessMessage"));
+    } catch (err) {
+      setError(getErrorMessage(err) || t("Register_ErrorMessage"));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <main className="auth-card auth-forgot-card">
-        <div className="brand-lockup"><span className="brand-mark">U</span><span>Uni<strong>Vibe</strong></span></div>
-        <button type="button" className="auth-back" onClick={() => navigate("/login")}>
-          <span aria-hidden="true">‹</span> {t("Register_BackToLogin")}
-        </button>
-        <div className="auth-forgot-heading">
-          <div className="auth-eyebrow">{t("Register_Eyebrow")}</div>
-          <h1 className="auth-title">{t("Register_PageTitle")}</h1>
-          <p className="auth-subtitle">{t("Register_PageDescription")}</p>
-        </div>
-        {message.text && <div className={message.type === "success" ? "auth-success" : "auth-error"}>{message.text}</div>}
-        {message.type === "success" ? (
-          <div className="auth-success">
-            {message.text}
-            <p className="mt-2 text-sm">{t("Register_CheckEmail")}</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="auth-form" noValidate>
-            <div>
-              <label htmlFor="register-email">{t("Login_Email")}</label>
-              <input id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target?.value ?? "")} placeholder="ad.soyad@universite.edu.tr" />
-            </div>
-            <button type="submit" className="auth-submit" disabled={isLoading}>
-              {isLoading ? t("Register_Sending") : t("Register_PageSubmit")} <span aria-hidden="true">›</span>
-            </button>
-          </form>
-        )}
-        <p className="auth-legal">{t("Auth_Legal")}</p>
-      </main>
-    </div>
+    <AuthLayout
+      title={t("Register_PageTitle")}
+      description={t("Register_PageDescription")}
+      backTo={{ to: "/login", label: t("Register_BackToLogin") }}
+    >
+      {success ? (
+        <EmailSentNotice title={success} text={t("Register_CheckEmail")} />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {error && <Alert>{error}</Alert>}
+          <Field label={t("Login_Email")}>
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="ad.soyad@universite.edu.tr"
+            />
+          </Field>
+          <Button type="submit" size="lg" className="w-full" loading={isLoading}>
+            {isLoading ? t("Register_Sending") : t("Register_PageSubmit")}
+          </Button>
+        </form>
+      )}
+      <p className="mt-5 text-center text-xs leading-relaxed text-ink-500">{t("Auth_Legal")}</p>
+    </AuthLayout>
   );
 }

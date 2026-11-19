@@ -1,15 +1,26 @@
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, CalendarDays, MessageSquare, Users, LogOut } from "lucide-react";
+import { useEffect } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { CalendarDays, Compass, LayoutDashboard, LogOut, MessageSquare, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import LanguageSwitch from "../components/ui/LanguageSwitch";
+import Logo from "../components/ui/Logo";
+import { adminStore, useAdminStore } from "../services/adminStore";
 import { tokenService } from "../services/tokenService";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { t, i18n } = useTranslation();
+  const { pathname } = useLocation();
+  const { t } = useTranslation();
+  const { stats } = useAdminStore();
+
+  useEffect(() => {
+    void adminStore.refresh();
+    window.scrollTo({ top: 0 });
+  }, [pathname]);
+
   const links = [
-    { to: "/admin/dashboard", label: t("Admin_NavigationOverview"), icon: BarChart3 },
-    { to: "/admin/events", label: t("Admin_NavigationEvents"), icon: CalendarDays },
+    { to: "/admin/dashboard", label: t("Admin_NavigationOverview"), icon: LayoutDashboard },
+    { to: "/admin/events", label: t("Admin_NavigationEvents"), icon: CalendarDays, badge: stats.pendingEvents },
     { to: "/admin/users", label: t("Admin_NavigationUsers"), icon: Users },
     { to: "/admin/feedback", label: t("Admin_NavigationFeedback"), icon: MessageSquare },
   ];
@@ -19,63 +30,72 @@ export default function AdminLayout() {
     navigate("/login");
   };
 
+  const utilityLink =
+    "flex h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm font-medium whitespace-nowrap text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900";
+
   return (
-    <div className="min-h-screen bg-[#f5f7f5] text-[#17212b] md:flex">
-      <aside className="w-full border-b border-[#e3e9e5] bg-white p-4 md:fixed md:inset-y-0 md:flex md:w-72 md:flex-col md:border-b-0 md:border-r md:p-6">
-        <div className="mb-6 flex items-center justify-between gap-2 md:mb-8">
-          <div className="flex items-center gap-3" translate="no">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1559ac] text-xl font-extrabold text-white">U</div>
-            <div>
-              <strong className="block text-lg leading-tight">Uni<span className="text-[#ef3653]">Vibe</span></strong>
-              <span className="text-xs text-[#819098]" translate="yes">{t("Admin_BrandSubtitle")}</span>
-            </div>
-          </div>
-          <div className="flex shrink-0 rounded-lg bg-[#f5f7f5] p-1 border border-[#e3e9e5]">
-            {["tr", "en"].map((language) => {
-              const currentLang = (i18n.language || "tr").toLowerCase();
-              const isEn = currentLang.startsWith("en");
-              const isActive = language === "tr" ? !isEn : isEn;
-              return (
-                <button
-                  key={language}
-                  type="button"
-                  onClick={() => i18n.changeLanguage(language)}
-                  className={`rounded-md px-2 py-0.5 text-xs font-extrabold transition ${
-                    isActive ? "bg-white text-[#1559ac] shadow-sm" : "text-[#819098] hover:text-[#17212b]"
-                  }`}
-                >
-                  {language.toUpperCase()}
-                </button>
-              );
-            })}
-          </div>
+    <div className="relative isolate min-h-dvh lg:pl-[284px]">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]"
+        style={{ background: "radial-gradient(50% 70% at 30% 0%, rgb(61 139 255 / 0.12), transparent 70%), radial-gradient(40% 60% at 95% 0%, rgb(239 54 83 / 0.07), transparent 70%)" }}
+        aria-hidden="true"
+      />
+      <aside className="z-30 m-3 flex flex-col rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[260px]">
+        <div className="flex h-[72px] shrink-0 items-center justify-between gap-3 px-5">
+          <Link to="/admin/dashboard" className="rounded-lg" aria-label="UniVibe">
+            <Logo />
+          </Link>
+          <LanguageSwitch />
         </div>
-        <nav className="flex gap-2 overflow-x-auto md:grid md:content-start md:gap-1">
-          {links.map(({ to, label, icon: Icon }) => (
+
+        <nav
+          aria-label={t("Admin_BrandSubtitle")}
+          className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:pt-3"
+        >
+          {links.map(({ to, label, icon: Icon, badge }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  isActive || (to === "/admin/dashboard" && (location.pathname === "/admin" || location.pathname === "/admin/"))
-                    ? "bg-[#eaf2ff] text-[#1559ac]"
-                    : "text-[#718089] hover:bg-[#f5f7f5]"
+                `flex h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold whitespace-nowrap transition-colors ${
+                  isActive ? "bg-brand-gradient text-white shadow-glow" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
                 }`
               }
             >
-              <Icon size={18} /> {label}
+              <Icon size={18} aria-hidden="true" />
+              <span className="flex-1">{label}</span>
+              {Boolean(badge) && (
+                <span className="rounded-full bg-coral-500 px-1.5 py-0.5 text-[11px] leading-none font-bold text-white tabular-nums ring-2 ring-white/70">
+                  {badge}
+                </span>
+              )}
             </NavLink>
           ))}
-          <button
-            type="button"
-            onClick={logout}
-            className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-[#ef3653] hover:bg-[#fff0f2] transition"
-          >
-            <LogOut size={18} /> {t("Admin_Logout")}
+          <Link to="/student/home" className={`${utilityLink} lg:hidden`}>
+            <Compass size={18} aria-hidden="true" />
+            {t("UI_StudentView")}
+          </Link>
+          <button type="button" onClick={logout} className={`${utilityLink} lg:hidden`}>
+            <LogOut size={18} aria-hidden="true" />
+            {t("Admin_Logout")}
           </button>
         </nav>
+
+        <div className="hidden shrink-0 space-y-1 border-t border-ink-100 p-3 lg:block">
+          <Link to="/student/home" className={utilityLink}>
+            <Compass size={18} aria-hidden="true" />
+            {t("UI_StudentView")}
+          </Link>
+          <button type="button" onClick={logout} className={`${utilityLink} w-full`}>
+            <LogOut size={18} aria-hidden="true" />
+            {t("Admin_Logout")}
+          </button>
+        </div>
       </aside>
-      <main className="w-full p-4 md:ml-72 md:p-8 lg:p-10"><Outlet /></main>
+
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <Outlet />
+      </main>
     </div>
   );
 }

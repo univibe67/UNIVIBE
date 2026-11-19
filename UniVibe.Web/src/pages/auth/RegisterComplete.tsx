@@ -1,20 +1,62 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronDown, Lock, ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { api } from "../../services/api";
-import { tokenService } from "../../services/tokenService";
-import { getErrorMessage } from "../../services/errorMessage";
-import { AlertCircle, ChevronDown } from "lucide-react";
-
-import { useRegistrationData } from "../../hooks/useRegistrationData";
-import {
-  TokenCheckingView,
-  TokenErrorView,
-} from "../../components/TokenStatusViews";
-import { SelectionModal } from "../../components/SelectionModal";
+import PasswordRules from "../../components/auth/PasswordRules";
 import PasswordInput from "../../components/PasswordInput";
+import { SelectionModal } from "../../components/SelectionModal";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonStyles";
+import { Field, Input } from "../../components/ui/Field";
+import { controlClass } from "../../components/ui/fieldStyles";
+import FullPageLoader from "../../components/ui/FullPageLoader";
+import { useRegistrationData } from "../../hooks/useRegistrationData";
+import AuthLayout from "../../layouts/AuthLayout";
+import { api } from "../../services/api";
+import { getErrorMessage } from "../../services/errorMessage";
+import { tokenService } from "../../services/tokenService";
+import type { ModalType } from "../../types/auth.types";
+import { REGISTER_PASSWORD_RULES, meetsPasswordRules } from "../../utils/password";
 
 const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
+
+interface PickerFieldProps {
+  label: string;
+  value?: string;
+  placeholder: string;
+  disabled?: boolean;
+  locked?: boolean;
+  required?: boolean;
+  className?: string;
+  onClick: () => void;
+}
+
+function PickerField({ label, value, placeholder, disabled, locked, required, className = "", onClick }: PickerFieldProps) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <p className="mb-1.5 text-[13px] font-semibold text-ink-700">
+        {label}
+        {required && <span className="ml-0.5 text-coral-600" aria-hidden="true">*</span>}
+      </p>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        aria-haspopup="dialog"
+        aria-label={`${label}: ${value ?? placeholder}`}
+        className={`flex h-11 items-center justify-between gap-2 px-3.5 text-left ${controlClass}`}
+      >
+        <span className={`truncate ${value ? "" : "text-ink-400"}`}>{value ?? placeholder}</span>
+        {locked ? (
+          <Lock size={15} className="shrink-0 text-ink-400" aria-hidden="true" />
+        ) : (
+          <ChevronDown size={16} className="shrink-0 text-ink-400" aria-hidden="true" />
+        )}
+      </button>
+    </div>
+  );
+}
 
 export default function RegisterComplete() {
   const { t } = useTranslation();
@@ -60,7 +102,7 @@ export default function RegisterComplete() {
     const fetchRegistrationDetails = async () => {
       if (!token) {
         setIsTokenValid(false);
-        setTokenErrorMessage(t("RegComplete_InvalidLinkTitle"));
+        setTokenErrorMessage(t("RegComplete_InvalidLinkMessage"));
         return;
       }
 
@@ -98,9 +140,7 @@ export default function RegisterComplete() {
         setIsTokenValid(false);
 
         if (err?.response?.status === 429) {
-          setTokenErrorMessage(
-            "Çok fazla deneme yaptınız, lütfen biraz bekleyin.",
-          );
+          setTokenErrorMessage(t("Error_TooManyRequests"));
         } else {
           setTokenErrorMessage(t("RegComplete_InvalidLinkMessage"));
         }
@@ -117,24 +157,18 @@ export default function RegisterComplete() {
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const cleanFirstName = (firstName ?? "").trim();
-    const cleanLastName = (lastName ?? "").trim();
-    const cleanUsername = (username ?? "").trim();
-    const cleanPassword = password ?? "";
-    const cleanPhone = (phoneNumber ?? "").trim();
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const cleanUsername = username.trim();
+    const cleanPhone = phoneNumber.trim();
 
-    if (
-      !cleanFirstName ||
-      !cleanLastName ||
-      !cleanUsername ||
-      !cleanPassword ||
-      !cleanPhone ||
-      !selectedDep
-    ) {
-      setErrorMessage(
-        t("RegComplete_ErrorValidation") ||
-          "Lütfen tüm zorunlu alanları doldurun.",
-      );
+    if (!cleanFirstName || !cleanLastName || !cleanUsername || !password || !cleanPhone || !selectedDep) {
+      setErrorMessage(t("RegComplete_ErrorValidation"));
+      return;
+    }
+
+    if (!meetsPasswordRules(password, REGISTER_PASSWORD_RULES)) {
+      setErrorMessage(t("UI_PasswordRulesUnmet"));
       return;
     }
 
@@ -145,7 +179,7 @@ export default function RegisterComplete() {
       const response = (await api.post("/Auth/register/completion", {
         token,
         username: cleanUsername,
-        password: cleanPassword,
+        password,
         firstName: cleanFirstName,
         lastName: cleanLastName,
         phoneNumber: cleanPhone,
@@ -153,7 +187,7 @@ export default function RegisterComplete() {
         universityId: selectedUni?.id,
         facultyId: selectedFac?.id,
         grade: grade?.id,
-        title: (title ?? "").trim() || null,
+        title: title.trim() || null,
       })) as any;
 
       const accessToken = response.token || response.data?.token;
@@ -166,9 +200,7 @@ export default function RegisterComplete() {
         navigate("/login");
       }
     } catch (err: any) {
-      const rawMessage = getErrorMessage(err);
-
-      const finalMessage = rawMessage
+      const finalMessage = getErrorMessage(err)
         .split(" • ")
         .map((part) => {
           const key = part.trim();
@@ -184,232 +216,176 @@ export default function RegisterComplete() {
   };
 
   if (isTokenValid === null) {
-    return <TokenCheckingView message={t("RegComplete_Checking")} />;
+    return (
+      <AuthLayout>
+        <FullPageLoader label={t("RegComplete_Checking")} />
+      </AuthLayout>
+    );
   }
 
   if (isTokenValid === false) {
     return (
-      <TokenErrorView
-        title={t("RegComplete_InvalidLinkTitle")}
-        errorMessage={tokenErrorMessage}
-        buttonText={t("RegComplete_BackToLogin")}
-        onBackToLogin={() => navigate("/login")}
-      />
+      <AuthLayout>
+        <div className="text-center">
+          <span className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-coral-50 text-coral-600" aria-hidden="true">
+            <ShieldAlert size={26} />
+          </span>
+          <h1 className="text-2xl font-bold text-ink-900">{t("RegComplete_InvalidLinkTitle")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-ink-500">{tokenErrorMessage}</p>
+          <Link to="/login" className={buttonClass("primary", "lg", "mt-6 w-full")}>
+            {t("RegComplete_BackToLogin")}
+          </Link>
+        </div>
+      </AuthLayout>
     );
   }
 
+  const openPicker = (type: ModalType) => {
+    setModalType(type);
+    setIsModalOpen(true);
+  };
+
+  const selectedId =
+    modalType === "uni"
+      ? selectedUni?.id
+      : modalType === "fac"
+        ? selectedFac?.id
+        : modalType === "dep"
+          ? selectedDep?.id
+          : grade?.id;
+
+  const sectionTitle = "mb-4 text-[15px] font-semibold text-ink-900";
+
   return (
-    <div className="auth-shell">
-      <div className="auth-card register-card">
-        <button
-          type="button"
-          className="auth-back"
-          onClick={() => navigate("/register")}
-        >
-          <span aria-hidden="true">‹</span> {t("RegComplete_Back")}
-        </button>
-
-        <div className="auth-forgot-heading register-heading">
-          <div className="auth-eyebrow">{t("RegComplete_Eyebrow")}</div>
-          <h1 className="auth-title">{t("RegComplete_Title")}</h1>
-          <p className="auth-subtitle">{t("RegComplete_Desc")}</p>
-        </div>
-
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <p>{errorMessage}</p>
-          </div>
-        )}
-
-        <form
-          onSubmit={handleComplete}
-          className="auth-form register-form"
-          noValidate
-        >
-          <div className="register-section register-basic-section">
-            <label className="register-section-title">
-              <span>01</span>
-              {t("RegComplete_BasicInfo")}
-            </label>
-            <div className="reg-field">
-              <label>{t("RegComplete_Username")}</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target?.value ?? "")}
-                placeholder="mehmetyilmaz"
-              />
-            </div>
-            <div className="reg-field">
-              <label>{t("RegComplete_FirstName")}</label>
-              <input
-                type="text"
+    <AuthLayout
+      wide
+      title={t("RegComplete_Title")}
+      description={t("RegComplete_Desc")}
+      backTo={{ to: "/register", label: t("RegComplete_Back") }}
+    >
+      <form onSubmit={handleComplete} className="space-y-8" noValidate>
+        <section>
+          <h2 className={sectionTitle}>{t("RegComplete_BasicInfo")}</h2>
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            <Field label={t("RegComplete_FirstName")} required>
+              <Input
+                autoComplete="given-name"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target?.value ?? "")}
+                onChange={(event) => setFirstName(event.target.value)}
                 placeholder={t("RegComplete_FirstNamePlaceholder")}
               />
-            </div>
-            <div className="reg-field">
-              <label>{t("RegComplete_LastName")}</label>
-              <input
-                type="text"
+            </Field>
+            <Field label={t("RegComplete_LastName")} required>
+              <Input
+                autoComplete="family-name"
                 value={lastName}
-                onChange={(e) => setLastName(e.target?.value ?? "")}
+                onChange={(event) => setLastName(event.target.value)}
                 placeholder={t("RegComplete_LastNamePlaceholder")}
               />
-            </div>
-            <div className="reg-field">
-              <label>{t("RegComplete_Password")}</label>
-              <PasswordInput
-                value={password}
-                onChange={(e) => setPassword(e.target?.value ?? "")}
-                placeholder={t("RegComplete_PasswordPlaceholder")}
-                autoComplete="new-password"
-                required
+            </Field>
+            <Field label={t("RegComplete_Username")} required>
+              <Input
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="mehmetyilmaz"
               />
+            </Field>
+            <div>
+              <Field label={t("RegComplete_Password")} required>
+                <PasswordInput
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder={t("RegComplete_PasswordPlaceholder")}
+                />
+              </Field>
+              <PasswordRules password={password} rules={REGISTER_PASSWORD_RULES} />
             </div>
           </div>
+        </section>
 
-          <div className="register-section register-education-section">
-            <label className="register-section-title">
-              <span>02</span>
-              {t("RegComplete_EduInfo")}
-            </label>
-
-            <button
-              type="button"
+        <section>
+          <h2 className={sectionTitle}>{t("RegComplete_EduInfo")}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PickerField
+              className="sm:col-span-2"
+              label={t("Student_University")}
+              value={selectedUni?.name}
+              placeholder={t("RegComplete_SelectUni")}
               disabled={isUniLocked}
-              onClick={() => {
-                setModalType("uni");
-                setIsModalOpen(true);
-              }}
-              className={`w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg flex justify-between items-center text-sm text-gray-700 transition-all ${
-                isUniLocked
-                  ? "opacity-75 cursor-not-allowed bg-gray-100"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              <span>
-                {selectedUni ? selectedUni.name : t("RegComplete_SelectUni")}
-              </span>
-              {!isUniLocked && (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-
-            <button
-              type="button"
+              locked={isUniLocked}
+              onClick={() => openPicker("uni")}
+            />
+            <PickerField
+              className="sm:col-span-2"
+              label={t("Student_Faculty")}
+              value={selectedFac?.name}
+              placeholder={t("RegComplete_SelectFac")}
               disabled={isFacLocked || !selectedUni}
-              onClick={() => {
-                setModalType("fac");
-                setIsModalOpen(true);
-              }}
-              className={`w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg flex justify-between items-center text-sm text-gray-700 transition-all ${
-                isFacLocked || !selectedUni
-                  ? "opacity-75 cursor-not-allowed bg-gray-100"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              <span>
-                {selectedFac ? selectedFac.name : t("RegComplete_SelectFac")}
-              </span>
-              {!isFacLocked && (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-
-            <button
-              type="button"
+              locked={isFacLocked}
+              onClick={() => openPicker("fac")}
+            />
+            <PickerField
+              required
+              label={t("Student_Department")}
+              value={selectedDep?.name}
+              placeholder={t("RegComplete_SelectDep")}
               disabled={!selectedFac}
-              onClick={() => {
-                setModalType("dep");
-                setIsModalOpen(true);
-              }}
-              className={`w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg flex justify-between items-center text-sm text-gray-700 transition-all ${!selectedFac ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
-            >
-              <span>
-                {selectedDep ? selectedDep.name : t("RegComplete_SelectDep")}
-              </span>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
-            </button>
-
-            <div className="reg-field">
-              <label>{t("RegComplete_Role")}</label>
-              <div className="reg-select-display">
-                <span>{t("RegComplete_RoleFromEmail")}</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-            <div className="reg-field">
-              <label>{t("RegComplete_SelectGrade")}</label>
-              <button
-                type="button"
-                onClick={() => {
-                  setModalType("grade");
-                  setIsModalOpen(true);
-                }}
-                className="reg-select-display"
-              >
-                <span>{grade ? grade.name : t("RegComplete_SelectGrade")}</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </button>
-            </div>
+              onClick={() => openPicker("dep")}
+            />
+            <PickerField
+              label={t("UI_Grade")}
+              value={grade?.name}
+              placeholder={t("RegComplete_SelectGrade")}
+              onClick={() => openPicker("grade")}
+            />
           </div>
+          <Alert tone="info" className="mt-4">
+            {t("RegComplete_Role")}: {t("RegComplete_RoleFromEmail")}
+          </Alert>
+        </section>
 
-          <div className="register-section register-contact-section">
-            <label className="register-section-title">
-              <span>03</span>
-              {t("RegComplete_ContactInfo")}
-            </label>
-            <div className="reg-field">
-              <label>{t("RegComplete_Phone")}</label>
-              <input
+        <section>
+          <h2 className={sectionTitle}>{t("RegComplete_ContactInfo")}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t("RegComplete_Phone")} required>
+              <Input
                 type="tel"
                 inputMode="numeric"
-                pattern="[0-9]{10}"
+                autoComplete="tel-national"
                 maxLength={10}
                 value={phoneNumber}
-                onChange={(e) => {
-                  const raw = e.target?.value ?? "";
-                  const numericValue = raw
-                    .replace(/[^0-9]/g, "")
-                    .slice(0, 10);
-                  setPhoneNumber(numericValue);
-                }}
-                placeholder="555..."
+                onChange={(event) => setPhoneNumber(event.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                placeholder="5XXXXXXXXX"
               />
-            </div>
-            <div className="reg-field">
-              <label>{t("RegComplete_AcademicTitle")}</label>
-              <input
-                type="text"
+            </Field>
+            <Field label={t("RegComplete_AcademicTitle")}>
+              <Input
                 value={title}
-                onChange={(e) => setTitle(e.target?.value ?? "")}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder={t("RegComplete_AcademicTitlePlaceholder")}
               />
-            </div>
+            </Field>
           </div>
+        </section>
 
-          <button
-            type="submit"
-            disabled={isLoading || !token}
-            className="auth-submit"
-          >
-            {isLoading ? t("RegComplete_Loading") : t("RegComplete_SubmitBtn")}{" "}
-            <span aria-hidden="true">›</span>
-          </button>
-        </form>
-      </div>
+        {errorMessage && <Alert>{errorMessage}</Alert>}
+
+        <Button type="submit" size="lg" className="w-full" disabled={!token} loading={isLoading}>
+          {isLoading ? t("RegComplete_Loading") : t("RegComplete_SubmitBtn")}
+        </Button>
+      </form>
 
       <SelectionModal
         isOpen={isModalOpen}
         modalType={modalType}
         data={getModalData()}
+        selectedId={selectedId}
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectModalItem}
         t={t}
       />
-    </div>
+    </AuthLayout>
   );
 }

@@ -1,54 +1,83 @@
-import { X } from 'lucide-react';
-import type { ItemModel, ModalType } from '../types/auth.types';
+import { useMemo, useState } from "react";
+import { Check, SearchX } from "lucide-react";
+import type { ItemModel, ModalType } from "../types/auth.types";
+import { SearchInput } from "./ui/Field";
+import Modal from "./ui/Modal";
 
 interface SelectionModalProps {
   isOpen: boolean;
   modalType: ModalType;
   data: ItemModel[];
+  selectedId?: ItemModel["id"];
   onClose: () => void;
   onSelect: (item: ItemModel) => void;
   t: (key: string) => string;
 }
 
-export function SelectionModal({ isOpen, modalType, data, onClose, onSelect, t }: SelectionModalProps) {
-  if (!isOpen) return null;
+const TITLE_KEYS: Record<string, string> = {
+  uni: "RegComplete_SelectUni",
+  fac: "RegComplete_SelectFac",
+  dep: "RegComplete_SelectDep",
+  grade: "RegComplete_SelectGrade",
+};
 
-  const getTitle = () => {
-    switch (modalType) {
-      case 'uni': return t('RegComplete_SelectUni');
-      case 'fac': return t('RegComplete_SelectFac');
-      case 'dep': return t('RegComplete_SelectDep');
-      default: return t('RegComplete_SelectGrade');
-    }
-  };
+function SelectionList({
+  data,
+  selectedId,
+  onSelect,
+  t,
+}: Pick<SelectionModalProps, "data" | "selectedId" | "onSelect" | "t">) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase("tr-TR");
+    return term ? data.filter((item) => item.name.toLocaleLowerCase("tr-TR").includes(term)) : data;
+  }, [data, query]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[70vh] flex flex-col shadow-2xl overflow-hidden">
-        
-        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-gray-800">{getTitle()}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <>
+      {data.length > 6 && (
+        <SearchInput
+          className="mb-3"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("UI_Search")}
+          aria-label={t("UI_Search")}
+        />
+      )}
+      <ul className="-mx-2 space-y-0.5">
+        {filtered.map((item) => {
+          const selected = item.id === selectedId;
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(item)}
+                aria-pressed={selected}
+                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                  selected ? "bg-brand-50 text-brand-800" : "text-ink-700 hover:bg-ink-100"
+                }`}
+              >
+                {item.name}
+                {selected && <Check size={16} className="shrink-0" aria-hidden="true" />}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {filtered.length === 0 && (
+        <p className="flex flex-col items-center gap-2 py-8 text-center text-sm text-ink-500">
+          <SearchX size={22} className="text-ink-400" aria-hidden="true" />
+          {data.length === 0 ? t("RegComplete_SelectParentFirst") : t("UI_NoResults")}
+        </p>
+      )}
+    </>
+  );
+}
 
-        <div className="overflow-y-auto p-2 divide-y divide-gray-50">
-          {data.map((item, idx) => (
-            <button
-              key={item.id || idx}
-              onClick={() => onSelect(item)}
-              className="w-full text-left px-4 py-3 hover:bg-purple-50 hover:text-purple-700 rounded-lg text-sm transition-colors font-medium text-gray-700"
-            >
-              {item.name}
-            </button>
-          ))}
-          {(data?.length ?? 0) === 0 && (
-            <p className="text-center text-gray-400 py-8 text-sm">{t('RegComplete_SelectParentFirst')}</p>
-          )}
-        </div>
-
-      </div>
-    </div>
+export function SelectionModal({ isOpen, modalType, data, selectedId, onClose, onSelect, t }: SelectionModalProps) {
+  return (
+    <Modal open={isOpen} onClose={onClose} title={t(TITLE_KEYS[modalType ?? "grade"])}>
+      <SelectionList key={modalType} data={data} selectedId={selectedId} onSelect={onSelect} t={t} />
+    </Modal>
   );
 }

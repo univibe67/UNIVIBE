@@ -3,6 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { tokenService } from "../services/tokenService";
 import { requestTokenRefresh } from "../services/api";
 import type { UserRole } from "../utils/userRole";
+import FullPageLoader from "./ui/FullPageLoader";
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -71,13 +72,7 @@ export default function ProtectedRoute({
 
   // 3. While actively verifying/refreshing token, show neutral loader (NEVER mount StudentHome / Outlet)
   if (isVerifying) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#1559ac] border-t-transparent" />
-        </div>
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   // 4. Double check token validity after verification completes
