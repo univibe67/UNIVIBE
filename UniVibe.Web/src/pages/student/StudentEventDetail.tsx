@@ -1,460 +1,171 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, CalendarX2, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Calendar,
-  MapPin,
-  User,
-  Tag,
-  ArrowLeft,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  AlertTriangle,
-  LogOut,
-  Loader2,
-} from "lucide-react";
+import CancelEventModal from "../../components/events/CancelEventModal";
+import EventActions from "../../components/events/EventActions";
+import EventCover from "../../components/events/EventCover";
+import EventFacts from "../../components/events/EventFacts";
+import EventReasons from "../../components/events/EventReasons";
+import EventStatusBadge from "../../components/events/EventStatusBadge";
+import EventCommentsChat from "../../components/EventCommentsChat";
+import Button from "../../components/ui/Button";
+import { buttonClass } from "../../components/ui/buttonStyles";
+import EmptyState from "../../components/ui/EmptyState";
+import FullPageLoader from "../../components/ui/FullPageLoader";
 import { api } from "../../services/api";
 import { getErrorMessage } from "../../services/errorMessage";
-import { formatCategoryName } from "../../utils/categoryLabel";
-import { isEventInFuture } from "../../utils/eventFilter";
-
-interface EventItem {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl?: string;
-  location?: string;
-  creatorName?: string;
-  organizerName?: string;
-  eventDate: string;
-  status: string | number;
-  categoryName?: string;
-  isCreator?: boolean;
-  isJoined?: boolean;
-  cancellationReason?: string;
-  rejectionReason?: string;
-}
+import { toast } from "../../services/toast";
+import { unwrap } from "../../services/unwrap";
+import type { EventItem } from "../../types/event";
+import { EventStatus, effectiveEventStatus } from "../../utils/eventStatus";
 
 export default function StudentEventDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-
+  const { t } = useTranslation();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState("");
-  const [isLeaving, setIsLeaving] = useState(false);
-
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-
-  const showNotification = (type: "success" | "error", text: string) => {
-    setNotification({ type, text });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  const fetchEventDetail = useCallback(async () => {
+  const fetchEvent = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
-    setError("");
     try {
-      const response: any = await api.get(`/events/${id}`);
-      const data = response.data?.data || response.data || response;
-      if (data && data.id) {
+      const data = unwrap<EventItem>(await api.get(`/events/${id}`));
+      if (data?.id) {
         setEvent(data);
+        setError("");
       } else {
-        setError("Etkinlik bulunamadı.");
+        setError(t("UI_EventNotFound"));
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
-    fetchEventDetail();
-  }, [fetchEventDetail]);
+    void fetchEvent();
+  }, [fetchEvent]);
 
-  const handleJoinEvent = async () => {
+  const join = async () => {
     if (!id) return;
+    setJoining(true);
     try {
       await api.post(`/events/${id}/attendees`);
-      showNotification(
-        "success",
-        t("Student_JoinSuccess") || "Etkinliğe başarıyla katıldınız!"
-      );
-      void fetchEventDetail();
-    } catch (err: any) {
-      const status = err?.response?.status || err?.status;
-      if (status === 409) {
-        setEvent((prev) => (prev ? { ...prev, isJoined: true } : null));
-        showNotification(
-          "success",
-          t("Student_AlreadyJoinedNotice") || "Bu etkinliğe zaten katılmışsınız."
-        );
-        void fetchEventDetail();
-        return;
+      toast.success(t("Student_JoinSuccess"));
+      await fetchEvent();
+    } catch (err) {
+      if ((err as { response?: { status?: number } })?.response?.status === 409) {
+        setEvent((current) => (current ? { ...current, isJoined: true } : current));
+        toast.success(t("Student_AlreadyJoinedNotice"));
+      } else {
+        toast.error(getErrorMessage(err) || t("Student_JoinError"));
       }
-      showNotification("error", getErrorMessage(err) || t("Student_JoinError") || "Katılım sırasında bir hata oluştu.");
+    } finally {
+      setJoining(false);
     }
   };
 
-  const handleLeaveEvent = async () => {
+  const leave = async () => {
     if (!id) return;
-    setIsLeaving(true);
+    setLeaving(true);
     try {
       await api.delete(`/events/${id}/attendees/me`);
-      showNotification(
-        "success",
-        t("Student_LeaveSuccess") || "Etkinlikten başarıyla ayrıldınız."
-      );
-      setEvent((prev) => (prev ? { ...prev, isJoined: false } : null));
-      await fetchEventDetail();
-    } catch (err: any) {
-      showNotification(
-        "error",
-        getErrorMessage(err) || t("Student_LeaveError") || "Etkinlikten ayrılırken bir sorun oluştu."
-      );
+      setEvent((current) => (current ? { ...current, isJoined: false } : current));
+      toast.success(t("Student_LeaveSuccess"));
+      await fetchEvent();
+    } catch (err) {
+      toast.error(getErrorMessage(err) || t("Student_LeaveError"));
     } finally {
-      setIsLeaving(false);
+      setLeaving(false);
     }
   };
 
-  const handleConfirmCancel = async () => {
-    if (!id) return;
-    if (!cancelReason.trim()) {
-      setCancelError(t("Admin_Reason_Required") || "Lütfen iptal nedeni girin.");
-      return;
-    }
+  if (loading) return <FullPageLoader label={t("Admin_LoadingDetails")} />;
 
-    setIsCancelling(true);
-    try {
-      await api.patch(`/events/${id}/cancel`, {
-        reason: cancelReason,
-      });
-      showNotification(
-        "success",
-        t("Student_CancelSuccess") || "Etkinlik iptal edildi."
-      );
-      setCancelModalOpen(false);
-      setTimeout(() => {
-        navigate("/student/home");
-      }, 700);
-    } catch (err: any) {
-      setCancelError(getErrorMessage(err) || t("Student_CancelError") || "İptal işlemi başarısız oldu.");
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+  if (error || !event) {
+    return (
+      <EmptyState
+        icon={<CalendarX2 size={22} />}
+        title={t("UI_EventNotFound")}
+        description={error}
+        action={
+          <Link to="/student/events" className={buttonClass("secondary", "md")}>
+            {t("UI_MyEvents")}
+          </Link>
+        }
+      />
+    );
+  }
 
-  const renderStatusBadge = (status: string | number) => {
-    const s = String(status).toLowerCase();
-    if (status === 1 || s === "pending") {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-          <Clock size={13} />
-          {t("Admin_Status_Pending") || "Onay Bekliyor"}
-        </span>
-      );
-    }
-    if (status === 2 || s === "approved") {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle2 size={13} />
-          {t("Admin_Status_Approved") || "Onaylandı"}
-        </span>
-      );
-    }
-    if (status === 3 || s === "rejected") {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-          <XCircle size={13} />
-          {t("Admin_Status_Rejected") || "Reddedildi"}
-        </span>
-      );
-    }
-    if (status === 4 || s === "cancelled") {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
-          <AlertCircle size={13} />
-          {t("Admin_Status_Cancelled") || "İptal Edildi"}
-        </span>
-      );
-    }
-    return null;
-  };
+  const status = effectiveEventStatus(event);
+  const canCancel = event.isCreator && status !== EventStatus.Cancelled;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-2xl text-white font-bold shadow-lg max-w-sm w-full transform transition-all duration-300 ${
-            notification.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {notification.type === "success" ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <AlertTriangle size={20} />
+    <>
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="mb-4 inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-ink-600 transition-colors hover:text-ink-900"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        {t("RegComplete_Back")}
+      </button>
+
+      <div className="aspect-[2/1] max-h-80 w-full overflow-hidden rounded-3xl bg-ink-100 sm:aspect-[3/1]">
+        <EventCover title={event.title} imageUrl={event.imageUrl} categoryName={event.categoryName} iconSize={64} />
+      </div>
+
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <header>
+            {status !== EventStatus.Approved && (
+              <EventStatusBadge status={event.status} isDeleted={event.isDeleted} className="mb-3" />
             )}
-            <span className="text-sm">{notification.text}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Top Bar */}
-      <div className="bg-white px-6 py-4 shadow-sm border-b border-gray-100 flex items-center gap-4 sticky top-0 z-30">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors flex items-center gap-1.5 text-sm font-bold"
-        >
-          <ArrowLeft size={18} />
-          <span className="hidden sm:inline">Geri</span>
-        </button>
-        <h1 className="text-lg font-black text-gray-900 truncate">
-          {event?.title || "Etkinlik Detayı"}
-        </h1>
-      </div>
-
-      <div className="px-6 py-6 w-full max-w-[940px] mx-auto">
-        {loading ? (
-          <div className="flex flex-col justify-center items-center h-64 space-y-4">
-            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-gray-500 font-medium text-sm">Etkinlik detayları yükleniyor...</p>
-          </div>
-        ) : error || !event ? (
-          <div className="bg-white rounded-3xl p-10 text-center shadow-sm border border-gray-100 space-y-4">
-            <AlertCircle size={48} className="mx-auto text-rose-500" />
-            <h2 className="text-xl font-bold text-gray-900">Etkinlik Bulunamadı</h2>
-            <p className="text-sm text-gray-500">{error || "Bu etkinliğe ulaşılamıyor."}</p>
-            <button
-              onClick={() => navigate("/student/events")}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-2xl text-sm transition-colors"
-            >
-              Etkinliklerime Dön
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden space-y-6">
-            {/* Banner Image */}
-            <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-gray-100">
-              {event.imageUrl ? (
-                <img
-                  src={event.imageUrl}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex flex-col items-center justify-center">
-                  <Calendar size={56} className="text-blue-300 mb-2" />
-                  <span className="text-blue-500 font-bold text-base">UniVibe Etkinliği</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                <div className="mb-3">{renderStatusBadge(event.status)}</div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight drop-shadow-sm">
-                  {event.title}
-                </h2>
-              </div>
+            <h1 className="text-[30px] leading-tight font-extrabold text-ink-900 sm:text-[42px]">{event.title}</h1>
+          </header>
+          <EventReasons event={event} />
+          <section className="rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70 p-5 shadow-card sm:p-6">
+            <EventFacts event={event} />
+            <div className="mt-5 border-t border-ink-100 pt-5">
+              <h2 className="text-sm font-semibold text-ink-900">{t("Student_EventDescription")}</h2>
+              <p className="mt-2 text-sm leading-relaxed break-words whitespace-pre-line text-ink-600">
+                {event.description || t("Student_NoEventDescription")}
+              </p>
             </div>
-
-            <div className="p-6 sm:p-8 pt-0 space-y-6">
-              {/* Event Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3.5 text-gray-700 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <Calendar size={22} className="text-blue-500 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      Tarih & Saat
-                    </span>
-                    <span className="text-sm font-bold text-gray-800">
-                      {event.eventDate
-                        ? new Date(event.eventDate).toLocaleString(i18n.language === "en" ? "en-US" : "tr-TR", {
-                            dateStyle: "long",
-                            timeStyle: "short",
-                          })
-                        : "-"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 text-gray-700 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <MapPin size={22} className="text-rose-500 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      Konum
-                    </span>
-                    <span className="text-sm font-bold text-gray-800">
-                      {event.location || "Belirtilmemiş"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 text-gray-700 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <User size={20} className="text-purple-500 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      {t("Student_OrganizerLabel")}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {event.creatorName || event.organizerName || t("Student_Unknown")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 text-gray-700 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <Tag size={20} className="text-emerald-500 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                      {t("Student_CategoryLabel")}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {formatCategoryName(event.categoryName, t)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="bg-blue-50/40 p-5 rounded-2xl border border-blue-100 space-y-2">
-                <span className="text-xs uppercase tracking-wider font-extrabold text-blue-900 block">
-                  {t("Student_EventDescription")}
-                </span>
-                <p className="text-sm text-gray-700 leading-relaxed font-normal whitespace-pre-line">
-                  {event.description || t("Student_NoEventDescription")}
-                </p>
-              </div>
-
-              {/* Rejection / Cancellation Notes */}
-              {event.rejectionReason && (
-                <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl text-xs text-rose-800 space-y-1.5">
-                  <span className="font-bold flex items-center gap-2 text-rose-900 text-sm">
-                    <AlertTriangle size={16} /> {t("Student_RejectionReason")}
-                  </span>
-                  <p className="leading-relaxed">{event.rejectionReason}</p>
-                </div>
-              )}
-
-              {event.cancellationReason && (
-                <div className="bg-gray-100 border border-gray-200 p-4 rounded-2xl text-xs text-gray-800 space-y-1.5">
-                  <span className="font-bold flex items-center gap-2 text-gray-900 text-sm">
-                    <XCircle size={16} /> {t("Student_CancellationReason")}
-                  </span>
-                  <p className="leading-relaxed">{event.cancellationReason}</p>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="pt-4 border-t border-gray-100">
-                {event.isCreator ? (
-                  <div className="space-y-3">
-                    <div className="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold py-3 rounded-2xl text-xs text-center">
-                      {t("Student_CreatedByYou")}
-                    </div>
-                    {String(event.status).toLowerCase() !== "cancelled" && event.status !== 4 && (
-                      <button
-                        onClick={() => {
-                          setCancelReason("");
-                          setCancelError("");
-                          setCancelModalOpen(true);
-                        }}
-                        className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3.5 rounded-2xl text-sm transition-colors flex items-center justify-center gap-2 border border-red-200"
-                      >
-                        <XCircle size={18} />
-                        {t("Student_CancelEventButton")}
-                      </button>
-                    )}
-                  </div>
-                ) : event.isJoined ? (
-                  <div className="space-y-2">
-                    <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold py-3.5 rounded-2xl text-sm text-center flex items-center justify-center gap-2">
-                      <CheckCircle2 size={18} />
-                      <span>{t("Student_JoinedEvent") || "✓ Katıldınız"}</span>
-                    </div>
-                    {isEventInFuture(event.eventDate) && (
-                      <button
-                        type="button"
-                        onClick={handleLeaveEvent}
-                        disabled={isLeaving}
-                        className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-2xl text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {isLeaving ? (
-                          <>
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>{t("Student_Leaving") || "Ayrılınıyor..."}</span>
-                          </>
-                        ) : (
-                          <>
-                            <LogOut size={14} />
-                            <span>{t("Student_LeaveEventBtn") || "Etkinlikten Ayrıl"}</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleJoinEvent}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl text-sm transition-colors shadow-lg shadow-blue-600/20"
-                  >
-                    {t("Student_JoinEventBtn") || "Etkinliğe Katıl"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Cancel Modal */}
-      {cancelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-8 space-y-4 shadow-2xl relative border border-blue-100">
-            <h3 className="text-xl font-black text-gray-900">{t("Student_CancelModalTitle")}</h3>
-            <p className="text-xs text-gray-500 font-medium">
-              {t("Student_CancelModalDescription")}
-            </p>
-            <textarea
-              value={cancelReason}
-              onChange={(e) => {
-                setCancelReason(e.target.value);
-                if (cancelError) setCancelError("");
-              }}
-              placeholder={t("Student_CancelReasonPlaceholder")}
-              className="w-full p-4 border border-blue-100 rounded-2xl outline-none text-sm h-32 resize-none bg-blue-50/40 focus:border-blue-500 font-medium"
+          </section>
+          <section className="rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70 p-5 shadow-card sm:p-6">
+            <h2 className="mb-4 text-[15px] font-semibold text-ink-900">{t("Event_CommentsTitle")}</h2>
+            <EventCommentsChat
+              eventId={event.id}
+              isJoined={event.isJoined}
+              isCreator={event.isCreator}
+              creatorId={event.creatorId ?? event.createdById ?? event.organizerId ?? event.userId}
             />
-            {cancelError && <p className="text-xs text-red-600 font-bold">{cancelError}</p>}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setCancelModalOpen(false)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl text-sm transition-colors"
-              >
-                {t("Student_CancelBtn")}
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCancel}
-                disabled={isCancelling}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
-              >
-                {isCancelling ? t("Student_Cancelling") : t("Student_ConfirmCancel")}
-              </button>
-            </div>
-          </div>
+          </section>
         </div>
-      )}
-    </div>
+
+        <aside className="flex flex-col gap-2.5 rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70 p-4 shadow-card empty:hidden lg:sticky lg:top-24">
+          <EventActions event={event} joining={joining} leaving={leaving} onJoin={join} onLeave={leave} />
+          {canCancel && (
+            <Button variant="dangerSoft" onClick={() => setCancelOpen(true)}>
+              <XCircle size={16} aria-hidden="true" />
+              {t("Student_CancelEventButton")}
+            </Button>
+          )}
+        </aside>
+      </div>
+
+      <CancelEventModal
+        eventId={cancelOpen ? event.id : null}
+        onClose={() => setCancelOpen(false)}
+        onCancelled={() => navigate("/student/events")}
+      />
+    </>
   );
 }

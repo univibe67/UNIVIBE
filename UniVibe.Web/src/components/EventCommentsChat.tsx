@@ -7,8 +7,9 @@ import {
   LogLevel,
   HttpTransportType,
 } from "@microsoft/signalr";
-import { MessageCircle, Send, Lock, AlertCircle, Loader2 } from "lucide-react";
+import { MessageCircle, Send, Lock, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import i18next from "../i18n";
 import { tokenService } from "../services/tokenService";
 import { getErrorMessage } from "../services/errorMessage";
 import {
@@ -17,6 +18,10 @@ import {
   sendEventMessageHttp,
   type EventMessageItem,
 } from "../services/eventChatService";
+import Alert from "./ui/Alert";
+import Avatar from "./ui/Avatar";
+import Button from "./ui/Button";
+import { controlClass } from "./ui/fieldStyles";
 
 interface EventCommentsChatProps {
   eventId: string;
@@ -25,31 +30,6 @@ interface EventCommentsChatProps {
   isCreator?: boolean;
   creatorId?: string;
   className?: string;
-}
-
-function getInitials(name?: string): string {
-  if (!name || !name.trim()) return "U";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function getAvatarBg(name?: string): string {
-  if (!name) return "bg-blue-600";
-  const colors = [
-    "bg-gradient-to-tr from-blue-500 to-indigo-600",
-    "bg-gradient-to-tr from-purple-500 to-pink-600",
-    "bg-gradient-to-tr from-emerald-500 to-teal-600",
-    "bg-gradient-to-tr from-amber-500 to-orange-600",
-    "bg-gradient-to-tr from-rose-500 to-red-600",
-    "bg-gradient-to-tr from-sky-500 to-blue-600",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
 }
 
 function formatMessageTime(
@@ -105,7 +85,6 @@ export default function EventCommentsChat({
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
 
   const connectionRef = useRef<HubConnection | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -142,7 +121,7 @@ export default function EventCommentsChat({
   const canPostMessage = isJoinedUser || isCreatorUser;
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   // 1. Önceki mesajları API üzerinden çek
@@ -248,7 +227,7 @@ export default function EventCommentsChat({
       ) {
         return;
       }
-      setChatError(errorMessage || "Bir sohbet hatası oluştu.");
+      setChatError(errorMessage || i18next.t("UI_ChatError"));
       setTimeout(() => setChatError(null), 6000);
     });
 
@@ -330,7 +309,7 @@ export default function EventCommentsChat({
       const msg = getErrorMessage(err);
       const msgLower = (msg || "").toLowerCase();
       if (!msgLower.includes("accessdenied") && !msgLower.includes("yetki")) {
-        setChatError(msg || "Mesajınız gönderilemedi.");
+        setChatError(msg || t("UI_ChatSendError"));
         setTimeout(() => setChatError(null), 6000);
       }
     } finally {
@@ -345,49 +324,33 @@ export default function EventCommentsChat({
     }
   };
 
+  const visibleError =
+    chatError &&
+    !chatError.toLowerCase().includes("accessdenied") &&
+    !chatError.toLowerCase().includes("yetki")
+      ? chatError
+      : null;
+
   return (
-    <div
-      className={`mt-6 border-t border-gray-100 pt-5 space-y-4 ${className}`}
-    >
-      {/* Başlık */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-          <MessageCircle size={18} className="text-blue-600" />
-          <span>{t("Event_CommentsTitle") || "Yorumlar & Sohbet"}</span>
-          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-            {messages?.length ?? 0}
-          </span>
-        </h3>
-      </div>
+    <div className={`flex flex-col gap-3 ${className}`}>
+      {visibleError && <Alert>{visibleError}</Alert>}
 
-      {/* Hata Bildirimi (Ham AccessDenied teknik hataları filtrelenir) */}
-      {chatError &&
-        !chatError.toLowerCase().includes("accessdenied") &&
-        !chatError.toLowerCase().includes("yetki") && (
-          <div className="flex items-center gap-2 px-3.5 py-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium animate-fadeIn">
-            <AlertCircle size={15} className="shrink-0 text-red-500" />
-            <span>{chatError}</span>
-          </div>
-        )}
-
-      {/* Mesaj Listesi */}
-      <div className="bg-gray-50/70 border border-gray-100 rounded-2xl p-3.5 max-h-64 min-h-36 overflow-y-auto space-y-3">
+      <div
+        className="h-[46dvh] max-h-[420px] min-h-56 space-y-4 overflow-y-auto rounded-xl bg-ink-50 p-3.5"
+        aria-live="polite"
+        aria-label={t("Event_CommentsTitle")}
+        tabIndex={0}
+      >
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-32 space-y-2 text-gray-400">
-            <Loader2 size={24} className="animate-spin text-blue-500" />
-            <span className="text-xs font-medium">
-              {t("Event_ChatLoading") || "Yorumlar yükleniyor..."}
-            </span>
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-ink-500">
+            <Loader2 size={22} className="animate-spin text-brand-600" aria-hidden="true" />
+            <span className="text-[13px]">{t("Event_ChatLoading")}</span>
           </div>
         ) : (messages?.length ?? 0) === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-center text-gray-400 space-y-1">
-            <MessageCircle size={28} className="text-gray-300 stroke-[1.5]" />
-            <p className="text-xs font-medium">
-              {canPostMessage
-                ? t("Event_NoCommentsYet") ||
-                  "Henüz yorum yapılmamış. İlk yorumu sen yap!"
-                : t("Event_ChatJoinRequired") ||
-                  "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-ink-500">
+            <MessageCircle size={26} strokeWidth={1.5} className="text-ink-400" aria-hidden="true" />
+            <p className="text-[13px] leading-relaxed">
+              {canPostMessage ? t("Event_NoCommentsYet") : t("Event_ChatJoinRequired")}
             </p>
           </div>
         ) : (
@@ -398,91 +361,34 @@ export default function EventCommentsChat({
               msg.userId.toLowerCase() === currentUserId.toLowerCase(),
             );
 
-            // Organizatör kontrolü (etkinliği oluşturan) - Önce organizatör olup olmadığına bakılır
             const isOrganizer = Boolean(
               effectiveCreatorId &&
               msg.userId &&
               msg.userId.toLowerCase() === effectiveCreatorId.toLowerCase(),
             );
 
-            const hasValidImage = msg.senderProfileImage && !imgErrors[msg.id];
-            const initials = getInitials(msg.senderName);
-
             return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-              >
-                {/* Profil Fotoğrafı veya Fallback Avatar */}
-                {hasValidImage ? (
-                  <img
-                    src={msg.senderProfileImage!}
-                    alt={msg.senderName}
-                    onError={() =>
-                      setImgErrors((prev) => ({ ...prev, [msg.id]: true }))
-                    }
-                    className={`w-8 h-8 rounded-full object-cover shrink-0 shadow-xs ${
-                      isOrganizer
-                        ? "ring-1.5 ring-blue-300"
-                        : "border border-gray-200"
-                    }`}
-                  />
-                ) : (
-                  <div
-                    className={`w-8 h-8 rounded-full ${getAvatarBg(msg.senderName)} text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs ${
-                      isOrganizer ? "ring-1.5 ring-blue-300" : ""
+              <div key={msg.id} className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""}`}>
+                <Avatar name={msg.senderName} src={msg.senderProfileImage} className="size-8 text-[11px]" />
+                <div className={`flex max-w-[78%] min-w-0 flex-col ${isMe ? "items-end" : "items-start"}`}>
+                  <div className={`mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
+                    <span className="text-xs font-semibold text-ink-800">{msg.senderName}</span>
+                    {isOrganizer && (
+                      <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] leading-none font-semibold text-brand-800">
+                        {t("Event_BadgeOrganizer")}
+                      </span>
+                    )}
+                    <time dateTime={msg.createdAt} className="text-[11px] text-ink-500">
+                      {formatMessageTime(msg.createdAt, i18n.language)}
+                    </time>
+                  </div>
+                  <p
+                    className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap ${
+                      isMe
+                        ? "rounded-br-md bg-brand-600 text-white"
+                        : "rounded-bl-md border border-ink-200/70 bg-white text-ink-800"
                     }`}
                   >
-                    {initials}
-                  </div>
-                )}
-
-                {/* Mesaj Balonu */}
-                <div
-                  className={`max-w-[80%] rounded-2xl p-3 text-xs space-y-1.5 ${
-                    isMe
-                      ? "bg-blue-600 text-white rounded-tr-xs"
-                      : "bg-white text-gray-800 border border-gray-100 rounded-tl-xs shadow-xs"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3 text-[11px]">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`font-bold truncate ${isMe ? "text-blue-100" : "text-gray-900"}`}
-                      >
-                        {msg.senderName}
-                      </span>
-
-                      {/* Sade, yumuşak/pastel tonlu etiket: Önce Organizatör, değilse Katılımcı */}
-                      <span
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 select-none ${
-                          isMe
-                            ? isOrganizer
-                              ? "bg-white/25 text-white"
-                              : "bg-white/15 text-blue-100"
-                            : isOrganizer
-                              ? "bg-blue-50 text-blue-700 border border-blue-100"
-                              : "bg-gray-100 text-gray-600 border border-gray-200/70"
-                        }`}
-                      >
-                        {isOrganizer
-                          ? t("Event_BadgeOrganizer") || "Organizatör"
-                          : t("Event_BadgeParticipant") || "Katılımcı"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`text-[10px] shrink-0 font-medium ${
-                          isMe ? "text-blue-200" : "text-gray-400"
-                        }`}
-                      >
-                        {formatMessageTime(msg.createdAt, i18n.language)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="whitespace-pre-wrap break-words leading-relaxed font-normal">
                     {msg.content}
                   </p>
                 </div>
@@ -493,45 +399,35 @@ export default function EventCommentsChat({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Mesaj Gönderme / Kısıtlama Alanı (Chat Bar) */}
       {canPostMessage ? (
-        <form
-          onSubmit={handleSendMessage}
-          className="relative flex items-center gap-2"
-        >
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <input
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              t("Event_ChatPlaceholder") || "Bir yorum veya mesaj yaz..."
-            }
+            placeholder={t("Event_ChatPlaceholder")}
+            aria-label={t("Event_ChatPlaceholder")}
             disabled={isSending}
             maxLength={1000}
-            className="flex-1 bg-white border border-gray-200 rounded-2xl px-4 py-3 text-xs outline-none focus:ring-3 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-gray-400 disabled:opacity-60 shadow-xs"
+            className={`h-11 flex-1 px-3.5 ${controlClass}`}
           />
-          <button
+          <Button
             type="submit"
-            disabled={!content.trim() || isSending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white disabled:text-gray-400 font-bold p-3 rounded-2xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-blue-600/20 disabled:shadow-none"
-            title={t("Event_ChatSend") || "Gönder"}
+            size="icon"
+            disabled={!content.trim()}
+            loading={isSending}
+            aria-label={t("Event_ChatSend")}
+            title={t("Event_ChatSend")}
           >
-            {isSending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Send size={16} />
-            )}
-          </button>
+            {!isSending && <Send size={17} aria-hidden="true" />}
+          </Button>
         </form>
       ) : (
-        <div className="flex items-center justify-center gap-2 py-3.5 px-4 bg-gray-50 border border-gray-200/80 rounded-2xl text-gray-600 text-xs font-semibold text-center select-none shadow-xs">
-          <Lock size={15} className="shrink-0 text-gray-400" />
-          <span>
-            {t("Event_ChatJoinRequired") ||
-              "Yorum yazabilmek için önce etkinliğe katılmalısınız."}
-          </span>
-        </div>
+        <p className="flex items-center justify-center gap-2 rounded-xl bg-ink-100 px-4 py-3 text-center text-[13px] font-medium text-ink-600">
+          <Lock size={15} className="shrink-0" aria-hidden="true" />
+          {t("Event_ChatJoinRequired")}
+        </p>
       )}
     </div>
   );

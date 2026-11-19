@@ -1,56 +1,65 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AdminLayout from './layouts/AdminLayout';
-import StudentLayout from './layouts/StudentLayout';
-import ProtectedRoute from './components/ProtectedRoute';
-import StudentHome from './pages/student/StudentHome';
-import StudentEvents from './pages/student/StudentEvents';
-import StudentEventDetail from './pages/student/StudentEventDetail';
-import StudentProfile from './pages/student/StudentProfile';
-import ResetPassword from './pages/auth/ResetPassword';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import Login from './pages/auth/Login';
-import RegisterComplete from './pages/auth/RegisterComplete';
-import RegisterInitiate from './pages/auth/RegisterInitiate';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminLogin from './pages/admin/AdminLogin';
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
+import FullPageLoader from "./components/ui/FullPageLoader";
+import Toaster from "./components/ui/Toaster";
+
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const StudentLayout = lazy(() => import("./layouts/StudentLayout"));
+const StudentHome = lazy(() => import("./pages/student/StudentHome"));
+const StudentEvents = lazy(() => import("./pages/student/StudentEvents"));
+const CreateEvent = lazy(() => import("./pages/student/CreateEvent"));
+const StudentEventDetail = lazy(() => import("./pages/student/StudentEventDetail"));
+const StudentProfile = lazy(() => import("./pages/student/StudentProfile"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const RegisterComplete = lazy(() => import("./pages/auth/RegisterComplete"));
+const RegisterInitiate = lazy(() => import("./pages/auth/RegisterInitiate"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/register-complete" element={<RegisterComplete />} />
-        <Route path="/register" element={<RegisterInitiate />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        
-        <Route element={<ProtectedRoute allowedRoles={["Admin"]} redirectPath="/admin/login" />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="events" element={<AdminDashboard />} />
-            <Route path="users" element={<AdminDashboard />} />
-            <Route path="feedback" element={<AdminDashboard />} />
-          </Route>
-        </Route>
+      <Toaster />
+      <Suspense fallback={<FullPageLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/register-complete" element={<RegisterComplete />} />
+          <Route path="/register" element={<RegisterInitiate />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-        <Route element={<ProtectedRoute allowedRoles={["Student", "Teacher", "Admin"]} />}>
-          <Route path="/" element={<StudentLayout />}>
-            <Route index element={<StudentHome />} />
+          <Route element={<ProtectedRoute allowedRoles={["Admin"]} redirectPath="/admin/login" />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminOverview />} />
+              <Route path="events" element={<AdminEvents />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="feedback" element={<AdminFeedback />} />
+            </Route>
           </Route>
-          <Route path="/student" element={<StudentLayout />}>
-            <Route index element={<Navigate to="/student/home" replace />} />
-            <Route path="home" element={<StudentHome />} />
-            <Route path="events" element={<StudentEvents />} />
-            <Route path="events/:id" element={<StudentEventDetail />} />
-            <Route path="profile" element={<StudentProfile />} />
-          </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route element={<ProtectedRoute allowedRoles={["Student", "Teacher", "Admin"]} />}>
+            <Route element={<StudentLayout />}>
+              <Route path="/" element={<StudentHome />} />
+              <Route path="/student" element={<Navigate to="/student/home" replace />} />
+              <Route path="/student/home" element={<StudentHome />} />
+              <Route path="/student/events" element={<StudentEvents />} />
+              <Route path="/student/events/new" element={<CreateEvent />} />
+              <Route path="/student/events/:id" element={<StudentEventDetail />} />
+              <Route path="/student/profile" element={<StudentProfile />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
