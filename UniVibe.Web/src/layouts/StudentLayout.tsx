@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { CalendarDays, Compass, Plus, ShieldCheck, UserRound } from "lucide-react";
+import { Compass, Plus, ShieldCheck, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Avatar from "../components/ui/Avatar";
 import LanguageSwitch from "../components/ui/LanguageSwitch";
@@ -43,7 +43,6 @@ export default function StudentLayout() {
   const creating = pathname === "/student/events/new";
   const links = [
     { to: "/student/home", label: t("Student_Discover"), active: HOME_PATHS.includes(pathname) },
-    { to: "/student/events", label: t("UI_MyEvents"), active: pathname.startsWith("/student/events") && !creating },
     { to: "/student/profile", label: t("Nav_Profile"), active: pathname === "/student/profile" },
   ];
 
@@ -70,14 +69,26 @@ export default function StudentLayout() {
             <Logo />
           </Link>
 
-          <nav aria-label={t("UI_MainNavigation")} className="hidden items-center gap-0.5 md:flex">
+          <nav aria-label={t("UI_MainNavigation")} className="relative hidden items-center md:flex">
+            {(() => {
+              const activeIndex = links.findIndex((item) => item.active);
+              if (activeIndex === -1) return null;
+
+              return (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-28 rounded-lg bg-brand-50 transition-transform duration-300 ease-out"
+                  style={{ transform: `translateX(${activeIndex * 112}px)` }}
+                />
+              );
+            })()}
             {links.map(({ to, label, active }) => (
               <NavLink
                 key={to}
                 to={to}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors ${
-                  active ? "bg-brand-50 text-brand-700" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+                className={`relative z-10 grid h-9 w-28 place-items-center rounded-lg px-3 text-sm font-semibold transition-colors ${
+                  active ? "text-brand-700" : "text-ink-500 hover:text-ink-900"
                 }`}
               >
                 {label}
@@ -97,13 +108,17 @@ export default function StudentLayout() {
               </Link>
             )}
             <LanguageSwitch />
-            <Link
+            <NavLink
               to="/student/events/new"
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-gradient px-4 text-sm font-bold text-white shadow-glow transition hover:brightness-110 max-md:hidden"
+              className={({ isActive }) =>
+                `inline-flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-sm font-semibold transition-colors max-md:hidden ${
+                  isActive ? "bg-brand-50 text-brand-700" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
+                }`
+              }
             >
-              <Plus size={16} strokeWidth={2.6} aria-hidden="true" />
+              <Plus size={16} aria-hidden="true" />
               {t("Student_CreateEvent")}
-            </Link>
+            </NavLink>
             <Link to="/student/profile" aria-label={t("Student_Profile")} className="rounded-full max-md:hidden">
               <Avatar name={displayNameOf(user)} src={user?.profilePictureUrl} className="size-10 text-xs ring-2 ring-white shadow-card" />
             </Link>
@@ -120,18 +135,10 @@ export default function StudentLayout() {
           <TabLink to={links[0].to} label={links[0].label} active={links[0].active}>
             <Compass size={21} aria-hidden="true" />
           </TabLink>
-          <TabLink to={links[1].to} label={links[1].label} active={links[1].active}>
-            <CalendarDays size={21} aria-hidden="true" />
+          <TabLink to="/student/events/new" label={t("Student_CreateEvent")} active={creating}>
+            <Plus size={21} aria-hidden="true" />
           </TabLink>
-          <NavLink
-            to="/student/events/new"
-            aria-label={t("Student_CreateEvent")}
-            aria-current={creating ? "page" : undefined}
-            className="grid h-12 w-16 place-items-center rounded-xl bg-brand-gradient text-white shadow-glow"
-          >
-            <Plus size={23} strokeWidth={2.6} aria-hidden="true" />
-          </NavLink>
-          <TabLink to={links[2].to} label={links[2].label} active={links[2].active}>
+          <TabLink to={links[1].to} label={links[1].label} active={links[1].active}>
             <UserRound size={21} aria-hidden="true" />
           </TabLink>
         </div>

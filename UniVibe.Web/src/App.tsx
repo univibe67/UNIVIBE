@@ -7,7 +7,6 @@ import Toaster from "./components/ui/Toaster";
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 const StudentLayout = lazy(() => import("./layouts/StudentLayout"));
 const StudentHome = lazy(() => import("./pages/student/StudentHome"));
-const StudentEvents = lazy(() => import("./pages/student/StudentEvents"));
 const CreateEvent = lazy(() => import("./pages/student/CreateEvent"));
 const StudentEventDetail = lazy(() => import("./pages/student/StudentEventDetail"));
 const StudentProfile = lazy(() => import("./pages/student/StudentProfile"));
@@ -50,7 +49,6 @@ function App() {
               <Route path="/" element={<StudentHome />} />
               <Route path="/student" element={<Navigate to="/student/home" replace />} />
               <Route path="/student/home" element={<StudentHome />} />
-              <Route path="/student/events" element={<StudentEvents />} />
               <Route path="/student/events/new" element={<CreateEvent />} />
               <Route path="/student/events/:id" element={<StudentEventDetail />} />
               <Route path="/student/profile" element={<StudentProfile />} />

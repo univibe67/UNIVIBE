@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { EventItem } from "../../types/event";
 import { EventStatus, effectiveEventStatus } from "../../utils/eventStatus";
@@ -20,6 +20,7 @@ interface EventDetailModalProps {
   onJoin: (eventId: string) => void;
   onLeave: (eventId: string) => void;
   onOpenComments: (event: EventItem) => void;
+  onCancelEvent?: (eventId: string) => void;
 }
 
 export default function EventDetailModal({
@@ -31,11 +32,14 @@ export default function EventDetailModal({
   onJoin,
   onLeave,
   onOpenComments,
+  onCancelEvent,
 }: EventDetailModalProps) {
   const { t } = useTranslation();
   if (!event) return null;
 
-  const showStatus = effectiveEventStatus(event) !== EventStatus.Approved;
+  const status = effectiveEventStatus(event);
+  const showStatus = status !== EventStatus.Approved;
+  const canCancel = Boolean(event.isCreator && onCancelEvent && status !== EventStatus.Cancelled);
 
   return (
     <Modal
@@ -58,6 +62,18 @@ export default function EventDetailModal({
               onJoin={() => onJoin(event.id)}
               onLeave={() => onLeave(event.id)}
             />
+            {canCancel && (
+              <Button
+                variant="dangerSoft"
+                onClick={() => {
+                  onClose();
+                  onCancelEvent?.(event.id);
+                }}
+              >
+                <XCircle size={16} aria-hidden="true" />
+                {t("Student_CancelEventBtn")}
+              </Button>
+            )}
           </>
         )
       }

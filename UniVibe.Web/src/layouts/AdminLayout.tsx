@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { CalendarDays, Compass, LayoutDashboard, LogOut, MessageSquare, Users } from "lucide-react";
+import { CalendarDays, LayoutDashboard, LogOut, MessageSquare, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitch from "../components/ui/LanguageSwitch";
 import Logo from "../components/ui/Logo";
@@ -71,21 +71,13 @@ export default function AdminLayout() {
               )}
             </NavLink>
           ))}
-          <Link to="/student/home" className={`${utilityLink} lg:hidden`}>
-            <Compass size={18} aria-hidden="true" />
-            {t("UI_StudentView")}
-          </Link>
           <button type="button" onClick={logout} className={`${utilityLink} lg:hidden`}>
             <LogOut size={18} aria-hidden="true" />
             {t("Admin_Logout")}
           </button>
         </nav>
 
-        <div className="hidden shrink-0 space-y-1 border-t border-ink-100 p-3 lg:block">
-          <Link to="/student/home" className={utilityLink}>
-            <Compass size={18} aria-hidden="true" />
-            {t("UI_StudentView")}
-          </Link>
+        <div className="hidden shrink-0 border-t border-ink-100 p-3 lg:block">
           <button type="button" onClick={logout} className={`${utilityLink} w-full`}>
             <LogOut size={18} aria-hidden="true" />
             {t("Admin_Logout")}

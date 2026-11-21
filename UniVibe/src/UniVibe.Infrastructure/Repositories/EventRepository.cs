@@ -12,12 +12,12 @@ namespace UniVibe.Infrastructure.Repositories
         public EventRepository(UniVibeDbContext context) : base(context) { }
 
         public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(
-    int pageNumber,
-    int pageSize,
-    bool onlyActive = true,
-    string? searchTerm = null,
-    Guid? categoryId = null,
-    EventStatus? status = null)
+        int pageNumber,
+        int pageSize,
+        bool onlyActive = true,
+        string? searchTerm = null,
+        Guid? categoryId = null,
+        EventStatus? status = null)
         {
             var query = _context.Events
                 .AsNoTracking()
