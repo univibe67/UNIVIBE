@@ -64,6 +64,17 @@ namespace UniVibe.Infrastructure.Services
                 }
             }
 
+            var expiredPendingEvents = await _context.Events
+                .Where(e => e.Status == EventStatus.Pending && e.EventDate < utcNow)
+                .ToListAsync();
+
+            foreach (var pendingEv in expiredPendingEvents)
+            {
+                pendingEv.Status = EventStatus.Rejected;
+                pendingEv.RejectionReason = "Etkinlik tarihi onaylanmadan geçtiği için reddedildi.";
+                pendingEv.UpdatedAt = utcNow;
+            }
+
             var oneHourLater = utcNow.AddHours(1);
 
             var upcomingEvents = await _context.Events
@@ -137,7 +148,7 @@ namespace UniVibe.Infrastructure.Services
                 ev.UpdatedAt = utcNow;
             }
 
-            if (expiredEvents.Any() || upcomingEvents.Any())
+            if (expiredEvents.Any() || expiredPendingEvents.Any() || upcomingEvents.Any())
             {
                 await _context.SaveChangesAsync();
             }
