@@ -95,8 +95,8 @@ export default function StudentEventDetail() {
         title={t("UI_EventNotFound")}
         description={error}
         action={
-          <Link to="/student/events" className={buttonClass("secondary", "md")}>
-            {t("UI_MyEvents")}
+          <Link to="/student/home" className={buttonClass("secondary", "md")}>
+            {t("Student_Discover")}
           </Link>
         }
       />
@@ -164,7 +164,7 @@ export default function StudentEventDetail() {
       <CancelEventModal
         eventId={cancelOpen ? event.id : null}
         onClose={() => setCancelOpen(false)}
-        onCancelled={() => navigate("/student/events")}
+        onCancelled={() => navigate("/student/profile", { replace: true })}
       />
     </>
   );
