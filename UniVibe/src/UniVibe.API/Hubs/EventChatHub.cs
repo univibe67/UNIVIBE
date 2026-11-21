@@ -4,6 +4,7 @@ using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Message.Requests;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.API.Hubs
 {
@@ -34,6 +35,11 @@ namespace UniVibe.API.Hubs
             if (evnt == null)
             {
                 throw new HubException("Etkinlik bulunamadı.");
+            }
+
+            if (evnt.Status != EventStatus.Approved || !evnt.IsActive)
+            {
+                throw new HubException("Sadece aktif ve onaylı etkinliklerin sohbet odasına katılabilirsiniz.");
             }
 
             bool isOrganizer = evnt.UserId == userId;
