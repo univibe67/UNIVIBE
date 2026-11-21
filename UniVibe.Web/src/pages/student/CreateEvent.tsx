@@ -22,6 +22,8 @@ interface Category {
   name: string;
 }
 
+const ACTIVE_EVENT_WARNING = "Etkinliğiniz var, yeni etkinlik oluşturamazsınız.";
+
 function FormSection({
   step,
   title,
@@ -55,10 +57,18 @@ function todayValue() {
   return now.toISOString().slice(0, 10);
 }
 
+function currentTimeValue() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export default function CreateEvent() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
+  const [hasActiveEvent, setHasActiveEvent] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -80,11 +90,7 @@ export default function CreateEvent() {
         if (cancelled) return;
 
         const active = activeResult.status === "fulfilled" ? unwrap<EventItem>(activeResult.value) : null;
-        if (active?.id) {
-          toast.error(t("Student_AlreadyHasPending"));
-          navigate("/student/events", { replace: true });
-          return;
-        }
+        setHasActiveEvent(Boolean(active?.id));
 
         if (categoryResult.status === "fulfilled") {
           const raw = unwrap<Category[] | { items?: Category[] }>(categoryResult.value);
@@ -98,7 +104,7 @@ export default function CreateEvent() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, t]);
+  }, []);
 
   const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
 
@@ -107,6 +113,15 @@ export default function CreateEvent() {
       if (imagePreview) URL.revokeObjectURL(imagePreview);
     };
   }, [imagePreview]);
+
+  const minTime = eventDate === todayValue() ? currentTimeValue() : undefined;
+
+  const handleDateChange = (nextDate: string) => {
+    setEventDate(nextDate);
+    if (nextDate === todayValue() && eventTime && eventTime < currentTimeValue()) {
+      setEventTime("");
+    }
+  };
 
   const localDate = eventDate && eventTime ? `${eventDate}T${eventTime}` : "";
   const categoryName = categories.find((category) => category.id === categoryId)?.name;
@@ -126,12 +141,21 @@ export default function CreateEvent() {
     event.preventDefault();
     setError("");
 
+    if (hasActiveEvent) {
+      toast.error(ACTIVE_EVENT_WARNING);
+      return;
+    }
+
     if (title.trim().length < 3) {
       setError(t("UI_EventTitleLength"));
       return;
     }
     if (!categoryId) {
       setError(t("Student_SelectCategoryError"));
+      return;
+    }
+    if (eventDate === todayValue() && eventTime && eventTime < currentTimeValue()) {
+      setError(t("UI_EventDateFuture"));
       return;
     }
     if (!localDate || new Date(localDate).getTime() <= Date.now()) {
@@ -145,6 +169,14 @@ export default function CreateEvent() {
 
     setSubmitting(true);
     try {
+      const activeResponse = await api.get("/events/active/me");
+      const currentActive = unwrap<EventItem>(activeResponse);
+      if (currentActive?.id) {
+        setHasActiveEvent(true);
+        toast.error(ACTIVE_EVENT_WARNING);
+        return;
+      }
+
       const formData = new FormData();
       formData.append("Title", title);
       formData.append("Description", description);
@@ -157,9 +189,11 @@ export default function CreateEvent() {
 
       await api.post("/events", formData, { headers: { "Content-Type": "multipart/form-data" } });
       toast.success(t("Student_CreateSuccess"));
-      navigate("/student/events");
+      navigate("/student/profile");
     } catch (err) {
-      setError(getErrorMessage(err) || t("Student_CreateError"));
+      const message = getErrorMessage(err) || t("Student_CreateError");
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -176,16 +210,22 @@ export default function CreateEvent() {
   return (
     <>
       <Link
-        to="/student/events"
+        to="/student/profile"
         className="mb-4 inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-ink-600 transition-colors hover:text-ink-900"
       >
         <ArrowLeft size={16} aria-hidden="true" />
-        {t("UI_MyEvents")}
+        {t("Nav_Profile")}
       </Link>
       <header className="mb-6">
         <h1 className="text-[30px] leading-tight font-extrabold text-ink-900 sm:text-[38px]">{t("Student_ModalTitleCreate")}</h1>
         <p className="mt-3 text-[15px] text-ink-600">{t("Student_NewEventDescription")}</p>
       </header>
+
+      {hasActiveEvent && (
+        <div className="mb-6">
+          <Alert>{ACTIVE_EVENT_WARNING}</Alert>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
@@ -222,7 +262,7 @@ export default function CreateEvent() {
           </FormSection>
 
           <FormSection step={2} title={t("Student_TimeAndLocation")} description={t("Student_TimeAndLocationDescription")}>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <Field label={t("Student_Date")} required>
                 <Input
                   type="date"
@@ -230,11 +270,19 @@ export default function CreateEvent() {
                   min={todayValue()}
                   lang={i18n.language}
                   value={eventDate}
-                  onChange={(event) => setEventDate(event.target.value)}
+                  onChange={(event) => handleDateChange(event.target.value)}
+                  className="w-full min-w-0 text-[15px]"
                 />
               </Field>
               <Field label={t("Student_Time")} required>
-                <Input type="time" required value={eventTime} onChange={(event) => setEventTime(event.target.value)} />
+                <Input
+                  type="time"
+                  required
+                  min={minTime}
+                  value={eventTime}
+                  onChange={(event) => setEventTime(event.target.value)}
+                  className="w-full min-w-0 text-[15px]"
+                />
               </Field>
             </div>
             <Field label={t("Student_FieldLocation")} required>
@@ -243,6 +291,7 @@ export default function CreateEvent() {
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
                 placeholder={t("Student_LocationPlaceholder")}
+                className="text-[15px]"
               />
             </Field>
           </FormSection>
@@ -306,11 +355,24 @@ export default function CreateEvent() {
             </div>
           </div>
           {error && <Alert>{error}</Alert>}
-          <Button type="submit" size="lg" className="w-full" loading={submitting}>
+          <Button
+            type={hasActiveEvent ? "button" : "submit"}
+            size="lg"
+            className={`w-full ${hasActiveEvent ? "cursor-not-allowed opacity-50 hover:brightness-100" : ""}`}
+            aria-disabled={hasActiveEvent}
+            loading={submitting}
+            onClick={
+              hasActiveEvent
+                ? () => {
+                    toast.error(ACTIVE_EVENT_WARNING);
+                  }
+                : undefined
+            }
+          >
             {!submitting && <Send size={17} aria-hidden="true" />}
             {submitting ? t("Student_Creating") : t("Student_PublishEvent")}
           </Button>
-          <Link to="/student/events" className={buttonClass("ghost", "md", "w-full")}>
+          <Link to="/student/profile" className={buttonClass("ghost", "md", "w-full")}>
             {t("Student_CancelBtn")}
           </Link>
           <p className="text-center text-xs leading-relaxed text-ink-500">{t("UI_ApprovalNotice")}</p>

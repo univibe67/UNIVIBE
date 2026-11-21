@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import CancelEventModal from "../../components/events/CancelEventModal";
 import EventCard from "../../components/events/EventCard";
 import EventCardSkeleton from "../../components/events/EventCardSkeleton";
 import EventChatModal from "../../components/events/EventChatModal";
@@ -32,6 +33,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import FullPageLoader from "../../components/ui/FullPageLoader";
 import Modal from "../../components/ui/Modal";
 import Segmented from "../../components/ui/Segmented";
+import VibeWave from "../../components/ui/VibeWave";
 import { useEventDialogs } from "../../hooks/useEventDialogs";
 import { api } from "../../services/api";
 import { currentUser } from "../../services/currentUser";
@@ -43,7 +45,6 @@ import type { EventItem } from "../../types/event";
 import { gradeLabelKey } from "../../utils/grades";
 import ChangePasswordModal from "./profile/ChangePasswordModal";
 import DeleteAccountModal from "./profile/DeleteAccountModal";
-import VibeWave from "../../components/ui/VibeWave";
 import EditProfileModal from "./profile/EditProfileModal";
 import { normalizeProfile } from "./profile/profileTypes";
 import type { UserProfile } from "./profile/profileTypes";
@@ -106,6 +107,7 @@ export default function StudentProfile() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"joined" | "created">("joined");
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = useCallback(async () => {
@@ -185,13 +187,17 @@ export default function StudentProfile() {
   if (loading) return <FullPageLoader label={t("Admin_LoadingDetails")} />;
 
   const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
+  const titlePrefix = profile?.title?.trim() ?? "";
+  const displayName = titlePrefix ? `${titlePrefix} ${fullName}`.trim() : fullName;
   const gradeKey = gradeLabelKey(profile?.grade);
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-24">
         <section className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70">
-          <div className="relative h-28 overflow-hidden bg-brand-gradient" aria-hidden="true"><VibeWave className="absolute inset-0 h-full w-full opacity-70" /></div>
+          <div className="relative h-28 overflow-hidden bg-brand-gradient" aria-hidden="true">
+            <VibeWave className="absolute inset-0 h-full w-full opacity-70" />
+          </div>
           <div className="px-5 pb-5">
             <div className="relative -mt-11 mb-3 w-fit">
               <button
@@ -206,7 +212,7 @@ export default function StudentProfile() {
                     <LoaderCircle size={24} className="animate-spin text-brand-600" aria-hidden="true" />
                   </span>
                 ) : (
-                  <Avatar name={fullName} src={profile?.profilePictureUrl} className="size-20 text-xl" />
+                  <Avatar name={displayName} src={profile?.profilePictureUrl} className="size-20 text-xl" />
                 )}
               </button>
               <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
@@ -221,11 +227,8 @@ export default function StudentProfile() {
               </button>
             </div>
 
-            <h1 className="text-[26px] leading-tight font-extrabold text-ink-900">{fullName}</h1>
-            <p className="mt-0.5 text-sm text-ink-500">
-              @{profile?.username}
-              {profile?.title ? ` · ${profile.title}` : ""}
-            </p>
+            <h1 className="text-[26px] leading-tight font-extrabold text-ink-900">{displayName}</h1>
+            <p className="mt-0.5 text-sm text-ink-500">@{profile?.username}</p>
             <p className="mt-3 text-sm leading-relaxed break-words text-ink-600">{profile?.bio || t("Student_NoBio")}</p>
             <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={() => setActiveModal("edit")}>
               <Pencil size={14} aria-hidden="true" />
@@ -287,7 +290,7 @@ export default function StudentProfile() {
             ariaLabel={t("UI_MyEvents")}
             value={activeTab}
             onChange={setActiveTab}
-            className="mb-4"
+            className="mb-3"
             options={[
               { value: "joined", label: t("Student_JoinedEvents"), count: joinedEvents.length },
               { value: "created", label: t("Student_CreatedEvents"), count: createdEvent ? 1 : 0 },
@@ -295,32 +298,41 @@ export default function StudentProfile() {
           />
 
           {eventsLoading ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <EventCardSkeleton />
-              <EventCardSkeleton />
+            <div className="flex gap-2.5 overflow-x-auto pb-2">
+              <div className="w-60 shrink-0">
+                <EventCardSkeleton />
+              </div>
+              <div className="w-60 shrink-0">
+                <EventCardSkeleton />
+              </div>
             </div>
           ) : activeTab === "joined" ? (
             joinedEvents.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory">
                 {joinedEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={{ ...event, isJoined: true }}
-                    onViewDetail={() => void openDetail(event, { isJoined: true })}
-                    onOpenComments={() => void openComments(event, { isJoined: true })}
-                  />
+                  <div key={event.id} className="w-60 shrink-0 snap-start">
+                    <EventCard
+                      compact
+                      event={{ ...event, isJoined: true }}
+                      onViewDetail={() => void openDetail(event, { isJoined: true })}
+                      onOpenComments={() => void openComments(event, { isJoined: true })}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
               <EmptyState icon={<CalendarCheck size={22} />} title={t("Student_NoJoinedEvents")} />
             )
           ) : createdEvent ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <EventCard
-                event={{ ...createdEvent, isCreator: true }}
-                onViewDetail={() => void openDetail(createdEvent, { isCreator: true })}
-                onOpenComments={() => void openComments(createdEvent, { isCreator: true })}
-              />
+            <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory">
+              <div className="w-60 shrink-0 snap-start">
+                <EventCard
+                  compact
+                  event={{ ...createdEvent, isCreator: true }}
+                  onViewDetail={() => void openDetail(createdEvent, { isCreator: true })}
+                  onOpenComments={() => void openComments(createdEvent, { isCreator: true })}
+                />
+              </div>
             </div>
           ) : (
             <EmptyState icon={<CalendarPlus size={22} />} title={t("Student_NoCreatedEvents")} />
@@ -385,11 +397,19 @@ export default function StudentProfile() {
         size="lg"
         ariaLabel={t("Student_ViewProfilePhoto")}
       >
-        <img src={profile?.profilePictureUrl} alt={fullName} className="max-h-[80dvh] w-full object-contain" />
+        <img src={profile?.profilePictureUrl} alt={displayName} className="max-h-[80dvh] w-full object-contain" />
       </Modal>
 
-      <EventDetailModal {...detailProps} />
+      <EventDetailModal {...detailProps} onCancelEvent={(eventId) => setCancelId(eventId)} />
       <EventChatModal {...chatProps} />
+      <CancelEventModal
+        eventId={cancelId}
+        onClose={() => setCancelId(null)}
+        onCancelled={() => {
+          setCancelId(null);
+          void fetchProfileEvents();
+        }}
+      />
     </div>
   );
 }
