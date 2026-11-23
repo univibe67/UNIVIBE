@@ -96,6 +96,10 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task<List<Event>> GetActiveEventByUserIdAsync(Guid userId)
         {
+            var now = DateTime.UtcNow;
+            const int activeOrPendingPriority = 0;
+            const int pastOrClosedPriority = 1;
+
             return await _context.Events
                 .AsNoTracking()
                 .Include(e => e.Category)
@@ -103,7 +107,11 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
                 .Where(e => e.UserId == userId && !e.IsDeleted)
-                .OrderByDescending(e => e.EventDate)
+                .OrderBy(e =>
+                    e.Status == EventStatus.Pending || (e.Status == EventStatus.Approved && e.EventDate > now)
+                        ? activeOrPendingPriority
+                        : pastOrClosedPriority)
+                .ThenByDescending(e => e.EventDate)
                 .ToListAsync();
         }
 

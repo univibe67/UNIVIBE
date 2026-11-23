@@ -192,12 +192,12 @@ namespace UniVibe.Application.Services
         {
             var myEvents = await _eventRepository.GetActiveEventByUserIdAsync(userId);
 
-            if (myEvents == null || !myEvents.Any())
+            if (myEvents == null || myEvents.Count == 0)
                 return new List<EventDetailResponse>();
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(myEvents);
 
-            for (int i = 0; i < myEvents.Count; i++)
+            for (var i = 0; i < myEvents.Count; i++)
             {
                 var eventEntity = myEvents[i];
                 var response = eventDetailResponses[i];
