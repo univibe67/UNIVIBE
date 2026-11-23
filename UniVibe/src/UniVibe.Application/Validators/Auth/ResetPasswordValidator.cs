@@ -20,6 +20,7 @@ namespace UniVibe.Application.Validators.Auth
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
                 .MinimumLength(8).WithMessage(x => localizer["Val_PassMinLength"].Value)
                 .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PassUppercase"].Value)
+                .Matches(@"[a-z]").WithMessage(x => localizer["Val_PassLowercaseRequired"]?.Value ?? localizer["Val_PassLowercase"]?.Value ?? "Şifre en az bir küçük harf içermelidir.")
                 .Matches(@"[0-9]").WithMessage(x => localizer["Val_PassDigit"].Value);
         }
     }

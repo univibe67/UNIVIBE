@@ -361,11 +361,19 @@ namespace UniVibe.UnitTests.Services
                 Capacity = 30
             };
 
-            _eventRepoMock.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
-                .ReturnsAsync(2);
+            var existingActiveEvents = new List<Event>
+            {
+                new() { Id = Guid.NewGuid(), UserId = userId, EventDate = DateTime.UtcNow.AddDays(1), Status = EventStatus.Approved },
+                new() { Id = Guid.NewGuid(), UserId = userId, EventDate = DateTime.UtcNow.AddDays(2), Status = EventStatus.Approved }
+            };
 
-            _localizerMock.Setup(l => l["Event_HasActiveEvent"])
-                .Returns(new LocalizedString("Event_HasActiveEvent", "En fazla 2 aktif etkinlik oluşturabilirsiniz."));
+            _eventRepoMock
+                .Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
+                .ReturnsAsync(existingActiveEvents);
+
+            _localizerMock
+                .Setup(l => l[It.IsAny<string>()])
+                .Returns((string key) => new LocalizedString(key, "En fazla 2 aktif etkinlik oluşturabilirsiniz."));
 
             Func<Task> act = async () => await _eventService.CreateEventAsync(request, userId);
 
