@@ -49,9 +49,24 @@ import EditProfileModal from "./profile/EditProfileModal";
 import { normalizeProfile } from "./profile/profileTypes";
 import type { UserProfile } from "./profile/profileTypes";
 
-type ActiveModal = "edit" | "password" | "feedback" | "logout" | "delete" | "photo" | null;
+type ActiveModal =
+  | "edit"
+  | "password"
+  | "feedback"
+  | "logout"
+  | "delete"
+  | "photo"
+  | null;
 
-function InfoRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+function InfoRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex items-start gap-3 py-2.5">
       <span className="mt-0.5 text-ink-400" aria-hidden="true">
@@ -59,7 +74,9 @@ function InfoRow({ icon, label, children }: { icon: ReactNode; label: string; ch
       </span>
       <div className="min-w-0">
         <dt className="text-xs text-ink-500">{label}</dt>
-        <dd className="mt-0.5 text-[13px] font-medium break-words text-ink-800">{children}</dd>
+        <dd className="mt-0.5 text-[13px] font-medium break-words text-ink-800">
+          {children}
+        </dd>
       </div>
     </div>
   );
@@ -81,10 +98,15 @@ function SettingRow({
       type="button"
       onClick={onClick}
       className={`flex w-full items-center gap-3 px-5 py-3.5 text-left text-sm font-medium transition-colors ${
-        danger ? "text-coral-700 hover:bg-coral-50" : "text-ink-800 hover:bg-ink-50"
+        danger
+          ? "text-coral-700 hover:bg-coral-50"
+          : "text-ink-800 hover:bg-ink-50"
       }`}
     >
-      <span className={danger ? "text-coral-600" : "text-ink-500"} aria-hidden="true">
+      <span
+        className={danger ? "text-coral-600" : "text-ink-500"}
+        aria-hidden="true"
+      >
         {icon}
       </span>
       <span className="flex-1">{label}</span>
@@ -103,7 +125,7 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([]);
-  const [createdEvent, setCreatedEvent] = useState<EventItem | null>(null);
+  const [createdEvents, setCreatedEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"joined" | "created">("joined");
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
@@ -112,7 +134,9 @@ export default function StudentProfile() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const data = unwrap<Record<string, unknown>>(await api.get("/users/profile/me"));
+      const data = unwrap<Record<string, unknown>>(
+        await api.get("/users/profile/me"),
+      );
       if (data) setProfile(normalizeProfile(data));
     } catch (error) {
       console.error("Profil bilgileri alınamadı:", error);
@@ -128,13 +152,20 @@ export default function StudentProfile() {
         api.get("/events/active/me"),
       ]);
       const joined = unwrap<EventItem[]>(joinedResponse);
-      const created = unwrap<EventItem>(createdResponse);
+      const created = unwrap<EventItem[] | EventItem>(createdResponse);
+
       setJoinedEvents(Array.isArray(joined) ? joined : []);
-      setCreatedEvent(created?.id ? created : null);
+      if (Array.isArray(created)) {
+        setCreatedEvents(created);
+      } else if (created?.id) {
+        setCreatedEvents([created]);
+      } else {
+        setCreatedEvents([]);
+      }
     } catch (error) {
       console.error("Profil etkinlikleri alınamadı:", error);
       setJoinedEvents([]);
-      setCreatedEvent(null);
+      setCreatedEvents([]);
     } finally {
       setEventsLoading(false);
     }
@@ -163,9 +194,14 @@ export default function StudentProfile() {
       const response = (await api.post("/users/profile/picture", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })) as unknown;
-      const url = typeof response === "string" ? response : (response as { data?: string }).data;
+      const url =
+        typeof response === "string"
+          ? response
+          : (response as { data?: string }).data;
       const profilePictureUrl = `${url}?t=${Date.now()}`;
-      setProfile((current) => (current ? { ...current, profilePictureUrl } : current));
+      setProfile((current) =>
+        current ? { ...current, profilePictureUrl } : current,
+      );
       currentUser.patch({ profilePictureUrl });
       toast.success(t("UI_PhotoUpdated"));
     } catch (error) {
@@ -186,16 +222,23 @@ export default function StudentProfile() {
 
   if (loading) return <FullPageLoader label={t("Admin_LoadingDetails")} />;
 
-  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
+  const fullName = [profile?.firstName, profile?.lastName]
+    .filter(Boolean)
+    .join(" ");
   const titlePrefix = profile?.title?.trim() ?? "";
-  const displayName = titlePrefix ? `${titlePrefix} ${fullName}`.trim() : fullName;
+  const displayName = titlePrefix
+    ? `${titlePrefix} ${fullName}`.trim()
+    : fullName;
   const gradeKey = gradeLabelKey(profile?.grade);
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-24">
         <section className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-ink-200/70">
-          <div className="relative h-28 overflow-hidden bg-brand-gradient" aria-hidden="true">
+          <div
+            className="relative h-28 overflow-hidden bg-brand-gradient"
+            aria-hidden="true"
+          >
             <VibeWave className="absolute inset-0 h-full w-full opacity-70" />
           </div>
           <div className="px-5 pb-5">
@@ -209,13 +252,27 @@ export default function StudentProfile() {
               >
                 {uploading ? (
                   <span className="grid size-20 place-items-center rounded-full bg-ink-100">
-                    <LoaderCircle size={24} className="animate-spin text-brand-600" aria-hidden="true" />
+                    <LoaderCircle
+                      size={24}
+                      className="animate-spin text-brand-600"
+                      aria-hidden="true"
+                    />
                   </span>
                 ) : (
-                  <Avatar name={displayName} src={profile?.profilePictureUrl} className="size-20 text-xl" />
+                  <Avatar
+                    name={displayName}
+                    src={profile?.profilePictureUrl}
+                    className="size-20 text-xl"
+                  />
                 )}
               </button>
-              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
+              />
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
@@ -227,10 +284,19 @@ export default function StudentProfile() {
               </button>
             </div>
 
-            <h1 className="text-[26px] leading-tight font-extrabold text-ink-900">{displayName}</h1>
+            <h1 className="text-[26px] leading-tight font-extrabold text-ink-900">
+              {displayName}
+            </h1>
             <p className="mt-0.5 text-sm text-ink-500">@{profile?.username}</p>
-            <p className="mt-3 text-sm leading-relaxed break-words text-ink-600">{profile?.bio || t("Student_NoBio")}</p>
-            <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={() => setActiveModal("edit")}>
+            <p className="mt-3 text-sm leading-relaxed break-words text-ink-600">
+              {profile?.bio || t("Student_NoBio")}
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4 w-full"
+              onClick={() => setActiveModal("edit")}
+            >
               <Pencil size={14} aria-hidden="true" />
               {t("Student_EditProfile")}
             </Button>
@@ -238,17 +304,26 @@ export default function StudentProfile() {
 
           <dl className="divide-y divide-ink-100 border-t border-ink-100 px-5 py-1">
             {profile?.universityName && (
-              <InfoRow icon={<Building2 size={16} />} label={t("Student_University")}>
+              <InfoRow
+                icon={<Building2 size={16} />}
+                label={t("Student_University")}
+              >
                 {profile.universityName}
               </InfoRow>
             )}
             {profile?.facultyName && (
-              <InfoRow icon={<BookOpen size={16} />} label={t("Student_Faculty")}>
+              <InfoRow
+                icon={<BookOpen size={16} />}
+                label={t("Student_Faculty")}
+              >
                 {profile.facultyName}
               </InfoRow>
             )}
             {profile?.departmentName && (
-              <InfoRow icon={<GraduationCap size={16} />} label={t("Student_Department")}>
+              <InfoRow
+                icon={<GraduationCap size={16} />}
+                label={t("Student_Department")}
+              >
                 {profile.departmentName}
                 {gradeKey ? ` · ${t(gradeKey)}` : ""}
               </InfoRow>
@@ -263,7 +338,13 @@ export default function StudentProfile() {
             )}
             {profile?.socialMediaLink && (
               <InfoRow
-                icon={isSafeLink(profile.socialMediaLink) ? <Link2 size={16} /> : <AtSign size={16} />}
+                icon={
+                  isSafeLink(profile.socialMediaLink) ? (
+                    <Link2 size={16} />
+                  ) : (
+                    <AtSign size={16} />
+                  )
+                }
                 label={t("Student_SocialMedia")}
               >
                 {isSafeLink(profile.socialMediaLink) ? (
@@ -292,8 +373,16 @@ export default function StudentProfile() {
             onChange={setActiveTab}
             className="mb-3"
             options={[
-              { value: "joined", label: t("Student_JoinedEvents"), count: joinedEvents.length },
-              { value: "created", label: t("Student_CreatedEvents"), count: createdEvent ? 1 : 0 },
+              {
+                value: "joined",
+                label: t("Student_JoinedEvents"),
+                count: joinedEvents.length,
+              },
+              {
+                value: "created",
+                label: t("Student_CreatedEvents"),
+                count: createdEvents.length,
+              },
             ]}
           />
 
@@ -314,28 +403,44 @@ export default function StudentProfile() {
                     <EventCard
                       compact
                       event={{ ...event, isJoined: true }}
-                      onViewDetail={() => void openDetail(event, { isJoined: true })}
-                      onOpenComments={() => void openComments(event, { isJoined: true })}
+                      onViewDetail={() =>
+                        void openDetail(event, { isJoined: true })
+                      }
+                      onOpenComments={() =>
+                        void openComments(event, { isJoined: true })
+                      }
                     />
                   </div>
                 ))}
               </div>
             ) : (
-              <EmptyState icon={<CalendarCheck size={22} />} title={t("Student_NoJoinedEvents")} />
+              <EmptyState
+                icon={<CalendarCheck size={22} />}
+                title={t("Student_NoJoinedEvents")}
+              />
             )
-          ) : createdEvent ? (
+          ) : createdEvents.length > 0 ? (
             <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory">
-              <div className="w-60 shrink-0 snap-start">
-                <EventCard
-                  compact
-                  event={{ ...createdEvent, isCreator: true }}
-                  onViewDetail={() => void openDetail(createdEvent, { isCreator: true })}
-                  onOpenComments={() => void openComments(createdEvent, { isCreator: true })}
-                />
-              </div>
+              {createdEvents.map((event) => (
+                <div key={event.id} className="w-60 shrink-0 snap-start">
+                  <EventCard
+                    compact
+                    event={{ ...event, isCreator: true }}
+                    onViewDetail={() =>
+                      void openDetail(event, { isCreator: true })
+                    }
+                    onOpenComments={() =>
+                      void openComments(event, { isCreator: true })
+                    }
+                  />
+                </div>
+              ))}
             </div>
           ) : (
-            <EmptyState icon={<CalendarPlus size={22} />} title={t("Student_NoCreatedEvents")} />
+            <EmptyState
+              icon={<CalendarPlus size={22} />}
+              title={t("Student_NoCreatedEvents")}
+            />
           )}
         </section>
 
@@ -354,7 +459,11 @@ export default function StudentProfile() {
               label={t("Student_FeedbackButton")}
               onClick={() => setActiveModal("feedback")}
             />
-            <SettingRow icon={<LogOut size={18} />} label={t("Auth_Logout")} onClick={() => setActiveModal("logout")} />
+            <SettingRow
+              icon={<LogOut size={18} />}
+              label={t("Auth_Logout")}
+              onClick={() => setActiveModal("logout")}
+            />
             <SettingRow
               danger
               icon={<Trash2 size={18} />}
@@ -376,11 +485,19 @@ export default function StudentProfile() {
           }}
         />
       )}
-      {activeModal === "password" && <ChangePasswordModal onClose={() => setActiveModal(null)} />}
-      {activeModal === "delete" && profile && (
-        <DeleteAccountModal profile={profile} onClose={() => setActiveModal(null)} />
+      {activeModal === "password" && (
+        <ChangePasswordModal onClose={() => setActiveModal(null)} />
       )}
-      <FeedbackModal open={activeModal === "feedback"} onClose={() => setActiveModal(null)} />
+      {activeModal === "delete" && profile && (
+        <DeleteAccountModal
+          profile={profile}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
+      <FeedbackModal
+        open={activeModal === "feedback"}
+        onClose={() => setActiveModal(null)}
+      />
       <ConfirmDialog
         open={activeModal === "logout"}
         title={t("Auth_LogoutConfirmTitle")}
@@ -397,10 +514,17 @@ export default function StudentProfile() {
         size="lg"
         ariaLabel={t("Student_ViewProfilePhoto")}
       >
-        <img src={profile?.profilePictureUrl} alt={displayName} className="max-h-[80dvh] w-full object-contain" />
+        <img
+          src={profile?.profilePictureUrl}
+          alt={displayName}
+          className="max-h-[80dvh] w-full object-contain"
+        />
       </Modal>
 
-      <EventDetailModal {...detailProps} onCancelEvent={(eventId) => setCancelId(eventId)} />
+      <EventDetailModal
+        {...detailProps}
+        onCancelEvent={(eventId) => setCancelId(eventId)}
+      />
       <EventChatModal {...chatProps} />
       <CancelEventModal
         eventId={cancelId}
