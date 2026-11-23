@@ -236,7 +236,9 @@ namespace UniVibe.Application.Services
             if (eventEntity.Status != EventStatus.Approved)
                 throw new BadRequestException(_localizer["Event_NotApproved"].Value);
 
-            if (eventEntity.EventDate <= DateTime.UtcNow)
+            var now = DateTime.UtcNow;
+
+            if (eventEntity.EventDate <= now)
                 throw new BadRequestException(_localizer["Event_PastDate"].Value);
 
             if (eventEntity.UserId == userId)
@@ -269,21 +271,65 @@ namespace UniVibe.Application.Services
                     throw new BadRequestException(_localizer["Event_GradeTooHigh"].Value);
             }
 
-            var alreadyJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, userId);
-            if (alreadyJoined)
-                throw new ConflictException(_localizer["Event_AlreadyJoined"].Value);
+            var lastAttendee = await _eventRepository.GetLastAttendeeIncludingDeletedAsync(eventId, userId, trackChanges: true);
+
+            if (lastAttendee != null)
+            {
+                if (!lastAttendee.IsDeleted && lastAttendee.IsActive)
+                    throw new ConflictException(_localizer["Event_AlreadyJoined"].Value);
+
+                if (lastAttendee.IsDeleted && lastAttendee.UpdatedAt.HasValue)
+                {
+                    var joinTime = lastAttendee.JoinedAt ?? lastAttendee.CreatedAt;
+                    var leftTime = lastAttendee.UpdatedAt.Value;
+
+                    var stayedDuration = leftTime - joinTime;
+                    var timeSinceLeft = now - leftTime;
+
+                    if (stayedDuration.TotalMinutes <= 3 && timeSinceLeft.TotalMinutes < 5)
+                    {
+                        int remainingMinutes = Math.Max(1, (int)Math.Ceiling(5 - timeSinceLeft.TotalMinutes));
+                        throw new BadRequestException(
+                            _localizer["Event_RejoinCooldown", remainingMinutes]?.Value
+                            ?? $"Etkinliğe kısa sürede katılıp ayrıldığınız için {remainingMinutes} dakika boyunca tekrar katılamazsınız.");
+                    }
+                }
+
+                await EnsureEventHasCapacityAsync(eventEntity, eventId);
+
+                lastAttendee.IsDeleted = false;
+                lastAttendee.IsActive = true;
+                lastAttendee.JoinedAt = now;
+                lastAttendee.UpdatedAt = now;
+
+                await _unitOfWork.SaveChangesAsync();
+                return _localizer["Res_Event_Joined"].Value;
+            }
+
+            await EnsureEventHasCapacityAsync(eventEntity, eventId);
 
             var attendee = new EventAttendee
             {
                 EventId = eventId,
                 UserId = userId,
-                JoinedAt = DateTime.UtcNow
+                JoinedAt = now
             };
 
             await _eventRepository.AddAttendeeAsync(attendee);
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Res_Event_Joined"].Value;
+        }
+
+        private async Task EnsureEventHasCapacityAsync(Event eventEntity, Guid eventId)
+        {
+            var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
+            if (participants.Count >= eventEntity.Capacity)
+            {
+                throw new BadRequestException(
+                    _localizer["Event_CapacityFull"]?.Value
+                    ?? "Bu etkinliğin katılımcı kontenjanı dolmuştur.");
+            }
         }
 
         public async Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request)
@@ -385,20 +431,14 @@ namespace UniVibe.Application.Services
             if (eventEntity == null)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
-            if (eventEntity.EventDate <= DateTime.UtcNow)
+            var now = DateTime.UtcNow;
+
+            if (eventEntity.EventDate <= now)
                 throw new BadRequestException(_localizer["Event_CannotLeavePast"].Value);
 
             var attendee = await _eventRepository.GetAttendeeAsync(eventId, userId);
             if (attendee == null)
                 throw new NotFoundException(_localizer["Event_NotJoined"].Value);
-
-            var joinTime = attendee.JoinedAt ?? attendee.CreatedAt;
-            var timeSinceJoined = DateTime.UtcNow - joinTime;
-
-            if (timeSinceJoined.TotalMinutes < 15)
-            {
-                throw new BadRequestException("Etkinliğe katıldıktan sonra en az 15 dakika geçmeden etkinlikten ayrılamazsınız.");
-            }
 
             _eventRepository.RemoveAttendee(attendee);
             await _unitOfWork.SaveChangesAsync();

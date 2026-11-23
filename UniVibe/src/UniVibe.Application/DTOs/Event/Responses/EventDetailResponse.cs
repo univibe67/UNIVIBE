@@ -25,6 +25,7 @@ namespace UniVibe.Application.DTOs.Event.Responses
         public int ParticipantCount { get; set; }
         public GradeLevel? MinGrade { get; set; }
         public GradeLevel? MaxGrade { get; set; }
+        public int? Capacity { get; set; }
         public string? TargetFaculty { get; set; }
         public string? TargetDepartment { get; set; }
     }

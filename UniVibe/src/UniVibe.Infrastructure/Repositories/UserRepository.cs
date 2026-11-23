@@ -61,18 +61,21 @@ namespace UniVibe.Infrastructure.Repositories
 
         public async Task<User?> GetByEmailIncludingDeletedAsync(string email, bool trackChanges = false)
         {
-            var normalizedEmail = email.ToLowerInvariant();
+            var normalizedEmail = email.Trim().ToLowerInvariant();
 
             var query = _context.Set<User>()
                 .IgnoreQueryFilters()
-                .AsQueryable();
+                .Where(u => u.Email.ToLower() == normalizedEmail);
 
             if (!trackChanges)
             {
                 query = query.AsNoTracking();
             }
 
-            return await query.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+            return await query
+                .OrderBy(u => u.IsDeleted)
+                .ThenByDescending(u => u.CreatedAt)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<bool> IsUsernameTakenAsync(string username)
