@@ -27,9 +27,6 @@ namespace UniVibe.Application.Validators.Auth
             RuleFor(x => x.DepartmentId)
                 .NotEmpty().WithMessage(x => localizer["Val_SelectDepartment"].Value);
 
-            RuleFor(x => x.PhoneNumber)
-                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .Matches(@"^5\d{9}$").WithMessage(x => localizer["Val_InvalidPhone"].Value);
 
             RuleFor(x => x.Grade)
                 .IsInEnum().WithMessage(x => localizer["Val_InvalidGrade"].Value);

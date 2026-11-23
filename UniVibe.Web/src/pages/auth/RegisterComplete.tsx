@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, Lock, ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -17,9 +17,19 @@ import { api } from "../../services/api";
 import { getErrorMessage } from "../../services/errorMessage";
 import { tokenService } from "../../services/tokenService";
 import type { ModalType } from "../../types/auth.types";
-import { REGISTER_PASSWORD_RULES, meetsPasswordRules } from "../../utils/password";
+import {
+  REGISTER_PASSWORD_RULES,
+  meetsPasswordRules,
+} from "../../utils/password";
 
 const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
+
+type ValidatableField =
+  | "department"
+  | "firstName"
+  | "lastName"
+  | "username"
+  | "password";
 
 interface PickerFieldProps {
   label: string;
@@ -28,32 +38,68 @@ interface PickerFieldProps {
   disabled?: boolean;
   locked?: boolean;
   required?: boolean;
+  error?: string;
+  buttonRef?: React.Ref<HTMLButtonElement>;
   className?: string;
   onClick: () => void;
 }
 
-function PickerField({ label, value, placeholder, disabled, locked, required, className = "", onClick }: PickerFieldProps) {
+function PickerField({
+  label,
+  value,
+  placeholder,
+  disabled,
+  locked,
+  required,
+  error,
+  buttonRef,
+  className = "",
+  onClick,
+}: PickerFieldProps) {
   return (
     <div className={`min-w-0 ${className}`}>
       <p className="mb-1.5 text-[13px] font-semibold text-ink-700">
         {label}
-        {required && <span className="ml-0.5 text-coral-600" aria-hidden="true">*</span>}
+        {required && (
+          <span className="ml-0.5 text-coral-600" aria-hidden="true">
+            *
+          </span>
+        )}
       </p>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={onClick}
         aria-haspopup="dialog"
+        aria-invalid={Boolean(error)}
         aria-label={`${label}: ${value ?? placeholder}`}
-        className={`flex h-11 items-center justify-between gap-2 px-3.5 text-left ${controlClass}`}
+        className={`flex h-11 items-center justify-between gap-2 px-3.5 text-left ${controlClass} ${
+          error ? "border-coral-500! ring-2 ring-coral-500/20" : ""
+        }`}
       >
-        <span className={`truncate ${value ? "" : "text-ink-400"}`}>{value ?? placeholder}</span>
+        <span className={`truncate ${value ? "" : "text-ink-400"}`}>
+          {value ?? placeholder}
+        </span>
         {locked ? (
-          <Lock size={15} className="shrink-0 text-ink-400" aria-hidden="true" />
+          <Lock
+            size={15}
+            className="shrink-0 text-ink-400"
+            aria-hidden="true"
+          />
         ) : (
-          <ChevronDown size={16} className="shrink-0 text-ink-400" aria-hidden="true" />
+          <ChevronDown
+            size={16}
+            className="shrink-0 text-ink-400"
+            aria-hidden="true"
+          />
         )}
       </button>
+      {error && (
+        <p role="alert" className="mt-1.5 text-xs font-medium text-coral-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -70,16 +116,24 @@ export default function RegisterComplete() {
 
   const [isUniLocked, setIsUniLocked] = useState(false);
   const [isFacLocked, setIsFacLocked] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [title, setTitle] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<ValidatableField, string>>
+  >({});
+
+  const fieldRefs = useRef<
+    Partial<Record<ValidatableField, HTMLElement | null>>
+  >({});
+  const generalAlertRef = useRef<HTMLDivElement | null>(null);
 
   const {
     selectedUni,
@@ -95,6 +149,12 @@ export default function RegisterComplete() {
     getModalData,
     handleSelectModalItem,
   } = useRegistrationData(t);
+
+  useEffect(() => {
+    if (selectedDep && fieldErrors.department) {
+      setFieldErrors((prev) => ({ ...prev, department: undefined }));
+    }
+  }, [selectedDep, fieldErrors.department]);
 
   useEffect(() => {
     let isMounted = true;
@@ -114,11 +174,27 @@ export default function RegisterComplete() {
           universityName?: string;
           facultyId?: string;
           facultyName?: string;
+          role?: string;
+          userType?: string;
+          isTeacher?: boolean;
         };
 
         if (!isMounted) return;
 
         setIsTokenValid(true);
+
+        const roleValue = (
+          details?.role ||
+          details?.userType ||
+          ""
+        ).toLowerCase();
+        const teacherCheck =
+          details?.isTeacher === true ||
+          roleValue === "teacher" ||
+          roleValue === "instructor" ||
+          roleValue === "academic" ||
+          roleValue === "ogretmen";
+        setIsTeacher(teacherCheck);
 
         if (details?.universityId && details.universityId !== EMPTY_GUID) {
           setSelectedUni({
@@ -154,24 +230,66 @@ export default function RegisterComplete() {
     };
   }, [token, setSelectedFac, setSelectedUni, t]);
 
+  const clearFieldError = (field: ValidatableField) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const scrollToAndFocus = (field: ValidatableField) => {
+    const target = fieldRefs.current[field];
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      const focusable =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLButtonElement
+          ? target
+          : target.querySelector<HTMLElement>("input, button");
+      focusable?.focus({ preventScroll: true });
+    }, 150);
+  };
+
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
     const cleanUsername = username.trim();
-    const cleanPhone = phoneNumber.trim();
 
-    if (!cleanFirstName || !cleanLastName || !cleanUsername || !password || !cleanPhone || !selectedDep) {
-      setErrorMessage(t("RegComplete_ErrorValidation"));
+    const errors: Partial<Record<ValidatableField, string>> = {};
+    const fieldOrder: ValidatableField[] = [
+      "department",
+      "firstName",
+      "lastName",
+      "username",
+      "password",
+    ];
+
+    if (!selectedDep) errors.department = t("RegComplete_ErrorValidation");
+    if (!cleanFirstName) errors.firstName = t("RegComplete_ErrorValidation");
+    if (!cleanLastName) errors.lastName = t("RegComplete_ErrorValidation");
+    if (!cleanUsername) errors.username = t("RegComplete_ErrorValidation");
+
+    if (!password) {
+      errors.password = t("RegComplete_ErrorValidation");
+    } else if (!meetsPasswordRules(password, REGISTER_PASSWORD_RULES)) {
+      errors.password = t("UI_PasswordRulesUnmet");
+    }
+
+    const firstInvalidField = fieldOrder.find((key) => Boolean(errors[key]));
+
+    if (firstInvalidField) {
+      setFieldErrors(errors);
+      setErrorMessage(
+        errors[firstInvalidField] || t("RegComplete_ErrorValidation"),
+      );
+      scrollToAndFocus(firstInvalidField);
       return;
     }
 
-    if (!meetsPasswordRules(password, REGISTER_PASSWORD_RULES)) {
-      setErrorMessage(t("UI_PasswordRulesUnmet"));
-      return;
-    }
-
+    setFieldErrors({});
     setErrorMessage("");
     setIsLoading(true);
 
@@ -182,12 +300,11 @@ export default function RegisterComplete() {
         password,
         firstName: cleanFirstName,
         lastName: cleanLastName,
-        phoneNumber: cleanPhone,
         departmentId: selectedDep?.id,
         universityId: selectedUni?.id,
         facultyId: selectedFac?.id,
         grade: grade?.id,
-        title: title.trim() || null,
+        title: isTeacher ? title.trim() || null : null,
       })) as any;
 
       const accessToken = response.token || response.data?.token;
@@ -210,6 +327,12 @@ export default function RegisterComplete() {
         .join(" • ");
 
       setErrorMessage(finalMessage);
+      setTimeout(() => {
+        generalAlertRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 50);
     } finally {
       setIsLoading(false);
     }
@@ -227,12 +350,22 @@ export default function RegisterComplete() {
     return (
       <AuthLayout>
         <div className="text-center">
-          <span className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-coral-50 text-coral-600" aria-hidden="true">
+          <span
+            className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-coral-50 text-coral-600"
+            aria-hidden="true"
+          >
             <ShieldAlert size={26} />
           </span>
-          <h1 className="text-2xl font-bold text-ink-900">{t("RegComplete_InvalidLinkTitle")}</h1>
-          <p className="mt-2 text-sm leading-relaxed text-ink-500">{tokenErrorMessage}</p>
-          <Link to="/login" className={buttonClass("primary", "lg", "mt-6 w-full")}>
+          <h1 className="text-2xl font-bold text-ink-900">
+            {t("RegComplete_InvalidLinkTitle")}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-ink-500">
+            {tokenErrorMessage}
+          </p>
+          <Link
+            to="/login"
+            className={buttonClass("primary", "lg", "mt-6 w-full")}
+          >
             {t("RegComplete_BackToLogin")}
           </Link>
         </div>
@@ -255,6 +388,7 @@ export default function RegisterComplete() {
           : grade?.id;
 
   const sectionTitle = "mb-4 text-[15px] font-semibold text-ink-900";
+  const errorInputClass = "border-coral-500! ring-2 ring-coral-500/20";
 
   return (
     <AuthLayout
@@ -264,47 +398,7 @@ export default function RegisterComplete() {
       backTo={{ to: "/register", label: t("RegComplete_Back") }}
     >
       <form onSubmit={handleComplete} className="space-y-8" noValidate>
-        <section>
-          <h2 className={sectionTitle}>{t("RegComplete_BasicInfo")}</h2>
-          <div className="grid items-start gap-4 sm:grid-cols-2">
-            <Field label={t("RegComplete_FirstName")} required>
-              <Input
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                placeholder={t("RegComplete_FirstNamePlaceholder")}
-              />
-            </Field>
-            <Field label={t("RegComplete_LastName")} required>
-              <Input
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                placeholder={t("RegComplete_LastNamePlaceholder")}
-              />
-            </Field>
-            <Field label={t("RegComplete_Username")} required>
-              <Input
-                autoComplete="username"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="mehmetyilmaz"
-              />
-            </Field>
-            <div>
-              <Field label={t("RegComplete_Password")} required>
-                <PasswordInput
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder={t("RegComplete_PasswordPlaceholder")}
-                />
-              </Field>
-              <PasswordRules password={password} rules={REGISTER_PASSWORD_RULES} />
-            </div>
-          </div>
-        </section>
-
+        {/* 1. EĞİTİM BİLGİLERİ */}
         <section>
           <h2 className={sectionTitle}>{t("RegComplete_EduInfo")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -328,10 +422,14 @@ export default function RegisterComplete() {
             />
             <PickerField
               required
+              buttonRef={(el) => {
+                fieldRefs.current.department = el;
+              }}
               label={t("Student_Department")}
               value={selectedDep?.name}
               placeholder={t("RegComplete_SelectDep")}
               disabled={!selectedFac}
+              error={fieldErrors.department}
               onClick={() => openPicker("dep")}
             />
             <PickerField
@@ -341,38 +439,155 @@ export default function RegisterComplete() {
               onClick={() => openPicker("grade")}
             />
           </div>
-          <Alert tone="info" className="mt-4">
-            {t("RegComplete_Role")}: {t("RegComplete_RoleFromEmail")}
-          </Alert>
         </section>
 
+        {/* 2. TEMEL BİLGİLER */}
         <section>
-          <h2 className={sectionTitle}>{t("RegComplete_ContactInfo")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t("RegComplete_Phone")} required>
-              <Input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                maxLength={10}
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
-                placeholder="5XXXXXXXXX"
+          <h2 className={sectionTitle}>{t("RegComplete_BasicInfo")}</h2>
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            <div
+              ref={(el) => {
+                fieldRefs.current.firstName = el;
+              }}
+            >
+              <Field label={t("RegComplete_FirstName")} required>
+                <Input
+                  autoComplete="given-name"
+                  aria-invalid={Boolean(fieldErrors.firstName)}
+                  className={fieldErrors.firstName ? errorInputClass : ""}
+                  value={firstName}
+                  onChange={(event) => {
+                    setFirstName(event.target.value);
+                    clearFieldError("firstName");
+                  }}
+                  placeholder={t("RegComplete_FirstNamePlaceholder")}
+                />
+              </Field>
+              {fieldErrors.firstName && (
+                <p
+                  role="alert"
+                  className="mt-1.5 text-xs font-medium text-coral-600"
+                >
+                  {fieldErrors.firstName}
+                </p>
+              )}
+            </div>
+
+            <div
+              ref={(el) => {
+                fieldRefs.current.lastName = el;
+              }}
+            >
+              <Field label={t("RegComplete_LastName")} required>
+                <Input
+                  autoComplete="family-name"
+                  aria-invalid={Boolean(fieldErrors.lastName)}
+                  className={fieldErrors.lastName ? errorInputClass : ""}
+                  value={lastName}
+                  onChange={(event) => {
+                    setLastName(event.target.value);
+                    clearFieldError("lastName");
+                  }}
+                  placeholder={t("RegComplete_LastNamePlaceholder")}
+                />
+              </Field>
+              {fieldErrors.lastName && (
+                <p
+                  role="alert"
+                  className="mt-1.5 text-xs font-medium text-coral-600"
+                >
+                  {fieldErrors.lastName}
+                </p>
+              )}
+            </div>
+
+            {isTeacher && (
+              <div className="sm:col-span-2">
+                <Field label={t("RegComplete_AcademicTitle")}>
+                  <Input
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder={t("RegComplete_AcademicTitlePlaceholder")}
+                  />
+                </Field>
+              </div>
+            )}
+
+            <div
+              ref={(el) => {
+                fieldRefs.current.username = el;
+              }}
+            >
+              <Field label={t("RegComplete_Username")} required>
+                <Input
+                  autoComplete="username"
+                  aria-invalid={Boolean(fieldErrors.username)}
+                  className={fieldErrors.username ? errorInputClass : ""}
+                  value={username}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                    clearFieldError("username");
+                  }}
+                  placeholder="mehmetyilmaz"
+                />
+              </Field>
+              {fieldErrors.username && (
+                <p
+                  role="alert"
+                  className="mt-1.5 text-xs font-medium text-coral-600"
+                >
+                  {fieldErrors.username}
+                </p>
+              )}
+            </div>
+
+            <div
+              ref={(el) => {
+                fieldRefs.current.password = el;
+              }}
+            >
+              <Field label={t("RegComplete_Password")} required>
+                <PasswordInput
+                  autoComplete="new-password"
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  className={fieldErrors.password ? errorInputClass : ""}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    clearFieldError("password");
+                  }}
+                  placeholder={t("RegComplete_PasswordPlaceholder")}
+                />
+              </Field>
+              {fieldErrors.password && (
+                <p
+                  role="alert"
+                  className="mt-1.5 text-xs font-medium text-coral-600"
+                >
+                  {fieldErrors.password}
+                </p>
+              )}
+              <PasswordRules
+                password={password}
+                rules={REGISTER_PASSWORD_RULES}
               />
-            </Field>
-            <Field label={t("RegComplete_AcademicTitle")}>
-              <Input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={t("RegComplete_AcademicTitlePlaceholder")}
-              />
-            </Field>
+            </div>
           </div>
         </section>
 
-        {errorMessage && <Alert>{errorMessage}</Alert>}
+        {errorMessage && (
+          <div ref={generalAlertRef}>
+            <Alert>{errorMessage}</Alert>
+          </div>
+        )}
 
-        <Button type="submit" size="lg" className="w-full" disabled={!token} loading={isLoading}>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={!token}
+          loading={isLoading}
+        >
           {isLoading ? t("RegComplete_Loading") : t("RegComplete_SubmitBtn")}
         </Button>
       </form>

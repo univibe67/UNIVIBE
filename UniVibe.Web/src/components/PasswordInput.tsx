@@ -6,7 +6,11 @@ import { controlClass } from "./ui/fieldStyles";
 
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
 
-export default function PasswordInput({ className = "", disabled, ...props }: PasswordInputProps) {
+export default function PasswordInput({
+  className = "",
+  disabled,
+  ...props
+}: PasswordInputProps) {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const label = visible ? t("Auth_HidePassword") : t("Auth_ShowPassword");
