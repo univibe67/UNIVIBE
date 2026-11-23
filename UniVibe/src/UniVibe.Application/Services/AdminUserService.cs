@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Exceptions;
@@ -16,19 +17,27 @@ namespace UniVibe.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
+        private readonly IEventCancellationJob _eventCancellationJob;
+        private readonly ILogger<AdminUserService> _logger;
+
+
 
         public AdminUserService(
             IUserRepository userRepository,
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IStringLocalizer<SharedResources> localizer,
-            IEventRepository eventRepository)
+            IEventRepository eventRepository,
+            IEventCancellationJob eventCancellationJob,
+            ILogger<AdminUserService> logger)
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizer = localizer;
             _eventRepository = eventRepository;
+            _eventCancellationJob = eventCancellationJob;
+            _logger = logger;
         }
 
         public async Task<PaginatedResult<UserListResponse>> GetAllUsersAsync(int pageNumber, int pageSize)
@@ -136,6 +145,18 @@ namespace UniVibe.Application.Services
             user.RefreshToken = null;
 
             await _unitOfWork.SaveChangesAsync();
+
+            foreach (var ev in userActiveEvents)
+            {
+                try
+                {
+                    _eventCancellationJob.Enqueue(ev.Id, cancellationReason);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Katılımcı iptal maili işi kuyruğa eklenemedi. EventId: {EventId}", ev.Id);
+                }
+            }
 
             return _localizer["Res_User_Deleted"].Value;
         }

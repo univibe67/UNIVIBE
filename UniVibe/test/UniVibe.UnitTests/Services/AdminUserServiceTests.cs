@@ -2,10 +2,12 @@
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Moq;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.User.Responses;
 using UniVibe.Application.Exceptions;
+using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Application.Services;
 using UniVibe.Domain.Entities;
@@ -17,8 +19,10 @@ namespace UniVibe.UnitTests.Services
     {
         private readonly Mock<IUserRepository> _userRepoMock;
         private readonly Mock<IEventRepository> _eventRepoMock;
+        private readonly Mock<IEventCancellationJob> _eventCancellationJobMock;
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<ILogger<AdminUserService>> _loggerMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
 
         private readonly AdminUserService _adminUserService;
@@ -27,16 +31,20 @@ namespace UniVibe.UnitTests.Services
         {
             _userRepoMock = new Mock<IUserRepository>();
             _eventRepoMock = new Mock<IEventRepository>();
+            _eventCancellationJobMock = new Mock<IEventCancellationJob>();
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _mapperMock = new Mock<IMapper>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
+            _loggerMock = new Mock<ILogger<AdminUserService>>();
 
             _adminUserService = new AdminUserService(
                 _userRepoMock.Object,
                 _unitOfWorkMock.Object,
                 _mapperMock.Object,
                 _localizerMock.Object,
-                _eventRepoMock.Object
+                _eventRepoMock.Object,
+                _eventCancellationJobMock.Object,
+                _loggerMock.Object
             );
         }
 
