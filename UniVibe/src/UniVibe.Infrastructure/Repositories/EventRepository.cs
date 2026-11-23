@@ -94,21 +94,17 @@ namespace UniVibe.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(e => e.Id == eventId);
         }
 
-        public async Task<Event?> GetActiveEventByUserIdAsync(Guid userId)
+        public async Task<List<Event>> GetActiveEventByUserIdAsync(Guid userId)
         {
             return await _context.Events
                 .AsNoTracking()
                 .Include(e => e.Category)
-                .Include(e => e.Attendees)
+                .Include(e => e.Attendees.Where(a => !a.IsDeleted))
                 .Include(e => e.User)
                     .ThenInclude(u => u.Department)
-                .FirstOrDefaultAsync(e =>
-                    e.UserId == userId &&
-                    e.IsDeleted == false &&
-                        (
-                            e.Status == EventStatus.Pending ||
-                            (e.Status == EventStatus.Approved && e.EventDate > DateTime.UtcNow)
-                        ));
+                .Where(e => e.UserId == userId && !e.IsDeleted)
+                .OrderByDescending(e => e.EventDate)
+                .ToListAsync();
         }
 
         public async Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null)

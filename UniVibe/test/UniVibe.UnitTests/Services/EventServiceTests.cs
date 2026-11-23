@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
+using UniVibe.Application.DTOs.Event.Responses;
 using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
@@ -344,6 +345,69 @@ namespace UniVibe.UnitTests.Services
             previousAttendee.IsDeleted.Should().BeFalse();
             previousAttendee.IsActive.Should().BeTrue();
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateEventAsync_WhenUserAlreadyHasTwoActiveEvents_ShouldThrowConflictException()
+        {
+            var userId = Guid.NewGuid();
+            var request = new CreateEventRequest
+            {
+                Title = "Üçüncü Etkinlik",
+                EventDate = DateTime.UtcNow.AddDays(3),
+                Location = "Merkez Kampüs",
+                Description = "Açıklama",
+                CategoryId = Guid.NewGuid(),
+                Capacity = 30
+            };
+
+            _eventRepoMock.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+                .ReturnsAsync(2);
+
+            _localizerMock.Setup(l => l["Event_HasActiveEvent"])
+                .Returns(new LocalizedString("Event_HasActiveEvent", "En fazla 2 aktif etkinlik oluşturabilirsiniz."));
+
+            Func<Task> act = async () => await _eventService.CreateEventAsync(request, userId);
+
+            await act.Should().ThrowAsync<ConflictException>();
+            _eventRepoMock.Verify(r => r.AddAsync(It.IsAny<Event>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetMyActiveEventAsync_WhenEventsExist_ShouldReturnMappedListWithCreatorInfo()
+        {
+            var userId = Guid.NewGuid();
+            var creator = new User
+            {
+                Id = userId,
+                FirstName = "Mehmet",
+                LastName = "Delibaş",
+                Department = new Department { Name = "Bilgisayar Mühendisliği" }
+            };
+
+            var events = new List<Event>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Gelecek Etkinlik", UserId = userId, User = creator, EventDate = DateTime.UtcNow.AddDays(5) },
+                new() { Id = Guid.NewGuid(), Title = "Geçmiş Etkinlik", UserId = userId, User = creator, EventDate = DateTime.UtcNow.AddDays(-5) }
+            };
+
+            var mappedResponses = new List<EventDetailResponse>
+            {
+                new() { Id = events[0].Id, Title = "Gelecek Etkinlik" },
+                new() { Id = events[1].Id, Title = "Geçmiş Etkinlik" }
+            };
+
+            _eventRepoMock.Setup(r => r.GetActiveEventByUserIdAsync(userId))
+                .ReturnsAsync(events);
+
+            _mapperMock.Setup(m => m.Map<List<EventDetailResponse>>(events))
+                .Returns(mappedResponses);
+
+            var result = await _eventService.GetMyActiveEventAsync(userId);
+
+            result.Should().HaveCount(2);
+            result.Should().OnlyContain(r => r.IsCreator && r.CreatorName == "Mehmet Delibaş" && r.Department == "Bilgisayar Mühendisliği");
         }
     }
 }

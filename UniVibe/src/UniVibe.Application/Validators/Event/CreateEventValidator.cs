@@ -29,7 +29,8 @@ namespace UniVibe.Application.Validators.Event
 
             RuleFor(x => x.Capacity)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .GreaterThan(0).WithMessage(x => localizer["Val_CapacityGreaterThanZero"]?.Value ?? "Kontenjan en az 1 olmalıdır.");
+                .GreaterThan(0).WithMessage(x => localizer["Val_CapacityGreaterThanZero"]?.Value ?? "Kontenjan en az 1 olmalıdır.")
+                .LessThanOrEqualTo(50000).WithMessage(x => localizer["Val_CapacityMax50000"]?.Value ?? "Kontenjan en fazla 50.000 olabilir.");
         }
     }
 }

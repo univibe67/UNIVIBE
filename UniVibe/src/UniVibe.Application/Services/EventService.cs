@@ -64,15 +64,21 @@ namespace UniVibe.Application.Services
         {
             await _createEventValidator.ValidateAndThrowCustomAsync(request);
 
-            var hasActiveEvent = await _eventRepository.AnyAsync(e =>
+            var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
                 e.EventDate > DateTime.UtcNow &&
                 e.IsDeleted == false &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected);
 
-            if (hasActiveEvent)
-                throw new ConflictException(_localizer["Event_HasActiveEvent"].Value);
+            if (userActiveEvents.Count >= 2)
+                throw new ConflictException(_localizer["Event_MaxActiveEventsReached"]?.Value ?? _localizer["Event_HasActiveEvent"].Value);
+
+            var hasConflictingEvent = userActiveEvents.Any(e =>
+                Math.Abs((e.EventDate - request.EventDate).TotalHours) < 1);
+
+            if (hasConflictingEvent)
+                throw new ConflictException(_localizer["Event_TimeConflict"]?.Value ?? "Mevcut etkinliğinizle aranızda en az 1 saat fark olmalıdır.");
 
             var categoryExists = await _categoryRepository.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
@@ -182,27 +188,32 @@ namespace UniVibe.Application.Services
             return eventDetailResponse;
         }
 
-        public async Task<EventDetailResponse?> GetMyActiveEventAsync(Guid userId)
+        public async Task<List<EventDetailResponse>> GetMyActiveEventAsync(Guid userId)
         {
-            var activeEvent = await _eventRepository.GetActiveEventByUserIdAsync(userId);
+            var myEvents = await _eventRepository.GetActiveEventByUserIdAsync(userId);
 
-            if (activeEvent == null)
-                return null;
+            if (myEvents == null || !myEvents.Any())
+                return new List<EventDetailResponse>();
 
-            var eventDetailResponse = _mapper.Map<EventDetailResponse>(activeEvent);
+            var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(myEvents);
 
-            if (activeEvent.User != null)
+            for (int i = 0; i < myEvents.Count; i++)
             {
-                eventDetailResponse.CreatorName = $"{activeEvent.User.FirstName} {activeEvent.User.LastName}";
-                eventDetailResponse.Department = activeEvent.User.Department?.Name;
-                eventDetailResponse.Grade = activeEvent.User.Grade;
+                var eventEntity = myEvents[i];
+                var response = eventDetailResponses[i];
+
+                if (eventEntity.User != null)
+                {
+                    response.CreatorName = $"{eventEntity.User.FirstName} {eventEntity.User.LastName}";
+                    response.Department = eventEntity.User.Department?.Name;
+                    response.Grade = eventEntity.User.Grade;
+                }
+
+                response.MapWithLocalization(eventEntity, _localizer);
+                response.IsCreator = true;
             }
 
-            eventDetailResponse.MapWithLocalization(activeEvent, _localizer);
-
-            eventDetailResponse.IsCreator = true;
-
-            return eventDetailResponse;
+            return eventDetailResponses;
         }
 
         public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
