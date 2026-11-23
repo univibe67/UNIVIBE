@@ -115,6 +115,9 @@ namespace UniVibe.Infrastructure.Migrations
                     b.Property<string>("CancellationReason")
                         .HasColumnType("text");
 
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 

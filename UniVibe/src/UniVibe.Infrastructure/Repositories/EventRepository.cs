@@ -172,6 +172,22 @@ namespace UniVibe.Infrastructure.Repositories
                 .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
         }
 
+        public async Task<EventAttendee?> GetLastAttendeeIncludingDeletedAsync(Guid eventId, Guid userId, bool trackChanges = true)
+        {
+            var query = _context.EventAttendees
+                .IgnoreQueryFilters()
+                .Where(ea => ea.EventId == eventId && ea.UserId == userId);
+
+            if (!trackChanges)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query
+                .OrderByDescending(ea => ea.UpdatedAt ?? ea.JoinedAt ?? ea.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<int> CountAsync(Expression<Func<Event, bool>> predicate)
         {
             return await _context.Events.Where(predicate).CountAsync();
@@ -179,18 +195,27 @@ namespace UniVibe.Infrastructure.Repositories
 
         public void RemoveAttendee(EventAttendee attendee)
         {
-            _context.EventAttendees.Remove(attendee);
+            attendee.IsDeleted = true;
+            attendee.IsActive = false;
+            attendee.UpdatedAt = DateTime.UtcNow;
+            _context.EventAttendees.Update(attendee);
         }
 
         public async Task RemoveAttendeesByUserIdAsync(Guid userId)
         {
             var attendees = await _context.EventAttendees
-                .Where(ea => ea.UserId == userId)
+                .Where(ea => ea.UserId == userId && !ea.IsDeleted)
                 .ToListAsync();
 
             if (attendees.Any())
             {
-                _context.EventAttendees.RemoveRange(attendees);
+                var now = DateTime.UtcNow;
+                foreach (var attendee in attendees)
+                {
+                    attendee.IsDeleted = true;
+                    attendee.IsActive = false;
+                    attendee.UpdatedAt = now;
+                }
             }
         }
     }

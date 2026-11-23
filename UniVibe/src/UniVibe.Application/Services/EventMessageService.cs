@@ -8,6 +8,7 @@ using UniVibe.Application.Exceptions;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
 using UniVibe.Domain.Entities;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Application.Services
 {
@@ -19,6 +20,7 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly IValidator<SendMessageRequest> _sendMessageValidator;
+
         public EventMessageService(
             IEventMessageRepository eventMessageRepository,
             IEventRepository eventRepository,
@@ -49,6 +51,17 @@ namespace UniVibe.Application.Services
             if (!isCreator && !isAttendee)
             {
                 throw new ForbiddenException(_localizer["Event_ChatAccessDenied"].Value);
+            }
+
+            if (eventEntity.Status != EventStatus.Approved || !eventEntity.IsActive)
+            {
+                throw new BadRequestException(_localizer["Event_ChatNotAvailable"].Value);
+            }
+
+            var eventEndTime = eventEntity.EventDate.AddHours(3);
+            if (DateTime.UtcNow >= eventEndTime)
+            {
+                throw new BadRequestException(_localizer["Event_ChatEnded"]?.Value ?? _localizer["Event_ChatNotAvailable"].Value);
             }
 
             var lastMessage = await _eventMessageRepository.GetLastMessageByEventIdAsync(eventId, userId);
