@@ -504,4 +504,16 @@
   <data name="Admin_EventOrganizerUnavailable" xml:space="preserve">
     <value>The event cannot be approved because the organizer account is deleted, inactive, or banned.</value>
   </data>
+  <data name="Event_RateLimit_TooFast" xml:space="preserve">
+    <value>You are sending messages too quickly. Please wait a moment.</value>
+  </data>
+  <data name="Event_ChatEnded" xml:space="preserve">
+    <value>The event chat period has ended.</value>
+  </data>
+  <data name="Event_ChatNotAvailable" xml:space="preserve">
+    <value>Chat is not currently available for this event.</value>
+  </data>
+  <data name="Event_ChatAccessDenied" xml:space="preserve">
+    <value>You do not have permission to access this event's chat.</value>
+  </data>
 </root>

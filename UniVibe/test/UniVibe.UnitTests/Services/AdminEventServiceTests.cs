@@ -195,16 +195,30 @@ namespace UniVibe.UnitTests.Services
         {
             // Arrange
             var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+
             var validEvent = new Event
             {
                 Id = eventId,
+                UserId = organizerId,
                 Status = EventStatus.Pending,
                 EventDate = DateTime.UtcNow.AddDays(5), // Gelecek tarih
                 IsDeleted = false
             };
 
+            var activeOrganizer = new User
+            {
+                Id = organizerId,
+                IsActive = true,
+                IsDeleted = false,
+                IsBannedByAdmin = false
+            };
+
             _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(validEvent);
+
+            _userRepoMock.Setup(r => r.GetByIdIncludingDeletedAsync(organizerId, It.IsAny<bool>()))
+                .ReturnsAsync(activeOrganizer);
 
             _localizerMock.Setup(l => l["Res_Event_Approved"])
                 .Returns(new LocalizedString("Res_Event_Approved", "Etkinlik onaylandı."));
