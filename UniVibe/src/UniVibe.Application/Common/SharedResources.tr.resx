@@ -504,4 +504,16 @@
   <data name="Admin_EventOrganizerUnavailable" xml:space="preserve">
     <value>Organizatör hesabı silinmiş, pasif veya banlanmış olduğu için etkinlik onaylanamaz.</value>
   </data>
+  <data name="Event_RateLimit_TooFast" xml:space="preserve">
+    <value>Çok hızlı mesaj gönderiyorsunuz. Lütfen biraz bekleyin.</value>
+  </data>
+  <data name="Event_ChatEnded" xml:space="preserve">
+    <value>Etkinlik sohbet süresi sona ermiştir.</value>
+  </data>
+  <data name="Event_ChatNotAvailable" xml:space="preserve">
+    <value>Bu etkinlik için sohbet şu anda aktif değildir.</value>
+  </data>
+  <data name="Event_ChatAccessDenied" xml:space="preserve">
+    <value>Bu etkinliğin sohbetine erişim yetkiniz bulunmamaktadır.</value>
+  </data>
 </root>
