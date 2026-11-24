@@ -235,8 +235,8 @@ namespace UniVibe.UnitTests.Services
             _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true))
                 .ReturnsAsync((EventAttendee?)null);
 
-            _eventRepoMock.Setup(r => r.GetParticipantsByEventIdAsync(eventId))
-                .ReturnsAsync(new List<User> { new(), new() });
+            _eventRepoMock.Setup(r => r.GetActiveAttendeeCountAsync(eventId))
+                .ReturnsAsync(2);
 
             _localizerMock.Setup(l => l["Event_CapacityFull"])
                 .Returns(new LocalizedString("Event_CapacityFull", "Bu etkinliğin katılımcı kontenjanı dolmuştur."));
