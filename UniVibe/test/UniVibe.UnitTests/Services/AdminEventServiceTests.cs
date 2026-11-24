@@ -23,7 +23,8 @@ namespace UniVibe.UnitTests.Services
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
-        private readonly Mock<ILogger<AdminEventService>> _loggerMock; 
+        private readonly Mock<ILogger<AdminEventService>> _loggerMock;
+        private readonly Mock<IEventCancellationJob> _eventCancellationJobMock;
 
         private readonly AdminEventService _adminEventService;
 
@@ -36,6 +37,7 @@ namespace UniVibe.UnitTests.Services
             _mapperMock = new Mock<IMapper>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
             _loggerMock = new Mock<ILogger<AdminEventService>>();
+            _eventCancellationJobMock = new Mock<IEventCancellationJob>();
 
             _adminEventService = new AdminEventService(
                 _eventRepoMock.Object,
@@ -44,7 +46,8 @@ namespace UniVibe.UnitTests.Services
                 _unitOfWorkMock.Object,
                 _mapperMock.Object,
                 _localizerMock.Object,
-                _loggerMock.Object
+                _loggerMock.Object,
+                _eventCancellationJobMock.Object
             );
         }
 
@@ -314,6 +317,101 @@ namespace UniVibe.UnitTests.Services
             result.Should().NotBeNull();
             result.Title.Should().Be("Concert");
             result.CreatorName.Should().Be("Ahmet Yılmaz");
+        }
+        [Fact]
+        public async Task RejectEventAsync_WhenApprovedEventHasActiveAttendees_ShouldEnqueueCancellationJob()
+        {
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var reason = "Etkinlik programında değişiklik yapıldı.";
+
+            var approvedEvent = new Event
+            {
+                Id = eventId,
+                UserId = organizerId,
+                Title = "Yapay Zeka Semineri",
+                EventDate = DateTime.UtcNow.AddDays(2),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                User = new User
+                {
+                    Id = organizerId,
+                    FirstName = "Ahmet",
+                    Email = "ahmet@univibe.edu.tr"
+                },
+                Attendees = new List<EventAttendee>
+                {
+                    new()
+                    {
+                        EventId = eventId,
+                        UserId = Guid.NewGuid(),
+                        IsDeleted = false,
+                        IsActive = true
+                    }
+                }
+            };
+
+            _eventRepoMock
+                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
+                .ReturnsAsync(approvedEvent);
+
+            _localizerMock
+                .Setup(l => l[It.IsAny<string>()])
+                .Returns((string key) => new LocalizedString(key, key));
+
+            var result = await _adminEventService.RejectEventAsync(eventId, reason);
+
+            approvedEvent.Status.Should().Be(EventStatus.Rejected);
+            approvedEvent.RejectionReason.Should().Be(reason);
+            result.Should().Be("Res_Event_Rejected");
+
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _emailServiceMock.Verify(
+                e => e.SendEmailAsync(
+                    "ahmet@univibe.edu.tr",
+                    "EventRejectedEmailSubject",
+                    It.IsAny<string>()),
+                Times.Once);
+            _eventCancellationJobMock.Verify(j => j.Enqueue(eventId, reason), Times.Once);
+        }
+
+        [Fact]
+        public async Task RejectEventAsync_WhenPendingEventIsRejected_ShouldNotEnqueueCancellationJob()
+        {
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var reason = "Eksik bilgi.";
+
+            var pendingEvent = new Event
+            {
+                Id = eventId,
+                UserId = organizerId,
+                Title = "Kulüp Tanıtımı",
+                EventDate = DateTime.UtcNow.AddDays(3),
+                Status = EventStatus.Pending,
+                IsDeleted = false,
+                User = new User
+                {
+                    Id = organizerId,
+                    FirstName = "Mehmet",
+                    Email = "mehmet@univibe.edu.tr"
+                },
+                Attendees = new List<EventAttendee>()
+            };
+
+            _eventRepoMock
+                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
+                .ReturnsAsync(pendingEvent);
+
+            _localizerMock
+                .Setup(l => l[It.IsAny<string>()])
+                .Returns((string key) => new LocalizedString(key, key));
+
+            await _adminEventService.RejectEventAsync(eventId, reason);
+
+            pendingEvent.Status.Should().Be(EventStatus.Rejected);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _eventCancellationJobMock.Verify(j => j.Enqueue(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

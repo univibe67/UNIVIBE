@@ -10,7 +10,7 @@ namespace UniVibe.Application.Validators.Event
             RuleFor(x => x.Content)
                 .NotEmpty().WithMessage("Mesaj içeriği boş olamaz.")
                 .NotNull().WithMessage("Mesaj alanı zorunludur.")
-                .MaximumLength(350).WithMessage("Bir mesaj en fazla 500 karakter olabilir.");
+                .MaximumLength(350).WithMessage("Bir mesaj en fazla 350 karakter olabilir.");
         }
     }
 }
