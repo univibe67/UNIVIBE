@@ -183,7 +183,7 @@ namespace UniVibe.UnitTests.Services
             _eventRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(), It.IsAny<bool>()))
                 .ReturnsAsync(validEvent);
 
-            _eventRepoMock.Setup(r => r.GetAttendeeAsync(eventId, userId))
+            _eventRepoMock.Setup(r => r.GetAttendeeAsync(eventId, userId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EventAttendee?)null);
 
             _localizerMock.Setup(l => l["Event_NotJoined"])
@@ -198,7 +198,9 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task GetEventStatisticsAsync_ShouldReturnCorrectStatistics()
         {
-            _eventRepoMock.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>()))
+            _eventRepoMock.Setup(r => r.CountAsync(
+        It.IsAny<System.Linq.Expressions.Expression<Func<Event, bool>>>(),
+        It.IsAny<CancellationToken>()))
                 .ReturnsAsync(5);
 
             var result = await _eventService.GetEventStatisticsAsync();
@@ -232,10 +234,10 @@ namespace UniVibe.UnitTests.Services
             _userRepoMock.Setup(r => r.GetUserWithDetailsByIdAsync(userId))
                 .ReturnsAsync(new User { Id = userId, Role = UserRole.Student });
 
-            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true))
+            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EventAttendee?)null);
 
-            _eventRepoMock.Setup(r => r.GetActiveAttendeeCountAsync(eventId))
+            _eventRepoMock.Setup(r => r.GetActiveAttendeeCountAsync(eventId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(2);
 
             _localizerMock.Setup(l => l["Event_CapacityFull"])
@@ -246,7 +248,7 @@ namespace UniVibe.UnitTests.Services
             await act.Should().ThrowAsync<BadRequestException>()
                 .WithMessage("Bu etkinliğin katılımcı kontenjanı dolmuştur.");
 
-            _eventRepoMock.Verify(r => r.AddAttendeeAsync(It.IsAny<EventAttendee>()), Times.Never);
+            _eventRepoMock.Verify(r => r.AddAttendeeAsync(It.IsAny<EventAttendee>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -283,7 +285,7 @@ namespace UniVibe.UnitTests.Services
             _userRepoMock.Setup(r => r.GetUserWithDetailsByIdAsync(userId))
                 .ReturnsAsync(new User { Id = userId, Role = UserRole.Student });
 
-            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true))
+            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(previousAttendee);
 
             _localizerMock.Setup(l => l["Event_RejoinCooldown", It.IsAny<object[]>()])
@@ -330,10 +332,10 @@ namespace UniVibe.UnitTests.Services
             _userRepoMock.Setup(r => r.GetUserWithDetailsByIdAsync(userId))
                 .ReturnsAsync(new User { Id = userId, Role = UserRole.Student });
 
-            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true))
+            _eventRepoMock.Setup(r => r.GetLastAttendeeIncludingDeletedAsync(eventId, userId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(previousAttendee);
 
-            _eventRepoMock.Setup(r => r.GetParticipantsByEventIdAsync(eventId))
+            _eventRepoMock.Setup(r => r.GetParticipantsByEventIdAsync(eventId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<User> { new() });
 
             _localizerMock.Setup(l => l["Res_Event_Joined"])
@@ -406,7 +408,7 @@ namespace UniVibe.UnitTests.Services
                 new() { Id = events[1].Id, Title = "Geçmiş Etkinlik" }
             };
 
-            _eventRepoMock.Setup(r => r.GetAllEventsByUserIdAsync(userId))
+            _eventRepoMock.Setup(r => r.GetAllEventsByUserIdAsync(userId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(events);
 
             _mapperMock.Setup(m => m.Map<List<EventDetailResponse>>(events))
