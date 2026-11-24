@@ -510,6 +510,8 @@ namespace UniVibe.Application.Services
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
 
             await _unitOfWork.SaveChangesAsync();
 

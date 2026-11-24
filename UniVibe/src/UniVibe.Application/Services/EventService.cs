@@ -164,12 +164,19 @@ namespace UniVibe.Application.Services
             return response;
         }
 
-        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
+        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId, bool isAdmin = false)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
-            if (eventEntity == null)
+            if (eventEntity == null || eventEntity.IsDeleted)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.Status != EventStatus.Approved &&
+                eventEntity.UserId != currentUserId &&
+                !isAdmin)
+            {
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
+            }
 
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
