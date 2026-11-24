@@ -35,35 +35,43 @@ namespace UniVibe.Infrastructure.Jobs
             if (existingEvent == null) return;
 
             var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
-            if (participants == null || participants.Count == 0) return;
 
-            foreach (var participant in participants)
+            if (participants != null && participants.Count > 0)
             {
-                if (!string.IsNullOrEmpty(participant.Email))
+                foreach (var participant in participants)
                 {
-                    try
+                    if (!string.IsNullOrEmpty(participant.Email))
                     {
-                        string subject = _localizer["EventCancelledParticipantSubject"].Value;
-                        string template = _localizer["EventCancelledParticipantBody"].Value;
-                        string body = string.Format(template, participant.FirstName, existingEvent.Title, reason);
+                        try
+                        {
+                            string subject = _localizer["EventCancelledParticipantSubject"].Value;
+                            string template = _localizer["EventCancelledParticipantBody"].Value;
+                            string body = string.Format(template, participant.FirstName, existingEvent.Title, reason);
 
-                        await _emailService.SendEmailAsync(participant.Email, subject, body);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Katılımcıya iptal e-postası gönderilemedi. Email: {Email}", participant.Email);
+                            await _emailService.SendEmailAsync(participant.Email, subject, body);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Katılımcıya iptal e-postası gönderilemedi. Email: {Email}", participant.Email);
+                        }
                     }
                 }
             }
 
-            if (existingEvent.Status == EventStatus.Rejected && existingEvent.Attendees != null)
+            if ((existingEvent.Status == EventStatus.Cancelled || existingEvent.Status == EventStatus.Rejected)
+                && existingEvent.Attendees != null)
             {
-                foreach (var attendee in existingEvent.Attendees.Where(a => !a.IsDeleted))
-                {
-                    _eventRepository.RemoveAttendee(attendee);
-                }
+                var activeAttendees = existingEvent.Attendees.Where(a => !a.IsDeleted).ToList();
 
-                await _unitOfWork.SaveChangesAsync();
+                if (activeAttendees.Count > 0)
+                {
+                    foreach (var attendee in activeAttendees)
+                    {
+                        _eventRepository.RemoveAttendee(attendee);
+                    }
+
+                    await _unitOfWork.SaveChangesAsync();
+                }
             }
         }
     }

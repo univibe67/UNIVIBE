@@ -220,7 +220,7 @@
     <value>Lütfen bir bölüm seçiniz.</value>
   </data>
   <data name="Val_InvalidGrade" xml:space="preserve">
-    <value>Lütfen geçerli bir sınıf seviyesi seçiniz.</value>
+    <value>Minimum sınıf seviyesi, maksimum sınıf seviyesinden büyük olamaz.</value>
   </data>
   <data name="Val_InvalidUsername" xml:space="preserve">
     <value>Kullanıcı adı sadece İngilizce harf, rakam ve alt çizgi (_) içerebilir, boşluk bırakılamaz.</value>
@@ -448,13 +448,13 @@
     <value>Yeni şifreniz mevcut şifrenizle aynı olamaz.</value>
   </data>
   <data name="Res_PasswordChangedSuccessfully" xml:space="preserve">
-    <value>Your password has been successfully changed.</value>
+    <value>Şifreniz başarıyla değiştirildi.</value>
   </data>
   <data name="Log_AccountDeletionEmailFailed" xml:space="preserve">
     <value>Kullanıcı hesabı silindi ancak silinme bilgilendirme emaili gönderilemedi. Email: {0}</value>
   </data>
   <data name="Event_OrganizerDeletedReason" xml:space="preserve">
-    <value>Event cancelled because the organizer account was deleted.</value>
+    <value>Organizatör hesabı silindiği için etkinlik iptal edildi.</value>
   </data>
   <data name="Event_OrganizerAdminDeletedReason" xml:space="preserve">
     <value>Organizatör hesabı yönetici tarafından silindiği için etkinlik iptal edildi.</value>
@@ -494,5 +494,14 @@
   </data>
   <data name="EventRejectedEmailBody" xml:space="preserve">
     <value>Merhaba {0}, "{1}" başlıklı etkinliğiniz şu gerekçeyle reddedilmiştir: {2}</value>
+  </data>
+  <data name="Admin_Event_RejectBodyRequired" xml:space="preserve">
+    <value>Etkinlik reddetme isteği gövdesi boş olamaz.</value>
+  </data>
+  <data name="Event_OrganizerUnavailableReason" xml:space="preserve">
+    <value>The event was cancelled because the organizer account is no longer active.</value>
+  </data>
+  <data name="Admin_EventOrganizerUnavailable" xml:space="preserve">
+    <value>Organizatör hesabı silinmiş, pasif veya banlanmış olduğu için etkinlik onaylanamaz.</value>
   </data>
 </root>

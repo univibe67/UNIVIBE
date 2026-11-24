@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using UniVibe.Application.Common;
 using UniVibe.Application.DTOs.Event.Requests;
 using UniVibe.Application.DTOs.Event.Responses;
@@ -14,10 +15,14 @@ namespace UniVibe.API.Controllers
     public sealed class AdminEventController : ControllerBase
     {
         private readonly IAdminEventService _adminEventService;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public AdminEventController(IAdminEventService adminEventService)
+        public AdminEventController(
+            IAdminEventService adminEventService,
+            IStringLocalizer<SharedResources> localizer)
         {
             _adminEventService = adminEventService;
+            _localizer = localizer;
         }
 
         [HttpGet("pending")]
@@ -52,7 +57,7 @@ namespace UniVibe.API.Controllers
         public async Task<IActionResult> RejectEvent(Guid id, [FromBody] RejectEventRequest? request)
         {
             if (request is null)
-                throw new BadRequestException("Etkinlik reddetme isteği gövdesi boş olamaz.");
+                throw new BadRequestException(_localizer["Admin_Event_RejectBodyRequired"].Value);
 
             var message = await _adminEventService.RejectEventAsync(id, request.Reason);
             return Ok(ApiResponse<string>.Success(message));

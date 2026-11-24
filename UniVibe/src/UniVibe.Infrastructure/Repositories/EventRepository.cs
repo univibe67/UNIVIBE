@@ -227,5 +227,11 @@ namespace UniVibe.Infrastructure.Repositories
                 }
             }
         }
+        public async Task<int> GetActiveAttendeeCountAsync(Guid eventId)
+        {
+            return await _context.EventAttendees
+                .AsNoTracking()
+                .CountAsync(ea => ea.EventId == eventId && !ea.IsDeleted);
+        }
     }
 }
