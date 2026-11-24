@@ -55,22 +55,24 @@ namespace UniVibe.UnitTests.Services
         // 1. TESTS FOR GetPendingEventsAsync
         // ==========================================
         [Fact]
-        public async Task GetPendingEventsAsync_ShouldReturnListOfEventListResponses()
+        public async Task GetPendingEventsAsync_ShouldReturnPagedPendingEvents()
         {
             // Arrange
             var pendingEvents = new List<Event>
-            {
-                new Event { Id = Guid.NewGuid(), Title = "Pending Event", Status = EventStatus.Pending }
-            };
+    {
+        new Event { Id = Guid.NewGuid(), Title = "Pending Event", Status = EventStatus.Pending }
+    };
             var expectedResponse = new List<EventListResponse>
-            {
-                new EventListResponse { Title = "Pending Event" }
-            };
+    {
+        new EventListResponse { Title = "Pending Event" }
+    };
 
-            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync(EventStatus.Pending))
-                .ReturnsAsync(pendingEvents);
+            _eventRepoMock
+                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, EventStatus.Pending))
+                .ReturnsAsync((pendingEvents, 1));
 
-            _mapperMock.Setup(m => m.Map<List<EventListResponse>>(pendingEvents))
+            _mapperMock
+                .Setup(m => m.Map<List<EventListResponse>>(pendingEvents))
                 .Returns(expectedResponse);
 
             // Act
@@ -78,32 +80,37 @@ namespace UniVibe.UnitTests.Services
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(1);
-            result[0].Title.Should().Be("Pending Event");
+            result.TotalCount.Should().Be(1);
+            result.PageNumber.Should().Be(1);
+            result.PageSize.Should().Be(10);
+            result.Items.Should().HaveCount(1);
+            result.Items[0].Title.Should().Be("Pending Event");
         }
 
         // ==========================================
         // 2. TESTS FOR GetAllEventsAsync
         // ==========================================
         [Fact]
-        public async Task GetAllEventsAsync_ShouldReturnAllEvents()
+        public async Task GetAllEventsAsync_ShouldReturnPagedAllEvents()
         {
             // Arrange
             var allEvents = new List<Event>
-            {
-                new Event { Id = Guid.NewGuid(), Title = "Event 1", Status = EventStatus.Approved },
-                new Event { Id = Guid.NewGuid(), Title = "Event 2", Status = EventStatus.Pending }
-            };
+    {
+        new Event { Id = Guid.NewGuid(), Title = "Event 1", Status = EventStatus.Approved },
+        new Event { Id = Guid.NewGuid(), Title = "Event 2", Status = EventStatus.Pending }
+    };
             var expectedResponse = new List<EventListResponse>
-            {
-                new EventListResponse { Title = "Event 1" },
-                new EventListResponse { Title = "Event 2" }
-            };
+    {
+        new EventListResponse { Title = "Event 1" },
+        new EventListResponse { Title = "Event 2" }
+    };
 
-            _eventRepoMock.Setup(r => r.GetEventsWithUsersByStatusAsync(It.IsAny<EventStatus?>()))
-                .ReturnsAsync(allEvents);
+            _eventRepoMock
+                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, null))
+                .ReturnsAsync((allEvents, 2));
 
-            _mapperMock.Setup(m => m.Map<List<EventListResponse>>(allEvents))
+            _mapperMock
+                .Setup(m => m.Map<List<EventListResponse>>(allEvents))
                 .Returns(expectedResponse);
 
             // Act
@@ -111,7 +118,12 @@ namespace UniVibe.UnitTests.Services
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(2);
+            result.TotalCount.Should().Be(2);
+            result.PageNumber.Should().Be(1);
+            result.PageSize.Should().Be(10);
+            result.Items.Should().HaveCount(2);
+            result.Items[0].Title.Should().Be("Event 1");
+            result.Items[1].Title.Should().Be("Event 2");
         }
 
         // ==========================================

@@ -40,15 +40,16 @@ namespace UniVibe.Application.Services
 
         public async Task<List<FacultyLookupResponse>> GetFacultiesByUniversityIdAsync(Guid universityId)
         {
-            var universityExists = await _universityRepository.AnyAsync(u => u.Id == universityId && u.IsActive);
-            if (!universityExists)
-            {
-                return new List<FacultyLookupResponse>();
-            }
-
             return await _memoryCache.GetOrCreateAsync($"faculties_univ_{universityId}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7);
+
+                var universityExists = await _universityRepository.AnyAsync(u => u.Id == universityId && u.IsActive);
+                if (!universityExists)
+                {
+                    return new List<FacultyLookupResponse>();
+                }
+
                 var faculties = await _facultyRepository.GetAllAsync(f => f.UniversityId == universityId && f.IsActive);
                 return _mapper.Map<List<FacultyLookupResponse>>(faculties.OrderBy(f => f.Name));
             }) ?? new();
@@ -56,15 +57,16 @@ namespace UniVibe.Application.Services
 
         public async Task<List<DepartmentLookupResponse>> GetDepartmentsByFacultyIdAsync(Guid facultyId)
         {
-            var facultyExists = await _facultyRepository.AnyAsync(f => f.Id == facultyId && f.IsActive);
-            if (!facultyExists)
-            {
-                return new List<DepartmentLookupResponse>();
-            }
-
             return await _memoryCache.GetOrCreateAsync($"depts_fac_{facultyId}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7);
+
+                var facultyExists = await _facultyRepository.AnyAsync(f => f.Id == facultyId && f.IsActive);
+                if (!facultyExists)
+                {
+                    return new List<DepartmentLookupResponse>();
+                }
+
                 var departments = await _departmentRepository.GetAllAsync(d => d.FacultyId == facultyId && d.IsActive);
                 return _mapper.Map<List<DepartmentLookupResponse>>(departments.OrderBy(d => d.Name));
             }) ?? new();

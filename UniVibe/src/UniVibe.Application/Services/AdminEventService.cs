@@ -42,20 +42,50 @@ namespace UniVibe.Application.Services
             _eventCancellationJob = eventCancellationJob;
         }
 
-        public async Task<List<EventListResponse>> GetPendingEventsAsync()
+        public async Task<PaginatedResult<EventListResponse>> GetPendingEventsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var pendingEvents = await _eventRepository.GetEventsWithUsersByStatusAsync(EventStatus.Pending);
+            pageNumber = pageNumber < 1 ? 1 : pageNumber;
+            pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
+
+            var (pendingEvents, totalCount) = await _eventRepository.GetPagedEventsAsync(
+                pageNumber,
+                pageSize,
+                onlyActive: false,
+                status: EventStatus.Pending);
+
             var response = _mapper.Map<List<EventListResponse>>(pendingEvents);
             response.MapListWithLocalization(pendingEvents, _localizer);
-            return response;
+
+            return new PaginatedResult<EventListResponse>
+            {
+                Items = response,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
-        public async Task<List<EventListResponse>> GetAllEventsAsync()
+        public async Task<PaginatedResult<EventListResponse>> GetAllEventsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var allEvents = await _eventRepository.GetEventsWithUsersByStatusAsync();
+            pageNumber = pageNumber < 1 ? 1 : pageNumber;
+            pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
+
+            var (allEvents, totalCount) = await _eventRepository.GetPagedEventsAsync(
+                pageNumber,
+                pageSize,
+                onlyActive: false,
+                status: null);
+
             var response = _mapper.Map<List<EventListResponse>>(allEvents);
             response.MapListWithLocalization(allEvents, _localizer);
-            return response;
+
+            return new PaginatedResult<EventListResponse>
+            {
+                Items = response,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<string> ApproveEventAsync(Guid eventId)

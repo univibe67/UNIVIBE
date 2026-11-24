@@ -510,13 +510,15 @@ namespace UniVibe.Application.Services
             user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
             user.PasswordResetToken = null;
             user.ResetTokenExpires = null;
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
 
             await _unitOfWork.SaveChangesAsync();
 
             return _localizer["Auth_PasswordResetSuccessful"].Value;
         }
 
-        public async Task<string> GetVerificationRedirectUrlAsync(string token)
+        public async Task<string> GetVerificationRedirectUrlAsync(string token, string? redirectUrl = null)
         {
             var pendingUser = await _pendingUserRepository.FirstOrDefaultAsync(u => u.Token == token && !u.IsUsed);
 
@@ -526,7 +528,12 @@ namespace UniVibe.Application.Services
             }
 
             string expoBaseUrl = _configuration["ExpoBaseUrl"] ?? "exp://localhost:8081";
-            return $"{expoBaseUrl}/--/register-complete?token={Uri.EscapeDataString(token)}";
+            string defaultTarget = $"{expoBaseUrl}/--/register-complete";
+
+            string chosenTarget = ResolveSafeRedirectTarget(redirectUrl, defaultTarget);
+            char separator = chosenTarget.Contains('?') ? '&' : '?';
+
+            return $"{chosenTarget}{separator}token={Uri.EscapeDataString(token)}";
         }
 
         public async Task<RegistrationDetailsResponse> GetRegistrationDetailsByTokenAsync(string token)
@@ -616,6 +623,44 @@ namespace UniVibe.Application.Services
                 return true;
 
             return allowSubdomains && emailDomain.EndsWith($".{clean}", StringComparison.OrdinalIgnoreCase);
+        }
+        private string ResolveSafeRedirectTarget(string? redirectUrl, string fallbackUrl)
+        {
+            if (string.IsNullOrWhiteSpace(redirectUrl))
+                return fallbackUrl;
+
+            var decoded = Uri.UnescapeDataString(redirectUrl).Trim();
+
+            if (!Uri.TryCreate(decoded, UriKind.Absolute, out var parsedUri))
+                return fallbackUrl;
+
+            if (parsedUri.Scheme.Equals("javascript", StringComparison.OrdinalIgnoreCase) ||
+                parsedUri.Scheme.Equals("data", StringComparison.OrdinalIgnoreCase) ||
+                parsedUri.Scheme.Equals("vbscript", StringComparison.OrdinalIgnoreCase) ||
+                parsedUri.Scheme.Equals("file", StringComparison.OrdinalIgnoreCase))
+            {
+                return fallbackUrl;
+            }
+
+            var allowedPrefixes = new List<string>();
+
+            var expoBase = _configuration["ExpoBaseUrl"];
+            if (!string.IsNullOrWhiteSpace(expoBase))
+                allowedPrefixes.Add(expoBase.TrimEnd('/'));
+
+            var webBase = _configuration["WebBaseUrl"];
+            if (!string.IsNullOrWhiteSpace(webBase))
+                allowedPrefixes.Add(webBase.TrimEnd('/'));
+
+            allowedPrefixes.Add("https://univibe-three.vercel.app");
+            allowedPrefixes.Add("exp://localhost:8081");
+
+            var normalizedCandidate = decoded.TrimEnd('/');
+            bool isAllowed = allowedPrefixes.Any(prefix =>
+                normalizedCandidate.Equals(prefix, StringComparison.OrdinalIgnoreCase) ||
+                normalizedCandidate.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase));
+
+            return isAllowed ? decoded : fallbackUrl;
         }
     }
 }

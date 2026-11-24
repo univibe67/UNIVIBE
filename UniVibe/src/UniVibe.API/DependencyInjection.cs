@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 using UniVibe.Application.Common;
 
@@ -31,10 +33,22 @@ namespace UniVibe.API
                 options.AddPolicy("LoginLimit", context =>
                 {
                     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var email = TryExtractEmailFromRequest(context.Request);
 
-                    return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                    if (!string.IsNullOrWhiteSpace(email))
                     {
-                        PermitLimit = 8,
+                        return RateLimitPartition.GetFixedWindowLimiter($"login:{ip}:{email}", _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 8,
+                            Window = TimeSpan.FromMinutes(15),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        });
+                    }
+
+                    return RateLimitPartition.GetFixedWindowLimiter($"login-ip:{ip}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 200,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -45,9 +59,9 @@ namespace UniVibe.API
                 {
                     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-                    return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                    return RateLimitPartition.GetFixedWindowLimiter($"strict:{ip}", _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 8,
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -65,9 +79,9 @@ namespace UniVibe.API
 
                     var responseObj = ApiResponse<object>.Fail(message);
 
-                    var jsonResponse = System.Text.Json.JsonSerializer.Serialize(responseObj);
+                    var jsonResponse = JsonSerializer.Serialize(responseObj);
 
-                    await context.HttpContext.Response.WriteAsync(jsonResponse);
+                    await context.HttpContext.Response.WriteAsync(jsonResponse, token);
                 };
             });
 
@@ -182,6 +196,63 @@ namespace UniVibe.API
             });
 
             return services;
+        }
+
+        private static string? TryExtractEmailFromRequest(HttpRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.Query["email"]))
+            {
+                return request.Query["email"].ToString().Trim().ToLowerInvariant();
+            }
+
+            if (request.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) != true)
+                return null;
+
+            if (request.ContentLength.HasValue && request.ContentLength.Value > 16_384)
+                return null;
+
+            try
+            {
+                request.EnableBuffering();
+                if (request.Body.CanSeek)
+                {
+                    request.Body.Position = 0;
+                }
+
+                using var ms = new MemoryStream();
+                request.Body.CopyToAsync(ms).GetAwaiter().GetResult();
+
+                if (request.Body.CanSeek)
+                {
+                    request.Body.Position = 0;
+                }
+
+                if (ms.Length == 0)
+                    return null;
+
+                using var doc = JsonDocument.Parse(ms.ToArray());
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    var emailProp = doc.RootElement.EnumerateObject()
+                        .FirstOrDefault(p => string.Equals(p.Name, "email", StringComparison.OrdinalIgnoreCase));
+
+                    if (emailProp.Name != null && emailProp.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var value = emailProp.Value.GetString()?.Trim().ToLowerInvariant();
+                        return string.IsNullOrWhiteSpace(value) ? null : value;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+
+            return null;
         }
     }
 }
