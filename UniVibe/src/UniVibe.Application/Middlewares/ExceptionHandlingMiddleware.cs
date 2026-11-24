@@ -76,6 +76,13 @@ namespace UniVibe.Application.Middlewares
                     userMessage = exception.Message;
                     break;
 
+                case { } ex when IsDbUpdateException(ex) && IsUniqueConstraintViolation(ex):
+                    statusCode = (int)HttpStatusCode.Conflict;
+                    userMessage = context.Request.Path.Value?.EndsWith("/attendees", StringComparison.OrdinalIgnoreCase) == true
+                        ? (_localizer["Event_AlreadyJoined"].Value ?? "Bu etkinliğe zaten katıldınız.")
+                        : (_localizer["Error_Conflict"].Value ?? "Bu kayıt zaten mevcut.");
+                    break;
+
                 default:
                     statusCode = (int)HttpStatusCode.InternalServerError;
                     userMessage = _localizer["Error_InternalServer"];
@@ -89,6 +96,42 @@ namespace UniVibe.Application.Middlewares
             var jsonResponse = JsonSerializer.Serialize(response, options);
 
             return context.Response.WriteAsync(jsonResponse);
+        }
+
+        private static bool IsDbUpdateException(Exception exception)
+        {
+            var type = exception.GetType();
+            while (type != null)
+            {
+                if (type.Name == "DbUpdateException")
+                    return true;
+
+                type = type.BaseType;
+            }
+
+            return false;
+        }
+
+        private static bool IsUniqueConstraintViolation(Exception exception)
+        {
+            var current = exception;
+            while (current != null)
+            {
+                var sqlStateProp = current.GetType().GetProperty("SqlState");
+                if (sqlStateProp?.GetValue(current) is string sqlState && sqlState == "23505")
+                    return true;
+
+                if (current.Message.Contains("23505", StringComparison.OrdinalIgnoreCase) ||
+                    current.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
+                    current.Message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                current = current.InnerException;
+            }
+
+            return false;
         }
     }
 }
