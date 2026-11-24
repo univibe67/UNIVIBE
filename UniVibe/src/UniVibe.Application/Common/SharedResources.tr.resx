@@ -489,4 +489,10 @@
   <data name="Error_InternalServer" xml:space="preserve">
     <value>Bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.</value>
   </data>
+  <data name="EventRejectedEmailSubject" xml:space="preserve">
+    <value>Etkinliğiniz Reddedildi - UniVibe</value>
+  </data>
+  <data name="EventRejectedEmailBody" xml:space="preserve">
+    <value>Merhaba {0}, "{1}" başlıklı etkinliğiniz şu gerekçeyle reddedilmiştir: {2}</value>
+  </data>
 </root>
