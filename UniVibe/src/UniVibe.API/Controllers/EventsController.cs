@@ -28,12 +28,12 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request)
+        public async Task<IActionResult> GetAllEvents([FromQuery] GetAllEventsRequest request, CancellationToken cancellationToken)
         {
             var currentUserId = User.GetUserId();
             var isAdmin = User.IsInRole("Admin");
 
-            var pagedEvents = await _eventService.GetAllEventsAsync(request, currentUserId, isAdmin);
+            var pagedEvents = await _eventService.GetAllEventsAsync(request, currentUserId, isAdmin, cancellationToken);
             return Ok(ApiResponse<PaginatedResult<EventDetailResponse>>.Success(pagedEvents));
         }
 
@@ -47,27 +47,27 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("active/me")]
-        public async Task<IActionResult> GetMyAllEvents()
+        public async Task<IActionResult> GetMyAllEvents(CancellationToken cancellationToken)
         {
             var userId = User.GetUserId();
-            var myEvent = await _eventService.GetMyAllEventsAsync(userId);
+            var myEvent = await _eventService.GetMyAllEventsAsync(userId, cancellationToken);
 
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(myEvent));
         }
 
         [HttpGet("joined/me")]
-        public async Task<IActionResult> GetMyJoinedEvents()
+        public async Task<IActionResult> GetMyJoinedEvents(CancellationToken cancellationToken)
         {
             var userId = User.GetUserId();
-            var joinedEvents = await _eventService.GetMyJoinedEventsAsync(userId);
+            var joinedEvents = await _eventService.GetMyJoinedEventsAsync(userId, cancellationToken);
 
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(joinedEvents));
         }
 
         [HttpGet("statistics")]
-        public async Task<IActionResult> GetEventStatistics()
+        public async Task<IActionResult> GetEventStatistics(CancellationToken cancellationToken)
         {
-            var statistics = await _eventService.GetEventStatisticsAsync();
+            var statistics = await _eventService.GetEventStatisticsAsync(cancellationToken);
             return Ok(ApiResponse<EventStatisticsResponse>.Success(statistics));
         }
 
@@ -90,19 +90,19 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetEventById(Guid id)
+        public async Task<IActionResult> GetEventById(Guid id, CancellationToken cancellationToken)
         {
             var currentUserId = User.GetUserId();
             var isAdmin = User.IsInRole("Admin");
-            var eventData = await _eventService.GetEventByIdAsync(id, currentUserId, isAdmin);
+            var eventData = await _eventService.GetEventByIdAsync(id, currentUserId, isAdmin, cancellationToken);
 
             return Ok(ApiResponse<EventDetailResponse>.Success(eventData));
         }
 
         [HttpGet("{id:guid}/participants")]
-        public async Task<IActionResult> GetEventParticipants(Guid id)
+        public async Task<IActionResult> GetEventParticipants(Guid id, CancellationToken cancellationToken)
         {
-            var participants = await _eventService.GetEventParticipantsAsync(id);
+            var participants = await _eventService.GetEventParticipantsAsync(id, cancellationToken);
 
             return Ok(ApiResponse<List<ParticipantResponse>>.Success(participants));
         }
@@ -127,6 +127,7 @@ namespace UniVibe.API.Controllers
 
             return Ok(ApiResponse<List<EventMessageResponse>>.Success(messages));
         }
+
         [HttpPost("{id:guid}/messages")]
         public async Task<IActionResult> SendEventMessage(Guid id, [FromBody] SendMessageRequest request)
         {

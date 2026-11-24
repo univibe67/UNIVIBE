@@ -12,35 +12,39 @@ namespace UniVibe.Infrastructure.Repositories
         public EventRepository(UniVibeDbContext context) : base(context) { }
 
         public async Task<(List<Event> Items, int TotalCount)> GetPagedEventsAsync(
-        int pageNumber,
-        int pageSize,
-        bool onlyActive = true,
-        string? searchTerm = null,
-        Guid? categoryId = null,
-        EventStatus? status = null)
+            int pageNumber,
+            int pageSize,
+            bool onlyActive = true,
+            string? searchTerm = null,
+            Guid? categoryId = null,
+            EventStatus? status = null,
+            CancellationToken cancellationToken = default)
         {
-            var query = _context.Events
+            var now = DateTime.UtcNow;
+
+            var filteredQuery = _context.Events
                 .AsNoTracking()
-                .Include(e => e.Category)
-                .Include(e => e.Attendees.Where(a => !a.IsDeleted))
-                .Include(e => e.User)
-                    .ThenInclude(u => u.Department)
                 .AsQueryable();
 
             if (status.HasValue)
             {
-                query = query.Where(e => e.Status == status.Value);
+                filteredQuery = filteredQuery.Where(e => e.Status == status.Value);
+
+                if (onlyActive)
+                {
+                    filteredQuery = filteredQuery.Where(e => e.IsActive && e.EventDate > now);
+                }
             }
             else if (onlyActive)
             {
-                query = query.Where(e => e.IsActive &&
-                                         e.EventDate >= DateTime.UtcNow &&
-                                         e.Status == EventStatus.Approved);
+                filteredQuery = filteredQuery.Where(e => e.IsActive &&
+                                                         e.EventDate > now &&
+                                                         e.Status == EventStatus.Approved);
             }
 
             if (categoryId.HasValue && categoryId != Guid.Empty)
             {
-                query = query.Where(e => e.CategoryId == categoryId.Value);
+                filteredQuery = filteredQuery.Where(e => e.CategoryId == categoryId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -51,23 +55,31 @@ namespace UniVibe.Infrastructure.Repositories
                     .Replace("_", "\\_");
 
                 var pattern = $"%{sanitized}%";
-                query = query.Where(e => EF.Functions.ILike(e.Title, pattern) ||
-                                         (e.Description != null && EF.Functions.ILike(e.Description, pattern)));
+                filteredQuery = filteredQuery.Where(e => EF.Functions.ILike(e.Title, pattern) ||
+                                                         (e.Description != null && EF.Functions.ILike(e.Description, pattern)));
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
-            var items = await query
+            var items = await filteredQuery
+                .Include(e => e.Category)
+                .Include(e => e.Attendees.Where(a => !a.IsDeleted))
+                .Include(e => e.User)
+                    .ThenInclude(u => u.Department)
+                .AsSplitQuery()
                 .OrderBy(e => e.EventDate)
                 .ThenBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return (items, totalCount);
         }
 
-        public async Task<List<Guid>> GetJoinedEventIdsByUserAsync(List<Guid> eventIds, Guid userId)
+        public async Task<List<Guid>> GetJoinedEventIdsByUserAsync(
+            List<Guid> eventIds,
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             if (eventIds == null || !eventIds.Any())
                 return new List<Guid>();
@@ -79,10 +91,13 @@ namespace UniVibe.Infrastructure.Repositories
                             !a.IsDeleted)
                 .Select(a => a.EventId)
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public async Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId, bool trackChanges = false)
+        public async Task<Event?> GetEventWithDetailsByIdAsync(
+            Guid eventId,
+            bool trackChanges = false,
+            CancellationToken cancellationToken = default)
         {
             var query = _context.Events
                 .Include(e => e.User)
@@ -96,10 +111,12 @@ namespace UniVibe.Infrastructure.Repositories
                 query = query.AsNoTracking();
             }
 
-            return await query.FirstOrDefaultAsync(e => e.Id == eventId);
+            return await query.FirstOrDefaultAsync(e => e.Id == eventId, cancellationToken);
         }
 
-        public async Task<List<Event>> GetAllEventsByUserIdAsync(Guid userId)
+        public async Task<List<Event>> GetAllEventsByUserIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             var now = DateTime.UtcNow;
             const int activeOrPendingPriority = 0;
@@ -117,10 +134,12 @@ namespace UniVibe.Infrastructure.Repositories
                         ? activeOrPendingPriority
                         : pastOrClosedPriority)
                 .ThenByDescending(e => e.EventDate)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public async Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null)
+        public async Task<List<Event>> GetEventsWithUsersByStatusAsync(
+            EventStatus? status = null,
+            CancellationToken cancellationToken = default)
         {
             var query = _context.Events
                 .AsNoTracking()
@@ -135,10 +154,12 @@ namespace UniVibe.Infrastructure.Repositories
                 query = query.Where(e => e.Status == status.Value);
             }
 
-            return await query.OrderByDescending(e => e.CreatedAt).ToListAsync();
+            return await query.OrderByDescending(e => e.CreatedAt).ToListAsync(cancellationToken);
         }
 
-        public async Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId)
+        public async Task<List<Event>> GetJoinedEventsByUserIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.Events
                 .AsNoTracking()
@@ -150,10 +171,12 @@ namespace UniVibe.Infrastructure.Repositories
                             e.IsActive &&
                             e.Attendees.Any(a => a.UserId == userId && !a.IsDeleted))
                 .OrderByDescending(e => e.EventDate)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public async Task<List<User>> GetParticipantsByEventIdAsync(Guid eventId)
+        public async Task<List<User>> GetParticipantsByEventIdAsync(
+            Guid eventId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.EventAttendees
                 .AsNoTracking()
@@ -161,27 +184,37 @@ namespace UniVibe.Infrastructure.Repositories
                 .Include(ea => ea.User)
                 .Select(ea => ea.User)
                 .Where(u => u != null && u.IsActive && !u.IsDeleted)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public async Task<bool> IsUserJoinedEventAsync(Guid eventId, Guid userId)
+        public async Task<bool> IsUserJoinedEventAsync(
+            Guid eventId,
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.EventAttendees
-                .AnyAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
+                .AnyAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted, cancellationToken);
         }
 
-        public async Task AddAttendeeAsync(EventAttendee attendee)
+        public async Task AddAttendeeAsync(EventAttendee attendee, CancellationToken cancellationToken = default)
         {
-            await _context.EventAttendees.AddAsync(attendee);
+            await _context.EventAttendees.AddAsync(attendee, cancellationToken);
         }
 
-        public async Task<EventAttendee?> GetAttendeeAsync(Guid eventId, Guid userId)
+        public async Task<EventAttendee?> GetAttendeeAsync(
+            Guid eventId,
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.EventAttendees
-                .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted);
+                .FirstOrDefaultAsync(ea => ea.EventId == eventId && ea.UserId == userId && !ea.IsDeleted, cancellationToken);
         }
 
-        public async Task<EventAttendee?> GetLastAttendeeIncludingDeletedAsync(Guid eventId, Guid userId, bool trackChanges = true)
+        public async Task<EventAttendee?> GetLastAttendeeIncludingDeletedAsync(
+            Guid eventId,
+            Guid userId,
+            bool trackChanges = true,
+            CancellationToken cancellationToken = default)
         {
             var query = _context.EventAttendees
                 .IgnoreQueryFilters()
@@ -194,12 +227,14 @@ namespace UniVibe.Infrastructure.Repositories
 
             return await query
                 .OrderByDescending(ea => ea.UpdatedAt ?? ea.JoinedAt ?? ea.CreatedAt)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
-        public async Task<int> CountAsync(Expression<Func<Event, bool>> predicate)
+        public async Task<int> CountAsync(
+            Expression<Func<Event, bool>> predicate,
+            CancellationToken cancellationToken = default)
         {
-            return await _context.Events.Where(predicate).CountAsync();
+            return await _context.Events.Where(predicate).CountAsync(cancellationToken);
         }
 
         public void RemoveAttendee(EventAttendee attendee)
@@ -210,13 +245,15 @@ namespace UniVibe.Infrastructure.Repositories
             _context.EventAttendees.Update(attendee);
         }
 
-        public async Task RemoveAttendeesByUserIdAsync(Guid userId)
+        public async Task RemoveAttendeesByUserIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             var attendees = await _context.EventAttendees
                 .Where(ea => ea.UserId == userId && !ea.IsDeleted)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            if (attendees.Any())
+            if (attendees.Count > 0)
             {
                 var now = DateTime.UtcNow;
                 foreach (var attendee in attendees)
@@ -227,11 +264,14 @@ namespace UniVibe.Infrastructure.Repositories
                 }
             }
         }
-        public async Task<int> GetActiveAttendeeCountAsync(Guid eventId)
+
+        public async Task<int> GetActiveAttendeeCountAsync(
+            Guid eventId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.EventAttendees
                 .AsNoTracking()
-                .CountAsync(ea => ea.EventId == eventId && !ea.IsDeleted);
+                .CountAsync(ea => ea.EventId == eventId && !ea.IsDeleted, cancellationToken);
         }
     }
 }
