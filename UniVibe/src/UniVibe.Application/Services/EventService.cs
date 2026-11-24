@@ -343,8 +343,8 @@ namespace UniVibe.Application.Services
 
         private async Task EnsureEventHasCapacityAsync(Event eventEntity, Guid eventId)
         {
-            var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
-            if (participants.Count >= eventEntity.Capacity)
+            var activeAttendeeCount = await _eventRepository.GetActiveAttendeeCountAsync(eventId);
+            if (activeAttendeeCount >= eventEntity.Capacity)
             {
                 throw new BadRequestException(
                     _localizer["Event_CapacityFull"]?.Value
@@ -376,6 +376,7 @@ namespace UniVibe.Application.Services
                 throw new BadRequestException(_localizer["Event_CannotCancelClose"].Value);
 
             existingEvent.Status = EventStatus.Cancelled;
+            existingEvent.IsActive = false;
             existingEvent.CancellationReason = request.Reason;
 
             await _unitOfWork.SaveChangesAsync();

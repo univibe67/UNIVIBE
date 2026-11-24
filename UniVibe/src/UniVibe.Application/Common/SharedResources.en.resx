@@ -448,13 +448,13 @@
     <value>Your new password cannot be the same as your current password.</value>
   </data>
   <data name="Res_PasswordChangedSuccessfully" xml:space="preserve">
-    <value>Şifreniz başarıyla değiştirildi.</value>
+    <value>Your password has been successfully changed.</value>
   </data>
   <data name="Log_AccountDeletionEmailFailed" xml:space="preserve">
     <value>User account was deleted but the deletion notification email could not be sent. Email: {0}</value>
   </data>
   <data name="Event_OrganizerDeletedReason" xml:space="preserve">
-    <value>Organizatör hesabı silindiği için etkinlik iptal edildi.</value>
+    <value>Event cancelled because the organizer account was deleted.</value>
   </data>
   <data name="Event_OrganizerAdminDeletedReason" xml:space="preserve">
     <value>Event cancelled because the organizer account was deleted by an administrator.</value>
@@ -494,5 +494,14 @@
   </data>
   <data name="EventRejectedEmailBody" xml:space="preserve">
     <value>Hello {0}, your event titled "{1}" has been rejected for the following reason: {2}</value>
+  </data>
+  <data name="Admin_Event_RejectBodyRequired" xml:space="preserve">
+    <value>The event rejection request body cannot be empty.</value>
+  </data>
+  <data name="Event_OrganizerUnavailableReason" xml:space="preserve">
+    <value>Organizatör hesabı aktif olmadığı için etkinlik iptal edildi.</value>
+  </data>
+  <data name="Admin_EventOrganizerUnavailable" xml:space="preserve">
+    <value>The event cannot be approved because the organizer account is deleted, inactive, or banned.</value>
   </data>
 </root>

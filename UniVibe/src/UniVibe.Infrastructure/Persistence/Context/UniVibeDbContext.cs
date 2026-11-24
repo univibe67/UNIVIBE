@@ -86,7 +86,7 @@ namespace UniVibe.Infrastructure.Persistence.Context
 
             modelBuilder.Entity<User>(entity =>
             {
-                entity.Property(u => u.Email).HasMaxLength(50).IsRequired();
+                entity.Property(u => u.Email).HasMaxLength(256).IsRequired();
                 entity.Property(u => u.FirstName).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.LastName).HasMaxLength(50).IsRequired();
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);

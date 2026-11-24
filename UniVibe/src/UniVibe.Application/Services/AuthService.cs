@@ -357,7 +357,10 @@ namespace UniVibe.Application.Services
             if (isStudentEmail)
             {
                 if (!request.Grade.HasValue)
-                    throw new BadRequestException(_localizer["Auth_TeacherTitleReq"].Value);
+                    throw new BadRequestException(_localizer["Auth_StudentGradeReq"].Value);
+
+                if (!Enum.IsDefined(request.Grade.Value))
+                    throw new BadRequestException(_localizer["Val_InvalidGrade"]?.Value ?? "Geçersiz sınıf seviyesi.");
 
                 title = null;
                 assignedRole = UserRole.Student;
