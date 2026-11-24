@@ -22,7 +22,9 @@ interface Category {
   name: string;
 }
 
-const ACTIVE_EVENT_WARNING = "Etkinliğiniz var, yeni etkinlik oluşturamazsınız.";
+const ACTIVE_EVENT_WARNING =
+  "Etkinliğiniz var, yeni etkinlik oluşturamazsınız.";
+const MAX_CAPACITY = 50000;
 
 function FormSection({
   step,
@@ -42,7 +44,9 @@ function FormSection({
           {step}
         </span>
         <div>
-          <h2 className="text-lg leading-tight font-bold text-ink-900">{title}</h2>
+          <h2 className="text-lg leading-tight font-bold text-ink-900">
+            {title}
+          </h2>
           <p className="text-[13px] text-ink-500">{description}</p>
         </div>
       </div>
@@ -76,6 +80,7 @@ export default function CreateEvent() {
   const [eventTime, setEventTime] = useState("");
   const [location, setLocation] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [minGrade, setMinGrade] = useState("");
   const [maxGrade, setMaxGrade] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -85,28 +90,37 @@ export default function CreateEvent() {
   useEffect(() => {
     let cancelled = false;
 
-    void Promise.allSettled([api.get("/events/active/me"), api.get("/event-categories")]).then(
-      ([activeResult, categoryResult]) => {
-        if (cancelled) return;
+    void Promise.allSettled([
+      api.get("/events/active/me"),
+      api.get("/event-categories"),
+    ]).then(([activeResult, categoryResult]) => {
+      if (cancelled) return;
 
-        const active = activeResult.status === "fulfilled" ? unwrap<EventItem>(activeResult.value) : null;
-        setHasActiveEvent(Boolean(active?.id));
+      const active =
+        activeResult.status === "fulfilled"
+          ? unwrap<EventItem>(activeResult.value)
+          : null;
+      setHasActiveEvent(Boolean(active?.id));
 
-        if (categoryResult.status === "fulfilled") {
-          const raw = unwrap<Category[] | { items?: Category[] }>(categoryResult.value);
-          const list = Array.isArray(raw) ? raw : raw?.items;
-          setCategories(Array.isArray(list) ? list : []);
-        }
-        setChecking(false);
-      },
-    );
+      if (categoryResult.status === "fulfilled") {
+        const raw = unwrap<Category[] | { items?: Category[] }>(
+          categoryResult.value,
+        );
+        const list = Array.isArray(raw) ? raw : raw?.items;
+        setCategories(Array.isArray(list) ? list : []);
+      }
+      setChecking(false);
+    });
 
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  const imagePreview = useMemo(
+    () => (imageFile ? URL.createObjectURL(imageFile) : null),
+    [imageFile],
+  );
 
   useEffect(() => {
     return () => {
@@ -118,13 +132,35 @@ export default function CreateEvent() {
 
   const handleDateChange = (nextDate: string) => {
     setEventDate(nextDate);
-    if (nextDate === todayValue() && eventTime && eventTime < currentTimeValue()) {
+    if (
+      nextDate === todayValue() &&
+      eventTime &&
+      eventTime < currentTimeValue()
+    ) {
       setEventTime("");
     }
   };
 
+  const handleCapacityChange = (rawValue: string) => {
+    const digitsOnly = rawValue.replace(/[^0-9]/g, "");
+    if (!digitsOnly) {
+      setCapacity("");
+      return;
+    }
+
+    const numericValue = Number(digitsOnly);
+    if (numericValue > MAX_CAPACITY) {
+      setCapacity(String(MAX_CAPACITY));
+      return;
+    }
+
+    setCapacity(String(numericValue));
+  };
+
   const localDate = eventDate && eventTime ? `${eventDate}T${eventTime}` : "";
-  const categoryName = categories.find((category) => category.id === categoryId)?.name;
+  const categoryName = categories.find(
+    (category) => category.id === categoryId,
+  )?.name;
 
   const preview: EventItem = {
     id: "preview",
@@ -154,7 +190,20 @@ export default function CreateEvent() {
       setError(t("Student_SelectCategoryError"));
       return;
     }
-    if (eventDate === todayValue() && eventTime && eventTime < currentTimeValue()) {
+    const numericCapacity = Number(capacity);
+    if (!capacity || numericCapacity < 1 || numericCapacity > MAX_CAPACITY) {
+      setError(
+        t("Student_CapacityError", {
+          defaultValue: `Kapasite 1 ile ${MAX_CAPACITY} arasında olmalıdır.`,
+        }),
+      );
+      return;
+    }
+    if (
+      eventDate === todayValue() &&
+      eventTime &&
+      eventTime < currentTimeValue()
+    ) {
       setError(t("UI_EventDateFuture"));
       return;
     }
@@ -183,11 +232,14 @@ export default function CreateEvent() {
       formData.append("EventDate", new Date(localDate).toISOString());
       formData.append("Location", location);
       formData.append("CategoryId", categoryId);
+      formData.append("Capacity", String(numericCapacity));
       if (minGrade) formData.append("MinGrade", minGrade);
       if (maxGrade) formData.append("MaxGrade", maxGrade);
       if (imageFile) formData.append("ImageFile", imageFile);
 
-      await api.post("/events", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      await api.post("/events", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.success(t("Student_CreateSuccess"));
       navigate("/student/profile");
     } catch (err) {
@@ -217,8 +269,12 @@ export default function CreateEvent() {
         {t("Nav_Profile")}
       </Link>
       <header className="mb-6">
-        <h1 className="text-[30px] leading-tight font-extrabold text-ink-900 sm:text-[38px]">{t("Student_ModalTitleCreate")}</h1>
-        <p className="mt-3 text-[15px] text-ink-600">{t("Student_NewEventDescription")}</p>
+        <h1 className="text-[30px] leading-tight font-extrabold text-ink-900 sm:text-[38px]">
+          {t("Student_ModalTitleCreate")}
+        </h1>
+        <p className="mt-3 text-[15px] text-ink-600">
+          {t("Student_NewEventDescription")}
+        </p>
       </header>
 
       {hasActiveEvent && (
@@ -227,10 +283,21 @@ export default function CreateEvent() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <form
+        onSubmit={handleSubmit}
+        className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]"
+      >
         <div className="space-y-4">
-          <FormSection step={1} title={t("Student_BasicInfo")} description={t("Student_BasicInfoDescription")}>
-            <Field label={t("Student_FieldTitle")} required counter={{ value: title.length, max: 100 }}>
+          <FormSection
+            step={1}
+            title={t("Student_BasicInfo")}
+            description={t("Student_BasicInfoDescription")}
+          >
+            <Field
+              label={t("Student_FieldTitle")}
+              required
+              counter={{ value: title.length, max: 100 }}
+            >
               <Input
                 required
                 minLength={3}
@@ -249,19 +316,44 @@ export default function CreateEvent() {
                 placeholder={t("Student_PlaceholderDesc")}
               />
             </Field>
-            <Field label={t("Student_FieldCategory")} required>
-              <Select required value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-                <option value="">{t("Student_SelectCategory")}</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {formatCategoryName(category.name, t)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t("Student_FieldCategory")} required>
+                <Select
+                  required
+                  value={categoryId}
+                  onChange={(event) => setCategoryId(event.target.value)}
+                >
+                  <option value="">{t("Student_SelectCategory")}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {formatCategoryName(category.name, t)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field
+                label={t("Student_FieldCapacity", { defaultValue: "Kapasite" })}
+                required
+              >
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={capacity}
+                  onChange={(event) => handleCapacityChange(event.target.value)}
+                  placeholder={t("Student_PlaceholderCapacity", {
+                    defaultValue: "Örn: 100 (Maks. 50000)",
+                  })}
+                />
+              </Field>
+            </div>
           </FormSection>
 
-          <FormSection step={2} title={t("Student_TimeAndLocation")} description={t("Student_TimeAndLocationDescription")}>
+          <FormSection
+            step={2}
+            title={t("Student_TimeAndLocation")}
+            description={t("Student_TimeAndLocationDescription")}
+          >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <Field label={t("Student_Date")} required>
                 <Input
@@ -296,16 +388,26 @@ export default function CreateEvent() {
             </Field>
           </FormSection>
 
-          <FormSection step={3} title={t("Student_AttendanceDetails")} description={t("Student_AttendanceDetailsDescription")}>
+          <FormSection
+            step={3}
+            title={t("Student_AttendanceDetails")}
+            description={t("Student_AttendanceDetailsDescription")}
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t("Student_MinimumGrade")}>
-                <Select value={minGrade} onChange={(event) => setMinGrade(event.target.value)}>
+                <Select
+                  value={minGrade}
+                  onChange={(event) => setMinGrade(event.target.value)}
+                >
                   <option value="">{t("Student_NoRestriction")}</option>
                   {gradeOptions}
                 </Select>
               </Field>
               <Field label={t("Student_MaximumGrade")}>
-                <Select value={maxGrade} onChange={(event) => setMaxGrade(event.target.value)}>
+                <Select
+                  value={maxGrade}
+                  onChange={(event) => setMaxGrade(event.target.value)}
+                >
                   <option value="">{t("Student_NoRestriction")}</option>
                   {gradeOptions}
                 </Select>
@@ -314,12 +416,23 @@ export default function CreateEvent() {
 
             <div>
               <p className="mb-1.5 text-[13px] font-semibold text-ink-700">
-                {t("Student_FieldImage")} <span className="font-normal text-ink-500">({t("Student_Optional")})</span>
+                {t("Student_FieldImage")}{" "}
+                <span className="font-normal text-ink-500">
+                  ({t("Student_Optional")})
+                </span>
               </p>
               {imageFile ? (
                 <div className="flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50 p-2.5">
-                  {imagePreview && <img src={imagePreview} alt="" className="size-12 rounded-lg object-cover" />}
-                  <span className="min-w-0 flex-1 truncate text-sm text-ink-700">{imageFile.name}</span>
+                  {imagePreview && (
+                    <img
+                      src={imagePreview}
+                      alt=""
+                      className="size-12 rounded-lg object-cover"
+                    />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-sm text-ink-700">
+                    {imageFile.name}
+                  </span>
                   <Button
                     variant="ghost"
                     size="iconSm"
@@ -332,14 +445,24 @@ export default function CreateEvent() {
                 </div>
               ) : (
                 <label className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-7 text-center transition-colors focus-within:border-brand-500 hover:border-brand-400 hover:bg-brand-50/50">
-                  <ImagePlus size={22} className="text-ink-500" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-brand-700">{t("Student_ChooseFile")}</span>
-                  <span className="text-xs text-ink-500">{t("UI_ImageHint")}</span>
+                  <ImagePlus
+                    size={22}
+                    className="text-ink-500"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm font-semibold text-brand-700">
+                    {t("Student_ChooseFile")}
+                  </span>
+                  <span className="text-xs text-ink-500">
+                    {t("UI_ImageHint")}
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
                     className="sr-only"
-                    onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                    onChange={(event) =>
+                      setImageFile(event.target.files?.[0] ?? null)
+                    }
                   />
                 </label>
               )}
@@ -349,7 +472,9 @@ export default function CreateEvent() {
 
         <aside className="space-y-3 lg:sticky lg:top-24">
           <div className="hidden lg:block">
-            <p className="mb-2.5 text-[13px] font-semibold text-ink-500">{t("UI_Preview")}</p>
+            <p className="mb-2.5 text-[13px] font-semibold text-ink-500">
+              {t("UI_Preview")}
+            </p>
             <div className="pointer-events-none" aria-hidden="true" inert>
               <EventCard event={preview} onViewDetail={() => undefined} />
             </div>
@@ -372,10 +497,15 @@ export default function CreateEvent() {
             {!submitting && <Send size={17} aria-hidden="true" />}
             {submitting ? t("Student_Creating") : t("Student_PublishEvent")}
           </Button>
-          <Link to="/student/profile" className={buttonClass("ghost", "md", "w-full")}>
+          <Link
+            to="/student/profile"
+            className={buttonClass("ghost", "md", "w-full")}
+          >
             {t("Student_CancelBtn")}
           </Link>
-          <p className="text-center text-xs leading-relaxed text-ink-500">{t("UI_ApprovalNotice")}</p>
+          <p className="text-center text-xs leading-relaxed text-ink-500">
+            {t("UI_ApprovalNotice")}
+          </p>
         </aside>
       </form>
     </>

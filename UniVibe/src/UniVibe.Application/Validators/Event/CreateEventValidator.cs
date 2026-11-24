@@ -16,7 +16,7 @@ namespace UniVibe.Application.Validators.Event
 
             RuleFor(x => x.EventDate)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .GreaterThan(_ =>DateTime.UtcNow).WithMessage(x => localizer["Val_EventDatePast"].Value);
+                .GreaterThan(_ => DateTime.UtcNow).WithMessage(x => localizer["Val_EventDatePast"].Value);
 
             RuleFor(x => x.Location)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
@@ -26,9 +26,11 @@ namespace UniVibe.Application.Validators.Event
 
             RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value);
-            RuleFor(x => x)
-                .Must(x => !x.MinGrade.HasValue || !x.MaxGrade.HasValue || (int)x.MinGrade.Value <= (int)x.MaxGrade.Value)
-                .WithMessage(x => localizer["Val_MinGradeGreaterThanMax"].Value);
+
+            RuleFor(x => x.Capacity)
+                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
+                .GreaterThan(0).WithMessage(x => localizer["Val_CapacityGreaterThanZero"]?.Value ?? "Kontenjan en az 1 olmalıdır.")
+                .LessThanOrEqualTo(50000).WithMessage(x => localizer["Val_CapacityMax50000"]?.Value ?? "Kontenjan en fazla 50.000 olabilir.");
         }
     }
 }

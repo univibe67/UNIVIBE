@@ -16,7 +16,7 @@ namespace UniVibe.Application.Interfaces.Repositories
 
         Task<List<Guid>> GetJoinedEventIdsByUserAsync(List<Guid> eventIds, Guid userId);
         Task<Event?> GetEventWithDetailsByIdAsync(Guid eventId, bool trackChanges = false);
-        Task<Event?> GetActiveEventByUserIdAsync(Guid userId);
+        Task<List<Event>> GetActiveEventByUserIdAsync(Guid userId);
         Task<List<Event>> GetEventsWithUsersByStatusAsync(EventStatus? status = null);
         Task<List<Event>> GetJoinedEventsByUserIdAsync(Guid userId);
         Task<List<User>> GetParticipantsByEventIdAsync(Guid eventId);
@@ -26,6 +26,7 @@ namespace UniVibe.Application.Interfaces.Repositories
         Task<int> CountAsync(Expression<Func<Event, bool>> predicate);
         void RemoveAttendee(EventAttendee attendee);
         Task RemoveAttendeesByUserIdAsync(Guid userId);
+        Task<EventAttendee?> GetLastAttendeeIncludingDeletedAsync(Guid eventId, Guid userId, bool trackChanges = true);
 
     }
 }

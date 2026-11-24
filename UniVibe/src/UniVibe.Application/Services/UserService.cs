@@ -26,6 +26,8 @@ namespace UniVibe.Application.Services
         private readonly IEmailService _emailService;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ILogger<UserService> _logger;
+        private readonly IEventCancellationJob _eventCancellationJob;
+
 
         public UserService(
             IUserRepository userRepository,
@@ -38,7 +40,8 @@ namespace UniVibe.Application.Services
             IPasswordHasher passwordHasher,
             IEventRepository eventRepository,
             ILogger<UserService> logger,
-            IValidator<ChangePasswordRequest> changePasswordValidator)
+            IValidator<ChangePasswordRequest> changePasswordValidator,
+            IEventCancellationJob eventCancellationJob)
         {
             _userRepository = userRepository;
             _imageService = imageService;
@@ -51,6 +54,7 @@ namespace UniVibe.Application.Services
             _eventRepository = eventRepository;
             _logger = logger;
             _changePasswordValidator = changePasswordValidator;
+            _eventCancellationJob = eventCancellationJob;
         }
 
         public async Task<string> UploadProfilePictureAsync(Guid userId, IFormFile profileImage)
@@ -205,6 +209,18 @@ namespace UniVibe.Application.Services
             user.RefreshTokenExpiryTime = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync();
+
+            foreach (var ev in userActiveEvents)
+            {
+                try
+                {
+                    _eventCancellationJob.Enqueue(ev.Id, cancellationReason);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Katılımcı iptal maili işi kuyruğa eklenemedi. EventId: {EventId}", ev.Id);
+                }
+            }
 
             if (!string.IsNullOrEmpty(user.Email))
             {

@@ -16,6 +16,7 @@ namespace UniVibe.Application.Validators.Auth
                 .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
                 .MinimumLength(8).WithMessage(x => localizer["Val_PassMinLength"].Value)
                 .Matches(@"[A-Z]").WithMessage(x => localizer["Val_PassUppercase"].Value)
+                .Matches(@"[a-z]").WithMessage(x => localizer["Val_PassLowercaseRequired"]?.Value ?? localizer["Val_PassLowercase"]?.Value ?? "Şifre en az bir küçük harf içermelidir.")
                 .Matches(@"[0-9]").WithMessage(x => localizer["Val_PassDigit"].Value);
 
             RuleFor(x => x.FirstName)
@@ -26,10 +27,6 @@ namespace UniVibe.Application.Validators.Auth
 
             RuleFor(x => x.DepartmentId)
                 .NotEmpty().WithMessage(x => localizer["Val_SelectDepartment"].Value);
-
-            RuleFor(x => x.PhoneNumber)
-                .NotEmpty().WithMessage(x => localizer["Val_Required"].Value)
-                .Matches(@"^5\d{9}$").WithMessage(x => localizer["Val_InvalidPhone"].Value);
 
             RuleFor(x => x.Grade)
                 .IsInEnum().WithMessage(x => localizer["Val_InvalidGrade"].Value);

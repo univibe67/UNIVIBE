@@ -50,12 +50,19 @@ namespace UniVibe.API.Hubs
                 throw new HubException("Bu etkinliğin sohbet odasına katılma yetkiniz yok.");
             }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, eventId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, parsedEventId.ToString());
         }
 
         public async Task LeaveEventGroup(string eventId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, eventId);
+            var groupName = Guid.TryParse(eventId, out var parsedEventId)
+                ? parsedEventId.ToString()
+                : eventId;
+
+            if (!string.IsNullOrWhiteSpace(groupName))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+            }
         }
 
         public async Task SendMessage(string eventId, string content)
@@ -74,7 +81,7 @@ namespace UniVibe.API.Hubs
 
                 var createdMessage = await _eventMessageService.SendMessageAsync(parsedEventId, userId, request);
 
-                await Clients.Group(eventId).SendAsync("ReceiveMessage", createdMessage);
+                await Clients.Group(parsedEventId.ToString()).SendAsync("ReceiveMessage", createdMessage);
             }
             catch (Exception ex)
             {

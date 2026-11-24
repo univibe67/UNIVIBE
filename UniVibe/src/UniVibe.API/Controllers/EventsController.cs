@@ -52,7 +52,7 @@ namespace UniVibe.API.Controllers
             var userId = User.GetUserId();
             var myEvent = await _eventService.GetMyActiveEventAsync(userId);
 
-            return Ok(ApiResponse<EventDetailResponse?>.Success(myEvent));
+            return Ok(ApiResponse<List<EventDetailResponse>>.Success(myEvent));
         }
 
         [HttpGet("joined/me")]

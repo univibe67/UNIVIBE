@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using UniVibe.Application.Common;
 using UniVibe.Application.Interfaces;
 using UniVibe.Application.Interfaces.Repositories;
+using UniVibe.Domain.Enums;
 
 namespace UniVibe.Infrastructure.Jobs
 {
@@ -10,28 +11,31 @@ namespace UniVibe.Infrastructure.Jobs
     {
         private readonly IEventRepository _eventRepository;
         private readonly IEmailService _emailService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly ILogger<EventCancellationEmailProcessor> _logger;
 
         public EventCancellationEmailProcessor(
             IEventRepository eventRepository,
             IEmailService emailService,
+            IUnitOfWork unitOfWork,
             IStringLocalizer<SharedResources> localizer,
             ILogger<EventCancellationEmailProcessor> logger)
         {
             _eventRepository = eventRepository;
             _emailService = emailService;
+            _unitOfWork = unitOfWork;
             _localizer = localizer;
             _logger = logger;
         }
 
         public async Task ProcessAsync(Guid eventId, string reason)
         {
-            var existingEvent = await _eventRepository.FirstOrDefaultAsync(e => e.Id == eventId);
+            var existingEvent = await _eventRepository.GetEventWithDetailsByIdAsync(eventId, trackChanges: true);
             if (existingEvent == null) return;
 
             var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
-            if (participants == null || !participants.Any()) return;
+            if (participants == null || participants.Count == 0) return;
 
             foreach (var participant in participants)
             {
@@ -50,6 +54,16 @@ namespace UniVibe.Infrastructure.Jobs
                         _logger.LogError(ex, "Katılımcıya iptal e-postası gönderilemedi. Email: {Email}", participant.Email);
                     }
                 }
+            }
+
+            if (existingEvent.Status == EventStatus.Rejected && existingEvent.Attendees != null)
+            {
+                foreach (var attendee in existingEvent.Attendees.Where(a => !a.IsDeleted))
+                {
+                    _eventRepository.RemoveAttendee(attendee);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
             }
         }
     }
