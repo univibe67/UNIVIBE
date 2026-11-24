@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -32,14 +34,21 @@ namespace UniVibe.API
                 {
                     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var email = TryExtractEmailFromRequest(context.Request);
-                    var hasEmail = !string.IsNullOrWhiteSpace(email);
 
-                    var partitionKey = hasEmail ? $"login:{ip}:{email}" : $"login-ip:{ip}";
-                    var permitLimit = hasEmail ? 8 : 200;
-
-                    return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+                    if (!string.IsNullOrWhiteSpace(email))
                     {
-                        PermitLimit = permitLimit,
+                        return RateLimitPartition.GetFixedWindowLimiter($"login:{ip}:{email}", _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 8,
+                            Window = TimeSpan.FromMinutes(15),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        });
+                    }
+
+                    return RateLimitPartition.GetFixedWindowLimiter($"login-ip:{ip}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 200,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -199,29 +208,48 @@ namespace UniVibe.API
             if (request.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) != true)
                 return null;
 
+            if (request.ContentLength.HasValue && request.ContentLength.Value > 16_384)
+                return null;
+
             try
             {
                 request.EnableBuffering();
-                request.Body.Position = 0;
+                if (request.Body.CanSeek)
+                {
+                    request.Body.Position = 0;
+                }
 
-                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
-                var body = reader.ReadToEnd();
-                request.Body.Position = 0;
+                using var ms = new MemoryStream();
+                request.Body.CopyToAsync(ms).GetAwaiter().GetResult();
 
-                if (string.IsNullOrWhiteSpace(body))
+                if (request.Body.CanSeek)
+                {
+                    request.Body.Position = 0;
+                }
+
+                if (ms.Length == 0)
                     return null;
 
-                using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                    doc.RootElement.TryGetProperty("email", out var emailProp) &&
-                    emailProp.ValueKind == JsonValueKind.String)
+                using var doc = JsonDocument.Parse(ms.ToArray());
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
                 {
-                    var value = emailProp.GetString()?.Trim().ToLowerInvariant();
-                    return string.IsNullOrWhiteSpace(value) ? null : value;
+                    var emailProp = doc.RootElement.EnumerateObject()
+                        .FirstOrDefault(p => string.Equals(p.Name, "email", StringComparison.OrdinalIgnoreCase));
+
+                    if (emailProp.Name != null && emailProp.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var value = emailProp.Value.GetString()?.Trim().ToLowerInvariant();
+                        return string.IsNullOrWhiteSpace(value) ? null : value;
+                    }
                 }
             }
-            catch
+            catch (JsonException)
             {
+                return null;
+            }
+            catch (IOException)
+            {
+                return null;
             }
 
             return null;

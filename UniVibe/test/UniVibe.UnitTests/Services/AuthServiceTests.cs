@@ -91,7 +91,11 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task LoginAsync_WhenUserNotFound_ShouldThrowUnauthorizedException()
         {
-            var request = new LoginRequest("test@univibe.com", "Password123");
+            var request = new LoginRequest
+            {
+                Email = "test@univibe.com",
+                Password = "Password123"
+            };
 
             _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))
                 .ReturnsAsync((User?)null);
@@ -108,7 +112,11 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task LoginAsync_WhenPasswordIsInvalid_ShouldThrowUnauthorizedException()
         {
-            var request = new LoginRequest("test@univibe.com", "Password123");
+            var request = new LoginRequest
+            {
+                Email = "test@univibe.com",
+                Password = "Password123"
+            };
             var user = new User { Email = request.Email, PasswordHash = "hashed_pass", IsActive = true };
 
             _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))

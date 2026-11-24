@@ -1,3 +1,7 @@
 ﻿namespace UniVibe.Application.DTOs.Auth.Requests;
 
-public record LoginRequest(string Email, string Password);
+public sealed class LoginRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
