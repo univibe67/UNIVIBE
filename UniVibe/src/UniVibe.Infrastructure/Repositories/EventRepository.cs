@@ -99,7 +99,7 @@ namespace UniVibe.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(e => e.Id == eventId);
         }
 
-        public async Task<List<Event>> GetActiveEventByUserIdAsync(Guid userId)
+        public async Task<List<Event>> GetAllEventsByUserIdAsync(Guid userId)
         {
             var now = DateTime.UtcNow;
             const int activeOrPendingPriority = 0;

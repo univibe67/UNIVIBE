@@ -47,10 +47,10 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("active/me")]
-        public async Task<IActionResult> GetMyActiveEvent()
+        public async Task<IActionResult> GetMyAllEvents()
         {
             var userId = User.GetUserId();
-            var myEvent = await _eventService.GetMyActiveEventAsync(userId);
+            var myEvent = await _eventService.GetMyAllEventsAsync(userId);
 
             return Ok(ApiResponse<List<EventDetailResponse>>.Success(myEvent));
         }

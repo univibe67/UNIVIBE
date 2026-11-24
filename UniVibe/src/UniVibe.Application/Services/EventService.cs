@@ -64,10 +64,12 @@ namespace UniVibe.Application.Services
         {
             await _createEventValidator.ValidateAndThrowCustomAsync(request);
 
+            var now = DateTime.UtcNow;
+
             var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
-                e.EventDate > DateTime.UtcNow &&
-                e.IsDeleted == false &&
+                e.EventDate > now &&
+                !e.IsDeleted &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected);
 
@@ -195,9 +197,9 @@ namespace UniVibe.Application.Services
             return eventDetailResponse;
         }
 
-        public async Task<List<EventDetailResponse>> GetMyActiveEventAsync(Guid userId)
+        public async Task<List<EventDetailResponse>> GetMyAllEventsAsync(Guid userId)
         {
-            var myEvents = await _eventRepository.GetActiveEventByUserIdAsync(userId);
+            var myEvents = await _eventRepository.GetAllEventsByUserIdAsync(userId);
 
             if (myEvents == null || myEvents.Count == 0)
                 return new List<EventDetailResponse>();
