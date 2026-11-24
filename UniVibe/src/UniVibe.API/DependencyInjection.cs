@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 using UniVibe.Application.Common;
 
@@ -31,10 +31,15 @@ namespace UniVibe.API
                 options.AddPolicy("LoginLimit", context =>
                 {
                     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var email = TryExtractEmailFromRequest(context.Request);
+                    var hasEmail = !string.IsNullOrWhiteSpace(email);
 
-                    return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                    var partitionKey = hasEmail ? $"login:{ip}:{email}" : $"login-ip:{ip}";
+                    var permitLimit = hasEmail ? 8 : 200;
+
+                    return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 8,
+                        PermitLimit = permitLimit,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -45,9 +50,9 @@ namespace UniVibe.API
                 {
                     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-                    return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                    return RateLimitPartition.GetFixedWindowLimiter($"strict:{ip}", _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 8,
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0,
                         AutoReplenishment = true
@@ -65,9 +70,9 @@ namespace UniVibe.API
 
                     var responseObj = ApiResponse<object>.Fail(message);
 
-                    var jsonResponse = System.Text.Json.JsonSerializer.Serialize(responseObj);
+                    var jsonResponse = JsonSerializer.Serialize(responseObj);
 
-                    await context.HttpContext.Response.WriteAsync(jsonResponse);
+                    await context.HttpContext.Response.WriteAsync(jsonResponse, token);
                 };
             });
 
@@ -182,6 +187,44 @@ namespace UniVibe.API
             });
 
             return services;
+        }
+
+        private static string? TryExtractEmailFromRequest(HttpRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.Query["email"]))
+            {
+                return request.Query["email"].ToString().Trim().ToLowerInvariant();
+            }
+
+            if (request.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) != true)
+                return null;
+
+            try
+            {
+                request.EnableBuffering();
+                request.Body.Position = 0;
+
+                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
+                var body = reader.ReadToEnd();
+                request.Body.Position = 0;
+
+                if (string.IsNullOrWhiteSpace(body))
+                    return null;
+
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("email", out var emailProp) &&
+                    emailProp.ValueKind == JsonValueKind.String)
+                {
+                    var value = emailProp.GetString()?.Trim().ToLowerInvariant();
+                    return string.IsNullOrWhiteSpace(value) ? null : value;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
         }
     }
 }

@@ -45,7 +45,12 @@ namespace UniVibe.Infrastructure.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var pattern = $"%{searchTerm.Trim()}%";
+                var sanitized = searchTerm.Trim()
+                    .Replace("\\", "\\\\")
+                    .Replace("%", "\\%")
+                    .Replace("_", "\\_");
+
+                var pattern = $"%{sanitized}%";
                 query = query.Where(e => EF.Functions.ILike(e.Title, pattern) ||
                                          (e.Description != null && EF.Functions.ILike(e.Description, pattern)));
             }
