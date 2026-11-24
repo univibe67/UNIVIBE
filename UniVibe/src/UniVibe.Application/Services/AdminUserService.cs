@@ -121,11 +121,14 @@ namespace UniVibe.Application.Services
             if (user == null || user.IsDeleted)
                 throw new NotFoundException(_localizer["Res_User_NotFound"].Value);
 
+            var now = DateTime.UtcNow;
+
             var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
+                !e.IsDeleted &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected &&
-                e.EventDate >= DateTime.UtcNow,
+                e.EventDate >= now,
                 trackChanges: true);
 
             string cancellationReason = _localizer["Event_OrganizerAdminDeletedReason"].Value;
@@ -133,14 +136,25 @@ namespace UniVibe.Application.Services
             foreach (var ev in userActiveEvents)
             {
                 ev.Status = EventStatus.Cancelled;
+                ev.IsActive = false;
                 ev.CancellationReason = cancellationReason;
+
+                var eventWithAttendees = await _eventRepository.GetEventWithDetailsByIdAsync(ev.Id, trackChanges: true);
+                if (eventWithAttendees?.Attendees != null)
+                {
+                    foreach (var attendee in eventWithAttendees.Attendees.Where(a => !a.IsDeleted))
+                    {
+                        attendee.IsDeleted = true;
+                        attendee.IsActive = false;
+                    }
+                }
             }
 
             await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsDeleted = true;
             user.IsBannedByAdmin = true;
-            user.DeletedAt = DateTime.UtcNow;
+            user.DeletedAt = now;
             user.IsActive = false;
             user.RefreshToken = null;
 

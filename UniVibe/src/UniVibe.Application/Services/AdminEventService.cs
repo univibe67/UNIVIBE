@@ -94,6 +94,20 @@ namespace UniVibe.Application.Services
 
             ValidateEventForApproval(evnt);
 
+            var organizer = await _userRepository.GetByIdIncludingDeletedAsync(evnt.UserId, trackChanges: false);
+            if (organizer == null || organizer.IsDeleted || !organizer.IsActive || organizer.IsBannedByAdmin)
+            {
+                evnt.Status = EventStatus.Cancelled;
+                evnt.IsActive = false;
+                evnt.CancellationReason = _localizer["Event_OrganizerUnavailableReason"]?.Value
+                    ?? "Organizatör hesabı aktif olmadığı için etkinlik onaylanamadı.";
+
+                await _unitOfWork.SaveChangesAsync();
+
+                throw new BadRequestException(_localizer["Admin_EventOrganizerUnavailable"]?.Value
+                    ?? "Organizatör hesabı silinmiş, pasif veya banlanmış olduğu için etkinlik onaylanamaz.");
+            }
+
             evnt.Status = EventStatus.Approved;
             await _unitOfWork.SaveChangesAsync();
 

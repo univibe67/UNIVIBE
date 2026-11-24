@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -197,7 +195,6 @@ namespace UniVibe.API
 
             return services;
         }
-
         private static string? TryExtractEmailFromRequest(HttpRequest request)
         {
             if (!string.IsNullOrWhiteSpace(request.Query["email"]))
@@ -205,51 +202,10 @@ namespace UniVibe.API
                 return request.Query["email"].ToString().Trim().ToLowerInvariant();
             }
 
-            if (request.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) != true)
-                return null;
-
-            if (request.ContentLength.HasValue && request.ContentLength.Value > 16_384)
-                return null;
-
-            try
+            var headerEmail = request.Headers["X-User-Email"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(headerEmail))
             {
-                request.EnableBuffering();
-                if (request.Body.CanSeek)
-                {
-                    request.Body.Position = 0;
-                }
-
-                using var ms = new MemoryStream();
-                request.Body.CopyToAsync(ms).GetAwaiter().GetResult();
-
-                if (request.Body.CanSeek)
-                {
-                    request.Body.Position = 0;
-                }
-
-                if (ms.Length == 0)
-                    return null;
-
-                using var doc = JsonDocument.Parse(ms.ToArray());
-                if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                {
-                    var emailProp = doc.RootElement.EnumerateObject()
-                        .FirstOrDefault(p => string.Equals(p.Name, "email", StringComparison.OrdinalIgnoreCase));
-
-                    if (emailProp.Name != null && emailProp.Value.ValueKind == JsonValueKind.String)
-                    {
-                        var value = emailProp.Value.GetString()?.Trim().ToLowerInvariant();
-                        return string.IsNullOrWhiteSpace(value) ? null : value;
-                    }
-                }
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
-            catch (IOException)
-            {
-                return null;
+                return headerEmail.Trim().ToLowerInvariant();
             }
 
             return null;

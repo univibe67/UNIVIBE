@@ -185,28 +185,42 @@ namespace UniVibe.Application.Services
             if (user == null)
                 throw new NotFoundException(_localizer["User_NotFound"].Value);
 
+            var now = DateTime.UtcNow;
+
             var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected &&
                 !e.IsDeleted &&
-                (e.EventDate >= DateTime.UtcNow || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved),
+                (e.EventDate >= now || e.Status == EventStatus.Pending || e.Status == EventStatus.Approved),
                 trackChanges: true);
 
             string cancellationReason = _localizer["Event_OrganizerDeletedReason"].Value;
+
             foreach (var ev in userActiveEvents)
             {
                 ev.Status = EventStatus.Cancelled;
+                ev.IsActive = false;
                 ev.CancellationReason = cancellationReason;
+
+                var eventWithAttendees = await _eventRepository.GetEventWithDetailsByIdAsync(ev.Id, trackChanges: true);
+                if (eventWithAttendees?.Attendees != null)
+                {
+                    foreach (var attendee in eventWithAttendees.Attendees.Where(a => !a.IsDeleted))
+                    {
+                        attendee.IsDeleted = true;
+                        attendee.IsActive = false;
+                    }
+                }
             }
 
             await _eventRepository.RemoveAttendeesByUserIdAsync(userId);
 
             user.IsActive = false;
             user.IsDeleted = true;
-            user.DeletedAt = DateTime.UtcNow;
+            user.DeletedAt = now;
             user.RefreshToken = null;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow;
+            user.RefreshTokenExpiryTime = now;
 
             await _unitOfWork.SaveChangesAsync();
 

@@ -9,11 +9,13 @@ namespace UniVibe.Application.Common
             var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                          ?? user.FindFirst("sub")?.Value;
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrWhiteSpace(userId))
                 throw new UnauthorizedAccessException("Kullanıcı kimliği bulunamadı.");
 
-            return Guid.Parse(userId);
-        }
+            if (!Guid.TryParse(userId, out var parsedGuid) || parsedGuid == Guid.Empty)
+                throw new UnauthorizedAccessException("Kullanıcı kimliği geçersiz formatta.");
 
+            return parsedGuid;
+        }
     }
 }
