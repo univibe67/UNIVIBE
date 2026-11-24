@@ -20,6 +20,7 @@ namespace UniVibe.Application.Services
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly ILogger<AdminEventService> _logger;
+        private readonly IEventCancellationJob _eventCancellationJob;
 
         public AdminEventService(
             IEventRepository eventRepository,
@@ -28,7 +29,8 @@ namespace UniVibe.Application.Services
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IStringLocalizer<SharedResources> localizer,
-            ILogger<AdminEventService> logger)
+            ILogger<AdminEventService> logger,
+            IEventCancellationJob eventCancellationJob)
         {
             _eventRepository = eventRepository;
             _userRepository = userRepository;
@@ -37,6 +39,7 @@ namespace UniVibe.Application.Services
             _mapper = mapper;
             _localizer = localizer;
             _logger = logger;
+            _eventCancellationJob = eventCancellationJob;
         }
 
         public async Task<List<EventListResponse>> GetPendingEventsAsync()
@@ -78,6 +81,8 @@ namespace UniVibe.Application.Services
 
             ValidateEventForRejection(evnt);
 
+            var wasApproved = evnt.Status == EventStatus.Approved;
+
             evnt.Status = EventStatus.Rejected;
             evnt.RejectionReason = reason;
 
@@ -96,6 +101,18 @@ namespace UniVibe.Application.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Etkinlik ret e-postası gönderilemedi. EventId: {EventId}, UserId: {UserId}", eventId, evnt.UserId);
+                }
+            }
+
+            if (wasApproved && evnt.Attendees != null && evnt.Attendees.Any(a => !a.IsDeleted))
+            {
+                try
+                {
+                    _eventCancellationJob.Enqueue(eventId, reason);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Onaylı etkinlik reddedildikten sonra katılımcı bildirim işi kuyruğa eklenemedi. EventId: {EventId}", eventId);
                 }
             }
 
