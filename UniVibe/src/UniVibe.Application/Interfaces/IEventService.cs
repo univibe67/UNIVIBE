@@ -9,8 +9,8 @@ namespace UniVibe.Application.Interfaces
         Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(GetAllEventsRequest request, Guid currentUserId, bool isAdmin = false);
         Task<string> CreateEventAsync(CreateEventRequest request, Guid userId);
         Task<List<EventCategoryResponse>> GetCategoriesAsync();
-        Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId);
-        Task<List<EventDetailResponse>> GetMyActiveEventAsync(Guid userId);
+        Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId, bool isAdmin = false);
+        Task<List<EventDetailResponse>> GetMyAllEventsAsync(Guid userId);
         Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId);
         Task<string> JoinEventAsync(Guid eventId, Guid userId);
         Task<string> CancelEventAsync(Guid eventId, Guid userId, CancelEventRequest request);

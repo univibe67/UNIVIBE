@@ -21,17 +21,17 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("pending")]
-        public async Task<IActionResult> GetPendingEvents()
+        public async Task<IActionResult> GetPendingEvents([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var events = await _adminEventService.GetPendingEventsAsync();
-            return Ok(ApiResponse<List<EventListResponse>>.Success(events));
+            var events = await _adminEventService.GetPendingEventsAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PaginatedResult<EventListResponse>>.Success(events));
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllEvents()
+        public async Task<IActionResult> GetAllEvents([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var events = await _adminEventService.GetAllEventsAsync();
-            return Ok(ApiResponse<List<EventListResponse>>.Success(events));
+            var events = await _adminEventService.GetAllEventsAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PaginatedResult<EventListResponse>>.Success(events));
         }
 
         [HttpGet("{id:guid}")]

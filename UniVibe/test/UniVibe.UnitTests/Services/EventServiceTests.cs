@@ -406,13 +406,13 @@ namespace UniVibe.UnitTests.Services
                 new() { Id = events[1].Id, Title = "Geçmiş Etkinlik" }
             };
 
-            _eventRepoMock.Setup(r => r.GetActiveEventByUserIdAsync(userId))
+            _eventRepoMock.Setup(r => r.GetAllEventsByUserIdAsync(userId))
                 .ReturnsAsync(events);
 
             _mapperMock.Setup(m => m.Map<List<EventDetailResponse>>(events))
                 .Returns(mappedResponses);
 
-            var result = await _eventService.GetMyActiveEventAsync(userId);
+            var result = await _eventService.GetMyAllEventsAsync(userId);
 
             result.Should().HaveCount(2);
             result.Should().OnlyContain(r => r.IsCreator && r.CreatorName == "Mehmet Delibaş" && r.Department == "Bilgisayar Mühendisliği");

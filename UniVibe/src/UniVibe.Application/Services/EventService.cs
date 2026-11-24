@@ -64,10 +64,12 @@ namespace UniVibe.Application.Services
         {
             await _createEventValidator.ValidateAndThrowCustomAsync(request);
 
+            var now = DateTime.UtcNow;
+
             var userActiveEvents = await _eventRepository.GetAllAsync(e =>
                 e.UserId == userId &&
-                e.EventDate > DateTime.UtcNow &&
-                e.IsDeleted == false &&
+                e.EventDate > now &&
+                !e.IsDeleted &&
                 e.Status != EventStatus.Cancelled &&
                 e.Status != EventStatus.Rejected);
 
@@ -164,12 +166,19 @@ namespace UniVibe.Application.Services
             return response;
         }
 
-        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId)
+        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId, bool isAdmin = false)
         {
             var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
 
-            if (eventEntity == null)
+            if (eventEntity == null || eventEntity.IsDeleted)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
+
+            if (eventEntity.Status != EventStatus.Approved &&
+                eventEntity.UserId != currentUserId &&
+                !isAdmin)
+            {
+                throw new NotFoundException(_localizer["Event_NotFound"].Value);
+            }
 
             var eventDetailResponse = _mapper.Map<EventDetailResponse>(eventEntity);
 
@@ -188,9 +197,9 @@ namespace UniVibe.Application.Services
             return eventDetailResponse;
         }
 
-        public async Task<List<EventDetailResponse>> GetMyActiveEventAsync(Guid userId)
+        public async Task<List<EventDetailResponse>> GetMyAllEventsAsync(Guid userId)
         {
-            var myEvents = await _eventRepository.GetActiveEventByUserIdAsync(userId);
+            var myEvents = await _eventRepository.GetAllEventsByUserIdAsync(userId);
 
             if (myEvents == null || myEvents.Count == 0)
                 return new List<EventDetailResponse>();

@@ -91,7 +91,11 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task LoginAsync_WhenUserNotFound_ShouldThrowUnauthorizedException()
         {
-            var request = new LoginRequest("test@univibe.com", "Password123");
+            var request = new LoginRequest
+            {
+                Email = "test@univibe.com",
+                Password = "Password123"
+            };
 
             _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))
                 .ReturnsAsync((User?)null);
@@ -108,7 +112,11 @@ namespace UniVibe.UnitTests.Services
         [Fact]
         public async Task LoginAsync_WhenPasswordIsInvalid_ShouldThrowUnauthorizedException()
         {
-            var request = new LoginRequest("test@univibe.com", "Password123");
+            var request = new LoginRequest
+            {
+                Email = "test@univibe.com",
+                Password = "Password123"
+            };
             var user = new User { Email = request.Email, PasswordHash = "hashed_pass", IsActive = true };
 
             _userRepoMock.Setup(r => r.GetByEmailIncludingDeletedAsync(request.Email, It.IsAny<bool>()))
@@ -501,6 +509,52 @@ namespace UniVibe.UnitTests.Services
                 .WithMessage("Auth_Suspended");
 
             _userRepoMock.Verify(r => r.AddAsync(It.IsAny<User>()), Times.Never);
+        }
+        [Fact]
+        public async Task ResetPasswordAsync_WhenValidRequest_ShouldClearRefreshTokenAndExpiry()
+        {
+            var email = "test@univibe.edu.tr";
+            var token = "valid-reset-token";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                PasswordHash = "old-hash",
+                PasswordResetToken = token,
+                ResetTokenExpires = DateTime.UtcNow.AddHours(1),
+                RefreshToken = "existing-refresh-token",
+                RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7),
+                IsDeleted = false,
+                IsBannedByAdmin = false
+            };
+
+            _userRepoMock
+                .Setup(r => r.FirstOrDefaultAsync(
+                    It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(),
+                    true))
+                .ReturnsAsync(user);
+
+            _passwordHasherMock
+                .Setup(h => h.Hash("YeniSifre123"))
+                .Returns("new-hash");
+
+            var request = new ResetPasswordRequest
+            {
+                Email = email,
+                Token = token,
+                NewPassword = "YeniSifre123"
+            };
+
+            var result = await _authService.ResetPasswordAsync(request);
+
+            result.Should().Be("Auth_PasswordResetSuccessful");
+            user.PasswordHash.Should().Be("new-hash");
+            user.PasswordResetToken.Should().BeNull();
+            user.ResetTokenExpires.Should().BeNull();
+            user.RefreshToken.Should().BeNull();
+            user.RefreshTokenExpiryTime.Should().BeNull();
+
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

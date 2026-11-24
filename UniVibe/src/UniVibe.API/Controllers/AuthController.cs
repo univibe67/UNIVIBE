@@ -76,11 +76,11 @@ namespace UniVibe.API.Controllers
         }
 
         [HttpGet("verification/redirect")]
-        public async Task<IActionResult> VerifyRedirect([FromQuery] string token)
+        public async Task<IActionResult> VerifyRedirect([FromQuery] string token, [FromQuery] string? redirectUrl)
         {
             try
             {
-                string linkToOpen = await _authService.GetVerificationRedirectUrlAsync(token);
+                string linkToOpen = await _authService.GetVerificationRedirectUrlAsync(token, redirectUrl);
 
                 string title = _localization["Auth_RedirectTitle"].Value ?? "UniVibe'a Yönlendiriliyorsunuz";
                 string message = _localization["Auth_RedirectMessage"].Value ?? "E-posta adresiniz başarıyla doğrulandı! Kayıt işlemini tamamlamak için aşağıdaki butona tıklayın.";
