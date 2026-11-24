@@ -109,7 +109,8 @@ namespace UniVibe.Application.Services
         public async Task<PaginatedResult<EventDetailResponse>> GetAllEventsAsync(
             GetAllEventsRequest request,
             Guid currentUserId,
-            bool isAdmin = false)
+            bool isAdmin = false,
+            CancellationToken cancellationToken = default)
         {
             await _getAllEventsValidator.ValidateAndThrowCustomAsync(request);
 
@@ -121,13 +122,14 @@ namespace UniVibe.Application.Services
                 request.OnlyActive,
                 request.SearchTerm,
                 request.CategoryId,
-                statusFilter);
+                statusFilter,
+                cancellationToken);
 
             var eventDetailResponses = _mapper.Map<List<EventDetailResponse>>(items);
 
             var eventIds = items.Select(i => i.Id).ToList();
 
-            var joinedEventIds = await _eventRepository.GetJoinedEventIdsByUserAsync(eventIds, currentUserId);
+            var joinedEventIds = await _eventRepository.GetJoinedEventIdsByUserAsync(eventIds, currentUserId, cancellationToken);
 
             var joinedEventIdSet = joinedEventIds.ToHashSet();
 
@@ -166,9 +168,13 @@ namespace UniVibe.Application.Services
             return response;
         }
 
-        public async Task<EventDetailResponse> GetEventByIdAsync(Guid eventId, Guid currentUserId, bool isAdmin = false)
+        public async Task<EventDetailResponse> GetEventByIdAsync(
+            Guid eventId,
+            Guid currentUserId,
+            bool isAdmin = false,
+            CancellationToken cancellationToken = default)
         {
-            var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId);
+            var eventEntity = await _eventRepository.GetEventWithDetailsByIdAsync(eventId, cancellationToken: cancellationToken);
 
             if (eventEntity == null || eventEntity.IsDeleted)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
@@ -192,14 +198,16 @@ namespace UniVibe.Application.Services
             eventDetailResponse.MapWithLocalization(eventEntity, _localizer);
 
             eventDetailResponse.IsCreator = (eventEntity.UserId == currentUserId);
-            eventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId);
+            eventDetailResponse.IsJoined = await _eventRepository.IsUserJoinedEventAsync(eventId, currentUserId, cancellationToken);
 
             return eventDetailResponse;
         }
 
-        public async Task<List<EventDetailResponse>> GetMyAllEventsAsync(Guid userId)
+        public async Task<List<EventDetailResponse>> GetMyAllEventsAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
-            var myEvents = await _eventRepository.GetAllEventsByUserIdAsync(userId);
+            var myEvents = await _eventRepository.GetAllEventsByUserIdAsync(userId, cancellationToken);
 
             if (myEvents == null || myEvents.Count == 0)
                 return new List<EventDetailResponse>();
@@ -225,9 +233,11 @@ namespace UniVibe.Application.Services
             return eventDetailResponses;
         }
 
-        public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(Guid userId)
+        public async Task<List<EventDetailResponse>> GetMyJoinedEventsAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
-            var events = await _eventRepository.GetJoinedEventsByUserIdAsync(userId);
+            var events = await _eventRepository.GetJoinedEventsByUserIdAsync(userId, cancellationToken);
 
             if (events == null || !events.Any())
                 return new List<EventDetailResponse>();
@@ -410,14 +420,16 @@ namespace UniVibe.Application.Services
             return _localizer["Res_Event_Cancelled"].Value;
         }
 
-        public async Task<List<ParticipantResponse>> GetEventParticipantsAsync(Guid eventId)
+        public async Task<List<ParticipantResponse>> GetEventParticipantsAsync(
+            Guid eventId,
+            CancellationToken cancellationToken = default)
         {
             var eventExists = await _eventRepository.AnyAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (!eventExists)
                 throw new NotFoundException(_localizer["Event_NotFound"].Value);
 
-            var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId);
+            var participants = await _eventRepository.GetParticipantsByEventIdAsync(eventId, cancellationToken);
 
             if (participants == null || !participants.Any())
                 return new List<ParticipantResponse>();
@@ -425,18 +437,18 @@ namespace UniVibe.Application.Services
             return _mapper.Map<List<ParticipantResponse>>(participants);
         }
 
-        public async Task<EventStatisticsResponse> GetEventStatisticsAsync()
+        public async Task<EventStatisticsResponse> GetEventStatisticsAsync(CancellationToken cancellationToken = default)
         {
-            var totalCreatedCount = await _eventRepository.CountAsync(e => !e.IsDeleted);
+            var totalCreatedCount = await _eventRepository.CountAsync(e => !e.IsDeleted, cancellationToken);
 
             var activeCount = await _eventRepository.CountAsync(e =>
                 !e.IsDeleted &&
                 e.EventDate > DateTime.UtcNow &&
-                e.Status == EventStatus.Approved);
+                e.Status == EventStatus.Approved, cancellationToken);
 
             var pendingCount = await _eventRepository.CountAsync(e =>
                 !e.IsDeleted &&
-                e.Status == EventStatus.Pending);
+                e.Status == EventStatus.Pending, cancellationToken);
 
             return new EventStatisticsResponse
             {

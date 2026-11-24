@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using FluentAssertions;
-using FluentValidation;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -18,8 +17,8 @@ namespace UniVibe.UnitTests.Services
     public class AdminEventServiceTests
     {
         private readonly Mock<IEventRepository> _eventRepoMock;
-        private readonly Mock<IUserRepository> _userRepoMock;        
-        private readonly Mock<IEmailService> _emailServiceMock;       
+        private readonly Mock<IUserRepository> _userRepoMock;
+        private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IStringLocalizer<SharedResources>> _localizerMock;
@@ -31,8 +30,8 @@ namespace UniVibe.UnitTests.Services
         public AdminEventServiceTests()
         {
             _eventRepoMock = new Mock<IEventRepository>();
-            _userRepoMock = new Mock<IUserRepository>();          
-            _emailServiceMock = new Mock<IEmailService>();       
+            _userRepoMock = new Mock<IUserRepository>();
+            _emailServiceMock = new Mock<IEmailService>();
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _mapperMock = new Mock<IMapper>();
             _localizerMock = new Mock<IStringLocalizer<SharedResources>>();
@@ -59,16 +58,16 @@ namespace UniVibe.UnitTests.Services
         {
             // Arrange
             var pendingEvents = new List<Event>
-    {
-        new Event { Id = Guid.NewGuid(), Title = "Pending Event", Status = EventStatus.Pending }
-    };
+            {
+                new Event { Id = Guid.NewGuid(), Title = "Pending Event", Status = EventStatus.Pending }
+            };
             var expectedResponse = new List<EventListResponse>
-    {
-        new EventListResponse { Title = "Pending Event" }
-    };
+            {
+                new EventListResponse { Title = "Pending Event" }
+            };
 
             _eventRepoMock
-                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, EventStatus.Pending))
+                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, EventStatus.Pending, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((pendingEvents, 1));
 
             _mapperMock
@@ -95,18 +94,18 @@ namespace UniVibe.UnitTests.Services
         {
             // Arrange
             var allEvents = new List<Event>
-    {
-        new Event { Id = Guid.NewGuid(), Title = "Event 1", Status = EventStatus.Approved },
-        new Event { Id = Guid.NewGuid(), Title = "Event 2", Status = EventStatus.Pending }
-    };
+            {
+                new Event { Id = Guid.NewGuid(), Title = "Event 1", Status = EventStatus.Approved },
+                new Event { Id = Guid.NewGuid(), Title = "Event 2", Status = EventStatus.Pending }
+            };
             var expectedResponse = new List<EventListResponse>
-    {
-        new EventListResponse { Title = "Event 1" },
-        new EventListResponse { Title = "Event 2" }
-    };
+            {
+                new EventListResponse { Title = "Event 1" },
+                new EventListResponse { Title = "Event 2" }
+            };
 
             _eventRepoMock
-                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, null))
+                .Setup(r => r.GetPagedEventsAsync(1, 10, false, null, null, null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((allEvents, 2));
 
             _mapperMock
@@ -202,7 +201,7 @@ namespace UniVibe.UnitTests.Services
                 Id = eventId,
                 UserId = organizerId,
                 Status = EventStatus.Pending,
-                EventDate = DateTime.UtcNow.AddDays(5), // Gelecek tarih
+                EventDate = DateTime.UtcNow.AddDays(5),
                 IsDeleted = false
             };
 
@@ -240,7 +239,7 @@ namespace UniVibe.UnitTests.Services
         {
             // Arrange
             var eventId = Guid.NewGuid();
-            string reason = "   "; // Boş sebep
+            string reason = "   ";
 
             _localizerMock.Setup(l => l["Res_Event_ReasonRequired"])
                 .Returns(new LocalizedString("Res_Event_ReasonRequired", "Red sebebi zorunludur."));
@@ -259,7 +258,6 @@ namespace UniVibe.UnitTests.Services
             var eventId = Guid.NewGuid();
             string reason = "Uygunsuz içerik";
 
-            // 🚀 Tüm olası null reference tuzaklarını engellemek için nesneyi eksiksiz dolduruyoruz
             var eventEntity = new Event
             {
                 Id = eventId,
@@ -270,7 +268,7 @@ namespace UniVibe.UnitTests.Services
                 User = new User { FirstName = "Ahmet", Email = "ahmet@test.com" }
             };
 
-            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(eventEntity);
 
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -279,7 +277,6 @@ namespace UniVibe.UnitTests.Services
             _localizerMock.Setup(l => l["Res_Event_Rejected"])
                 .Returns(new LocalizedString("Res_Event_Rejected", "Etkinlik reddedildi."));
 
-            // 💡 E-posta şablon localizer mock'ları da ekleyelim ki mail bloğunda patlamasın
             _localizerMock.Setup(l => l["EventRejectedEmailSubject"])
                 .Returns(new LocalizedString("EventRejectedEmailSubject", "Red Konusu"));
             _localizerMock.Setup(l => l["EventRejectedEmailBody"])
@@ -304,7 +301,7 @@ namespace UniVibe.UnitTests.Services
             // Arrange
             var eventId = Guid.NewGuid();
 
-            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>()))
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Event?)null);
 
             _localizerMock.Setup(l => l["Event_NotFound"])
@@ -330,7 +327,7 @@ namespace UniVibe.UnitTests.Services
             };
             var expectedResponse = new EventDetailResponse { Title = "Concert" };
 
-            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>()))
+            _eventRepoMock.Setup(r => r.GetEventWithDetailsByIdAsync(eventId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(eventEntity);
 
             _mapperMock.Setup(m => m.Map<EventDetailResponse>(eventEntity))
@@ -344,6 +341,7 @@ namespace UniVibe.UnitTests.Services
             result.Title.Should().Be("Concert");
             result.CreatorName.Should().Be("Ahmet Yılmaz");
         }
+
         [Fact]
         public async Task RejectEventAsync_WhenApprovedEventHasActiveAttendees_ShouldEnqueueCancellationJob()
         {
@@ -378,7 +376,7 @@ namespace UniVibe.UnitTests.Services
             };
 
             _eventRepoMock
-                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
+                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(approvedEvent);
 
             _localizerMock
@@ -426,7 +424,7 @@ namespace UniVibe.UnitTests.Services
             };
 
             _eventRepoMock
-                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true))
+                .Setup(r => r.GetEventWithDetailsByIdAsync(eventId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(pendingEvent);
 
             _localizerMock
